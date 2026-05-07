@@ -55,6 +55,12 @@
     "credentials": [],
     "apiKeys": {}
   },
+  "responseSchema": {
+    "responsePath": "messages[0].parts[0].textMarkdown",
+    "toolCallsPath": "tool_calls",
+    "userInfoPath": "user",
+    "guardrailsPath": "guardrails"
+  },
   "sensitivePatterns": [
     "policy_number",
     "POL-",
