@@ -114,8 +114,10 @@ async function runSetupSteps(config: Config): Promise<void> {
       } else {
         console.log(`    [OK] ${label}: ${res.status}`);
       }
-    } catch (err) {
-      console.error(`    [FAIL] ${label}: ${err instanceof Error ? err.message : String(err)}`);
+    } catch (err: any) {
+      const detail = err?.cause ? ` | cause: ${err.cause?.message || err.cause}` : "";
+      console.error(`    [FAIL] ${label}: ${err instanceof Error ? err.message : String(err)}${detail}`);
+      console.error(`    [DEBUG] URL: ${method} ${url}`);
     }
   }
 }
