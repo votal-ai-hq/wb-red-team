@@ -37,6 +37,7 @@
       }
     ],
     "refreshPerRound": true,
+    "refreshPerConversation": true,
     "customApiTemplate": {
       "method": "POST",
       "headers": {

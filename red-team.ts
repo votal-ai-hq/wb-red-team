@@ -86,6 +86,7 @@ import { analyzeCodebase } from "./lib/codebase-analyzer.js";
 import { planAttacks, refinePartialAttacks } from "./lib/attack-planner.js";
 import {
   preAuthenticate,
+  prepareConversation,
   runPreSetup,
   executeAttack,
   executeMultiTurn,
@@ -624,6 +625,7 @@ async function main() {
         delete (cleanPayload as Record<string, unknown>)._rapidFire;
         const cleanAttack = { ...attack, payload: cleanPayload };
 
+        await prepareConversation(config);
         const responses = await executeRapidFire(
           config,
           cleanAttack,
@@ -671,6 +673,7 @@ async function main() {
             `  ${progress} ${attack.name} (${totalSteps} steps)...`,
           );
 
+          await prepareConversation(config);
           const { results: stepResults, stoppedEarly } = await executeMultiTurn(
             config,
             attack,
@@ -689,6 +692,7 @@ async function main() {
             `  ${progress} ${attack.name} (adaptive, max ${maxTurns} turns)...`,
           );
 
+          await prepareConversation(config);
           const {
             results: stepResults,
             stoppedEarly,
@@ -738,6 +742,7 @@ async function main() {
         } else {
           // Single-turn attack
           process.stdout.write(`  ${progress} ${attack.name}...`);
+          await prepareConversation(config);
           const { statusCode, body, timeMs, executionTrace } =
             await executeAttack(config, attack);
           const result = await analyzeResponse(
@@ -827,6 +832,7 @@ async function main() {
                   `  ${progress} ${attack.name} (${totalSteps} steps)...`,
                 );
 
+                await prepareConversation(config);
                 const { results: stepResults, stoppedEarly } =
                   await executeMultiTurn(
                     config,
@@ -853,6 +859,7 @@ async function main() {
                   `  ${progress} ${attack.name} (adaptive, max ${maxTurns} turns)...`,
                 );
 
+                await prepareConversation(config);
                 const {
                   results: stepResults,
                   stoppedEarly,
@@ -922,6 +929,7 @@ async function main() {
                 roundResults.push(result);
               } else {
                 process.stdout.write(`  ${progress} ${attack.name}...`);
+                await prepareConversation(config);
                 const { statusCode, body, timeMs, executionTrace } =
                   await executeAttack(config, attack);
                 const result = await analyzeResponse(
