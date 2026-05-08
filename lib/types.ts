@@ -456,6 +456,8 @@ export interface Config {
     }>;
     /** Re-run preAuthCommand + setupSteps before each round (for expiring tokens). Default: false. */
     refreshPerRound?: boolean;
+    /** Re-run preAuthCommand + setupSteps before starting each attack conversation. Default: false. */
+    refreshPerConversation?: boolean;
     /** WebSocket chat settings when target.type is "websocket_agent". */
     websocket?: WebSocketTargetConfig;
     /** Optional infrastructure descriptor for the Attack Path visualization. */

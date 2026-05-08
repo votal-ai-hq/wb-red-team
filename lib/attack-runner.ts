@@ -128,6 +128,13 @@ export async function runPreSetup(config: Config): Promise<void> {
   await runSetupSteps(config);
 }
 
+/** Refresh token/session state at the start of each new conversation when configured. */
+export async function prepareConversation(config: Config): Promise<void> {
+  if (!config.target.refreshPerConversation) return;
+  console.log("  Refreshing pre-auth tokens and session for new conversation...");
+  await runPreSetup(config);
+}
+
 export async function preAuthenticate(config: Config): Promise<void> {
   const adapter = getTargetAdapter(config);
   if (adapter) {

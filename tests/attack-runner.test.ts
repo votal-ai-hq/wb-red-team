@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { executeAttack } from "../lib/attack-runner.js";
+import { executeAttack, prepareConversation } from "../lib/attack-runner.js";
 import type { Attack, Config } from "../lib/types.js";
 
 function makeConfig(): Config {
@@ -115,5 +115,51 @@ describe("executeAttack custom API template", () => {
       messages: [{ role: "user", content: "user message" }],
       guardrails: ["votal-input-guard", "votal-output-guard"],
     });
+  });
+});
+
+describe("prepareConversation", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("refreshes pre-auth state for each new conversation when enabled", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => ({ conversationId: "conv-123" }),
+    } as Response);
+
+    const config = makeConfig();
+    config.target.refreshPerConversation = true;
+    config.target.preAuthCommand = {
+      command: "python3 scripts/get_esso_token_mock.py 9245099016",
+      outputVar: "E_SSO_TOKEN",
+    };
+    config.target.setupSteps = [
+      {
+        name: "Create conversation",
+        url: "/start/conversation",
+        method: "POST",
+        headers: {
+          "e-sso-token": "{{var:E_SSO_TOKEN}}",
+        },
+        body: {
+          conversationId: "{{uuid}}",
+        },
+        extract: {
+          conversationId: "conversationId",
+        },
+      },
+    ];
+
+    await prepareConversation(config);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect((requestInit.headers as Record<string, string>)["e-sso-token"]).toMatch(
+      /^\*MOCK_ESSO\*/,
+    );
   });
 });
