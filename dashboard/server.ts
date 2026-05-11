@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage } from "node:http";
-import { readFileSync, readdirSync, rmSync, mkdtempSync } from "node:fs";
+import { readFileSync, readdirSync, rmSync, mkdtempSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, extname } from "node:path";
 import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
@@ -34,6 +34,7 @@ loadEnvFile();
 
 const PORT = parseInt(process.argv[2] || "4100", 10);
 const REPORT_DIR = join(import.meta.dirname, "..", "report");
+const LITELLM_REPORT_DIR = join(import.meta.dirname, "..", "reports", "litellm-guardrails");
 const DASHBOARD_DIR = import.meta.dirname;
 
 const MIME: Record<string, string> = {
@@ -1021,6 +1022,94 @@ const server = createServer(withMiddleware(async (req, res, ctx) => {
     } catch {
       res.writeHead(404);
       res.end("Not found");
+    }
+    return;
+  }
+
+  // ── LiteLLM Guardrails Reports ──
+
+  // API: list litellm guardrails reports
+  if (url.pathname === "/api/litellm-reports" && req.method === "GET") {
+    try {
+      const files = readdirSync(LITELLM_REPORT_DIR)
+        .filter((f) => f.endsWith(".json"))
+        .sort()
+        .reverse();
+      const metas = files.map((f) => {
+        try {
+          const raw = JSON.parse(readFileSync(join(LITELLM_REPORT_DIR, f), "utf-8"));
+          const results = raw.results || [];
+          const goodTotal = results.filter((r: any) => r.without_guardrails?.category === "good").length;
+          const badTotal = results.filter((r: any) => r.without_guardrails?.category === "bad").length;
+          const blocked = results.filter((r: any) =>
+            r.with_guardrails?.category === "bad" &&
+            (r.with_guardrails?.status_code === 400 || r.with_guardrails?.status_code === 403 ||
+             (r.with_guardrails?.response_text || "").toLowerCase().includes("blocked") ||
+             (r.with_guardrails?.response_text || "").toLowerCase().includes("guardrail"))
+          ).length;
+          return {
+            filename: f,
+            created_at: raw.created_at || "",
+            model: raw.model || "",
+            guardrails: raw.guardrails || [],
+            goodTotal,
+            badTotal,
+            blocked,
+            total: results.length,
+          };
+        } catch {
+          return { filename: f, created_at: "", model: "", guardrails: [], goodTotal: 0, badTotal: 0, blocked: 0, total: 0 };
+        }
+      });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(metas));
+    } catch {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end("[]");
+    }
+    return;
+  }
+
+  // API: get a specific litellm guardrails report
+  if (url.pathname.startsWith("/api/litellm-report/") && req.method === "GET") {
+    const filename = url.pathname.slice("/api/litellm-report/".length);
+    if (filename.includes("..") || filename.includes("/")) {
+      res.writeHead(400);
+      res.end("Bad request");
+      return;
+    }
+    try {
+      const raw = readFileSync(join(LITELLM_REPORT_DIR, filename), "utf-8");
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(raw);
+    } catch {
+      res.writeHead(404);
+      res.end("Not found");
+    }
+    return;
+  }
+
+  // API: upload a litellm guardrails report JSON
+  if (url.pathname === "/api/litellm-report-upload" && req.method === "POST") {
+    try {
+      const body = await readBody(req);
+      const parsed = JSON.parse(body);
+      if (!parsed.results || !Array.isArray(parsed.results)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid report: missing results array" }));
+        return;
+      }
+      if (!existsSync(LITELLM_REPORT_DIR)) {
+        mkdirSync(LITELLM_REPORT_DIR, { recursive: true });
+      }
+      const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19) + "Z";
+      const filename = `litellm-guardrails-${ts}.json`;
+      writeFileSync(join(LITELLM_REPORT_DIR, filename), JSON.stringify(parsed, null, 2));
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ filename, message: "Report uploaded" }));
+    } catch (err) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err instanceof Error ? err.message : "Invalid JSON" }));
     }
     return;
   }

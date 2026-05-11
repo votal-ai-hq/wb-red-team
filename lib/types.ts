@@ -525,7 +525,12 @@ export interface Config {
     enabledCategories?: AttackCategory[];
     /** Optional allowlist of strategy slugs to use for LLM generation. Omit or set to empty array to use all. */
     enabledStrategies?: string[];
-    /** How many strategies to sample per category per round (default: 5). */
+    /**
+     * How many strategies to sample per category per round (default: 5).
+     * If this value is greater than or equal to the number of eligible strategies, or >= 100,
+     * every eligible strategy (enabled slugs or full catalog) is passed to generation and the
+     * model is asked for one attack per strategy.
+     */
     strategiesPerRound?: number;
     /** Max PARTIAL results to refine per category per round (default: 10). */
     maxRefinementsPerCategory?: number;
