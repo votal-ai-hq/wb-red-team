@@ -1,25 +1,18 @@
-# Red Team AI — OpenShift deployment (no Postgres, simple auth)
-#
-# Usage:
-#   1. Copy this file: cp deploy-no-db.example.yaml deploy-no-db.yaml
-#   2. Fill in your real API keys and password in deploy-no-db.yaml
-#   3. oc apply -f openshift/deploy-no-db.yaml
-#
-# deploy-no-db.yaml is gitignored — your secrets stay local.
-
-# Secret: API keys and auth config
+# Secret: API keys and auth config (no DB)
+# NOTE: Replace these placeholder values with freshly-rotated keys.
+# The previous keys shared in chat must be revoked.
 apiVersion: v1
 kind: Secret
 metadata:
   name: red-team-secrets
-  namespace: YOUR_NAMESPACE
+  namespace: sundi133-dev
   labels:
     app.kubernetes.io/part-of: red-team-ai
 type: Opaque
 stringData:
   ANTHROPIC_API_KEY: ""
   OPENAI_API_KEY: ""
-  SIMPLE_AUTH_SESSION_SECRET: "replace-with-random-string"
+  SIMPLE_AUTH_SESSION_SECRET: "replace-this"
   SIMPLE_AUTH_PASSWORD: "changeme"
 ---
 # Red Team Dashboard (no Postgres, emptyDir volumes)
@@ -27,7 +20,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: red-team-dashboard
-  namespace: YOUR_NAMESPACE
+  namespace: sundi133-dev
   labels:
     app: red-team-dashboard
     app.kubernetes.io/part-of: red-team-ai
@@ -41,9 +34,11 @@ spec:
       labels:
         app: red-team-dashboard
     spec:
+      # No securityContext here — OpenShift assigns UID/fsGroup from the
+      # namespace's allocated range via the restricted-v2 SCC.
       containers:
         - name: dashboard
-          image: docker.io/sundi133/wb-red-team:latest
+          image: docker.io/sundi133/wb-red-team:v4
           imagePullPolicy: Always
           ports:
             - containerPort: 4200
@@ -99,22 +94,24 @@ spec:
             periodSeconds: 10
           resources:
             requests:
-              cpu: 200m
-              memory: 512Mi
-            limits:
               cpu: "1"
-              memory: 1Gi
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
       volumes:
         - name: reports
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 100G
         - name: guardrail-reports
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 100G
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: red-team-dashboard
-  namespace: YOUR_NAMESPACE
+  namespace: sundi133-dev
 spec:
   selector:
     app: red-team-dashboard
@@ -127,7 +124,7 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: red-team-dashboard
-  namespace: YOUR_NAMESPACE
+  namespace: sundi133-dev
 spec:
   to:
     kind: Service

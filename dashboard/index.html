@@ -8369,31 +8369,39 @@
             </div>
           </div>
 
-          <!-- Filter tabs -->
-          <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <!-- Filter tabs + expand toolbar -->
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;flex:1;">
             <button onclick="filterGrResults('all')" class="gr-filter-btn active" data-filter="all" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;">All (${results.length})</button>
             <button onclick="filterGrResults('bad-allowed')" class="gr-filter-btn" data-filter="bad-allowed" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;">Bad Allowed (${badAllowed.length})</button>
             <button onclick="filterGrResults('bad-blocked')" class="gr-filter-btn" data-filter="bad-blocked" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;">Bad Blocked (${badBlocked.length})</button>
             <button onclick="filterGrResults('good')" class="gr-filter-btn" data-filter="good" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;">Good (${good.length})</button>
             ${goodBlockedByGr.length > 0 ? `<button onclick="filterGrResults('false-positive')" class="gr-filter-btn" data-filter="false-positive" style="background:var(--surface2);color:var(--red);border:1px solid var(--red);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;">False Positives (${goodBlockedByGr.length})</button>` : ''}
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+              <button type="button" onclick="grExpandCollapseAll(true)" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;font-weight:500;">Expand all</button>
+              <button type="button" onclick="grExpandCollapseAll(false)" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;font-weight:500;">Collapse all</button>
+            </div>
           </div>
 
           <!-- Results Table -->
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-            <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:900px;">
               <thead>
                 <tr style="border-bottom:1px solid var(--border);background:var(--bg);">
-                  <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text2);width:30px;">#</th>
-                  <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text2);width:50px;">Type</th>
-                  <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text2);">Prompt</th>
-                  <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text2);width:80px;">Baseline</th>
-                  <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text2);width:80px;">Guardrail</th>
-                  <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text2);">Assessment</th>
+                  <th style="padding:10px 10px;text-align:left;font-weight:600;color:var(--text2);width:36px;">#</th>
+                  <th style="padding:10px 10px;text-align:left;font-weight:600;color:var(--text2);width:52px;">Type</th>
+                  <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text2);min-width:220px;">Prompt</th>
+                  <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text2);min-width:200px;max-width:280px;">Baseline<div style="font-weight:500;font-size:10px;color:var(--text2);opacity:0.85;margin-top:2px;">Verdict · reason</div></th>
+                  <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text2);min-width:200px;max-width:280px;">Guardrail<div style="font-weight:500;font-size:10px;color:var(--text2);opacity:0.85;margin-top:2px;">Verdict · reason</div></th>
+                  <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text2);min-width:160px;">Assessment</th>
                 </tr>
               </thead>
               <tbody id="grResultsBody">
               </tbody>
             </table>
+            </div>
           </div>
         `;
 
@@ -8418,6 +8426,60 @@
         if (!caseResult) return false;
         if (caseResult.verdict) return caseResult.verdict === "harmful_compliance";
         return false;
+      }
+
+      /** Parse Votal/LiteLLM guardrail body for collapsed-row + detail summaries. */
+      function guardrailExplanationFromResponse(text) {
+        const raw = text == null ? "" : String(text);
+        const low = raw.toLowerCase();
+        if (!low.includes("guardrails") && !low.includes("triggered guardrails") && !low.includes("unsafe ["))
+          return "";
+        const parts = [];
+        const trigM = raw.match(/\bTriggered guardrails:\s*([^\n]+)/i);
+        if (trigM) parts.push(trigM[1].trim());
+        const reasonM = raw.match(/\bReason:\s*([^\n]+)/i);
+        if (reasonM) parts.push(reasonM[1].trim());
+        return parts.length ? parts.join(" · ") : "";
+      }
+
+      /** Text to show under verdict badges: JSON verdict_reason and/or guardrail API body. */
+      function verdictReasonText(c) {
+        if (!c) return "";
+        const fromJson = c.verdict_reason != null && String(c.verdict_reason).trim();
+        if (fromJson) return fromJson;
+        if (c.verdict === "guardrail_blocked")
+          return guardrailExplanationFromResponse(c.response_text || c.response_excerpt || "");
+        return "";
+      }
+
+      function verdictReasonLine(c) {
+        const v = c && c.verdict;
+        const r = verdictReasonText(c);
+        if (!r) return "";
+        if (v !== "harmful_compliance" && v !== "safe_refusal_or_redirect" && v !== "guardrail_blocked") return "";
+        const color =
+          v === "harmful_compliance" ? "var(--red)" :
+          v === "guardrail_blocked" ? "var(--green)" : "var(--text2)";
+        return `<div class="gr-reason-preview" style="font-size:10px;color:${color};margin-top:6px;line-height:1.4;max-height:88px;overflow-y:auto;overflow-x:hidden;word-break:break-word;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;">${escHtml(r)}</div>`;
+      }
+
+      function verdictReasonBlock(c) {
+        const v = c && c.verdict;
+        const r = verdictReasonText(c);
+        if (!r) return "";
+        if (v !== "harmful_compliance" && v !== "safe_refusal_or_redirect" && v !== "guardrail_blocked") return "";
+        let border, title;
+        if (v === "harmful_compliance") {
+          border = "var(--red)";
+          title = "Why this counts as harmful";
+        } else if (v === "safe_refusal_or_redirect") {
+          border = "var(--accent)";
+          title = "Why this counts as a safe refusal";
+        } else {
+          border = "var(--green)";
+          title = "Why it was blocked (guardrails)";
+        }
+        return `<div style="font-size:10px;color:var(--text);margin-top:8px;padding:10px;background:var(--surface);border:1px solid var(--border);border-left:3px solid ${border};border-radius:6px;line-height:1.45;"><div style="font-weight:600;margin-bottom:4px;color:var(--text2);">${escHtml(title)}</div>${escHtml(r)}</div>`;
       }
 
       function filterGrResults(filter) {
@@ -8454,32 +8516,37 @@
             };
             return `<span style="color:${colors[v] || 'var(--text2)'};">${labels[v] || v}</span>`;
           };
-          const baseLabel = w.verdict ? verdictBadge(w.verdict) : (baseBlocked ? '<span style="color:var(--green);">Blocked</span>' : `<span style="color:var(--text2);">HTTP ${w.status_code || "?"}</span>`);
+          const baseFallbackHttpColor =
+            !w.verdict && cat === "bad" && !baseBlocked ? "var(--red)" : "var(--text2)";
+          const baseLabel = w.verdict ? verdictBadge(w.verdict) : (baseBlocked ? '<span style="color:var(--green);">Blocked</span>' : `<span style="color:${baseFallbackHttpColor};">HTTP ${w.status_code || "?"}</span>`);
           const grLabel = g.verdict ? verdictBadge(g.verdict) : (grBlocked ? '<span style="color:var(--green);">Blocked</span>' : `<span style="color:${cat === "bad" ? "var(--red)" : "var(--text2)"};">HTTP ${g.status_code || "?"}</span>`);
           const prompt = (w.message || "").length > 200 ? (w.message || "").slice(0, 200) + "..." : (w.message || "");
           const assessment = r.assessment || "";
-          return `<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="toggleGrDetail(this)">
-            <td style="padding:8px 12px;color:var(--text2);">${i + 1}</td>
-            <td style="padding:8px 12px;"><span style="color:${catColor};font-weight:600;text-transform:uppercase;font-size:10px;">${cat}</span></td>
-            <td style="padding:8px 12px;font-family:monospace;font-size:10px;max-width:500px;white-space:pre-wrap;word-break:break-word;" title="${(w.message||'').replace(/"/g,'&quot;')}">${escHtml(prompt)}</td>
-            <td style="padding:8px 12px;">${baseLabel}</td>
-            <td style="padding:8px 12px;">${grLabel}</td>
-            <td style="padding:8px 12px;font-size:10px;color:var(--text2);">${escHtml(assessment)}</td>
+          const rowStripe = i % 2 === 0 ? "background:rgba(127,127,127,0.04);" : "";
+          return `<tr class="gr-main-row" style="border-bottom:1px solid var(--border);cursor:pointer;${rowStripe}" onclick="toggleGrDetail(this)" title="Click to expand or collapse details">
+            <td style="padding:10px 10px;color:var(--text2);vertical-align:top;"><span style="opacity:0.65;font-size:10px;margin-right:2px;">▸</span>${i + 1}</td>
+            <td style="padding:10px 10px;vertical-align:top;"><span style="color:${catColor};font-weight:600;text-transform:uppercase;font-size:10px;">${cat}</span></td>
+            <td style="padding:10px 12px;font-family:ui-monospace,monospace;font-size:10px;vertical-align:top;line-height:1.45;white-space:pre-wrap;word-break:break-word;" title="${(w.message||'').replace(/"/g,'&quot;')}">${escHtml(prompt)}</td>
+            <td style="padding:10px 12px;vertical-align:top;max-width:280px;"><div style="margin-bottom:4px;">${baseLabel}</div>${verdictReasonLine(w)}</td>
+            <td style="padding:10px 12px;vertical-align:top;max-width:280px;"><div style="margin-bottom:4px;">${grLabel}</div>${verdictReasonLine(g)}</td>
+            <td style="padding:10px 12px;font-size:10px;color:var(--text2);vertical-align:top;"><div style="max-height:120px;overflow-y:auto;line-height:1.45;">${escHtml(assessment)}</div></td>
           </tr>
           <tr class="gr-detail-row" style="display:none;border-bottom:1px solid var(--border);">
-            <td colspan="6" style="padding:12px 16px;background:var(--bg);">
-              <div style="margin-bottom:12px;">
+            <td colspan="6" style="padding:14px 18px;background:var(--bg);box-shadow:inset 0 1px 0 var(--border);">
+              <div style="margin-bottom:14px;">
                 <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;">Prompt</div>
-                <div style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;white-space:pre-wrap;word-break:break-word;">${escHtml(w.message || "(no prompt)")}</div>
+                <div style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;white-space:pre-wrap;word-break:break-word;line-height:1.45;">${escHtml(w.message || "(no prompt)")}</div>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
                 <div>
-                  <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;">Without Guardrails (${w.latency_ms || 0}ms)</div>
-                  <div style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;">${escHtml(w.response_text || w.response_excerpt || "(no response)")}</div>
+                  <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;">Without guardrails <span style="opacity:0.8;font-weight:500;">(${w.latency_ms || 0}ms · ${escHtml(w.verdict || "—")})</span></div>
+                  ${verdictReasonBlock(w)}
+                  <div style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;max-height:min(480px,55vh);overflow-y:auto;white-space:pre-wrap;word-break:break-word;line-height:1.45;">${escHtml(w.response_text || w.response_excerpt || "(no response)")}</div>
                 </div>
                 <div>
-                  <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;">With Guardrails (${g.latency_ms || 0}ms)</div>
-                  <div style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;">${escHtml(g.response_text || g.response_excerpt || "(no response)")}</div>
+                  <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;">With guardrails <span style="opacity:0.8;font-weight:500;">(${g.latency_ms || 0}ms · ${escHtml(g.verdict || "—")})</span></div>
+                  ${verdictReasonBlock(g)}
+                  <div style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;max-height:min(480px,55vh);overflow-y:auto;white-space:pre-wrap;word-break:break-word;line-height:1.45;">${escHtml(g.response_text || g.response_excerpt || "(no response)")}</div>
                 </div>
               </div>
             </td>
@@ -8490,8 +8557,23 @@
       function toggleGrDetail(row) {
         const detail = row.nextElementSibling;
         if (detail && detail.classList.contains("gr-detail-row")) {
-          detail.style.display = detail.style.display === "none" ? "table-row" : "none";
+          const wasHidden = detail.style.display === "none" || detail.style.display === "";
+          detail.style.display = wasHidden ? "table-row" : "none";
+          const chev = row.querySelector("td:first-child span");
+          if (chev) chev.textContent = wasHidden ? "▾" : "▸";
         }
+      }
+
+      function grExpandCollapseAll(expand) {
+        const tbody = document.getElementById("grResultsBody");
+        if (!tbody) return;
+        tbody.querySelectorAll("tr.gr-detail-row").forEach((tr) => {
+          tr.style.display = expand ? "table-row" : "none";
+        });
+        tbody.querySelectorAll("tr.gr-main-row").forEach((tr) => {
+          const chev = tr.querySelector("td:first-child span");
+          if (chev) chev.textContent = expand ? "▾" : "▸";
+        });
       }
 
       function escHtml(s) {
