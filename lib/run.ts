@@ -760,6 +760,28 @@ export async function runRedTeam(
               return { verdict: r.verdict, findings: r.findings };
             },
           );
+
+          const lastStep = stepResults[stepResults.length - 1];
+          const result = await analyzeResponse(
+            config, attack, lastStep.statusCode, lastStep.body,
+            lastStep.timeMs, appContext, lastStep.executionTrace,
+          );
+          result.stepIndex = lastStep.stepIndex;
+          result.totalSteps = stepResults.length;
+          result.conversation = stepResults.map((sr) => ({
+            stepIndex: sr.stepIndex,
+            payload: sr.stepIndex === 0
+              ? attack.payload
+              : (attack.steps?.[sr.stepIndex - 1]?.payload ?? {}),
+            statusCode: sr.statusCode,
+            responseBody: sr.body,
+            responseTimeMs: sr.timeMs,
+          }));
+
+          log("attacks", `[${i + 1}/${attacks.length}] ${attack.name} → ${getVerdictLabel(result.verdict)} (${lastStep.statusCode}, ${lastStep.timeMs}ms)${stoppedEarly ? ` (stopped early)` : ""}`, progressExtra);
+          await maybeGenerateIdealResponse(config, result);
+          roundResults.push(result);
+          emitResult(result, progressExtra);
         } else if (
           config.attackConfig.enableAdaptiveMultiTurn &&
           config.attackConfig.enableMultiTurnGeneration
