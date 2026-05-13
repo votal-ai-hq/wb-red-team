@@ -1,0 +1,136 @@
+# Secret: API keys and auth config (no DB)
+# NOTE: Replace these placeholder values with freshly-rotated keys.
+# The previous keys shared in chat must be revoked.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: red-team-secrets
+  labels:
+    app.kubernetes.io/part-of: red-team-ai
+type: Opaque
+stringData:
+  ANTHROPIC_API_KEY: ""
+  OPENAI_API_KEY: ""
+  SIMPLE_AUTH_SESSION_SECRET: "replace-this"
+  SIMPLE_AUTH_PASSWORD: "changeme"
+---
+# Red Team Dashboard (no Postgres, emptyDir volumes)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: red-team-dashboard
+  labels:
+    app: red-team-dashboard
+    app.kubernetes.io/part-of: red-team-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: red-team-dashboard
+  template:
+    metadata:
+      labels:
+        app: red-team-dashboard
+    spec:
+      # No securityContext here — OpenShift assigns UID/fsGroup from the
+      # namespace's allocated range via the restricted-v2 SCC.
+      containers:
+        - name: dashboard
+          image: docker.io/sundi133/wb-red-team:v7
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4200
+              name: http
+          env:
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: red-team-secrets
+                  key: ANTHROPIC_API_KEY
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: red-team-secrets
+                  key: OPENAI_API_KEY
+                  optional: true
+            - name: AUTH_MODE
+              value: "simple"
+            - name: SIMPLE_AUTH_SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: red-team-secrets
+                  key: SIMPLE_AUTH_SESSION_SECRET
+            - name: SIMPLE_AUTH_SESSION_TTL_HOURS
+              value: "12"
+            - name: SIMPLE_AUTH_USERNAME
+              value: "admin"
+            - name: SIMPLE_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: red-team-secrets
+                  key: SIMPLE_AUTH_PASSWORD
+            - name: SIMPLE_AUTH_ROLE
+              value: "admin"
+            - name: SIMPLE_AUTH_NAME
+              value: "Admin User"
+            - name: NO_PROXY
+              value: "localhost,127.0.0.1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.svc,.cluster.local"
+            - name: no_proxy
+              value: "localhost,127.0.0.1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.svc,.cluster.local"
+          volumeMounts:
+            - name: reports
+              mountPath: /app/report
+            - name: guardrail-reports
+              mountPath: /app/reports
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 4200
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4200
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "4"
+              memory: 8Gi
+            limits:
+              cpu: "8"
+              memory: 8Gi
+      volumes:
+        - name: reports
+          emptyDir:
+            sizeLimit: 100G
+        - name: guardrail-reports
+          emptyDir:
+            sizeLimit: 100G
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: red-team-dashboard
+spec:
+  selector:
+    app: red-team-dashboard
+  ports:
+    - port: 4200
+      targetPort: 4200
+      name: http
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: red-team-dashboard
+spec:
+  to:
+    kind: Service
+    name: red-team-dashboard
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

@@ -82,6 +82,7 @@
       "strategiesPerRound": 5,
       "enableAdaptiveMultiTurn": true,
       "multiTurnGenerationRate": 0.6,
+      "attacksPerStrategy":10,
       "llmProvider": "custom",
       "llmModel": "AISolutions6GVASAAPTUs",
       "judgeProvider": "custom",

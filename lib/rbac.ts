@@ -46,6 +46,11 @@ const PERMISSIONS: RoutePermission[] = [
     roles: ["admin", "auditor"],
   },
 
+  // LiteLLM Guardrails Reports
+  { method: "GET", pattern: /^\/api\/litellm-reports$/, roles: ["admin", "viewer"] },
+  { method: "GET", pattern: /^\/api\/litellm-report\//, roles: ["admin", "viewer"] },
+  { method: "POST", pattern: /^\/api\/litellm-report-upload$/, roles: ["admin"] },
+
   // Audit log
   { method: "GET", pattern: /^\/api\/audit-log/, roles: ["admin", "auditor"] },
 ];

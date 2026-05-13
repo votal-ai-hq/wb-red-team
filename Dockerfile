@@ -27,8 +27,10 @@ COPY compliance/ ./compliance/
 COPY config.example.json ./
 COPY examples/ ./examples/
 
-# Create report directory
-RUN mkdir -p report
+COPY scripts/ ./scripts/
+
+# Create report directories
+RUN mkdir -p report reports/litellm-guardrails
 
 EXPOSE 4200
 
