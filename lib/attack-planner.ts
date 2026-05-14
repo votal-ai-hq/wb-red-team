@@ -316,7 +316,7 @@ Return a JSON array of objects with "idx" (number) and "message" (rewritten stri
         model: config.attackConfig.llmModel,
         messages: [{ role: "user", content: prompt }],
         temperature: 0.9,
-        maxTokens: 4096,
+        maxTokens: 8192,
       });
 
       const rewrites = parseJsonArrayFromLlmResponse<{
@@ -433,12 +433,12 @@ ${realismFooter}`;
         },
       ],
       temperature: 0.9,
-      maxTokens: 2048,
+      maxTokens: 8192,
     });
 
     // Log full LLM response for debugging generation issues
     if (text) {
-      console.error(`      [GEN DEBUG] Full response (${text.length} chars): ${text.replace(/\s+/g, " ").slice(0, 2000)}`);
+      console.error(`      [GEN DEBUG] Full response (${text.length} chars): ${text.replace(/\s+/g, " ")}`);
     } else {
       console.error(`      [GEN DEBUG] No text present — LLM returned empty/null content`);
     }
@@ -748,7 +748,7 @@ Return ONLY the JSON array, no markdown fences.`;
         model: config.attackConfig.llmModel,
         messages: [{ role: "user", content: prompt }],
         temperature: 0.9,
-        maxTokens: 4096,
+        maxTokens: 8192,
       });
 
       const attacks = parseJsonArrayFromLlmResponse<
