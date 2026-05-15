@@ -1,0 +1,96 @@
+{
+  "target": {
+    "type": "http_agent",
+    "baseUrl": "https://litellm-guardrails-votal-ai-production.up.railway.app",
+    "agentEndpoint": "/v1/chat/completions",
+    "applicationDetails": "The application is used for natural-language generation, question answering, summarization, text drafting, reasoning, extraction, classification, rewriting, translation, code assistance, data analysis, brainstorming, planning, and conversational assistant workflows across general-purpose user prompts.",
+    "customApiTemplate": {
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "guardrails": [
+        "votal-input-guard",
+        "votal-output-guard"
+      ],
+      "bodyTemplate": "{\"model\":\"moonshotai/kimi-k2.5\",\"messages\":[{\"role\":\"user\",\"content\":\"{{message}}\"}],\"guardrails\":[\"votal-input-guard\",\"votal-output-guard\"]}",
+      "responsePath": "choices[0].message.content"
+    }
+  },
+  "codebasePath": null,
+  "codebaseRepo": null,
+  "codebaseRepoBranch": "main",
+  "codebaseGlob": "**/*.ts",
+  "policyFile": "policies/strict.json",
+  "auth": {
+    "methods": ["none"],
+    "jwtSecret": "not-needed",
+    "credentials": [],
+    "apiKeys": {},
+    "bearerToken": "sk-my-master-key-123aasasaoksoasansnkqsnk3823ehoiuebcwdwe"
+  },
+  "requestSchema": {
+    "messageField": "message",
+    "roleField": "role",
+    "apiKeyField": "api_key",
+    "guardrailModeField": "guardrail_mode"
+  },
+  "responseSchema": {
+    "responsePath": "choices[0].message.content",
+    "toolCallsPath": "choices[0].message.tool_calls",
+    "userInfoPath": "user",
+    "guardrailsPath": "guardrails"
+  },
+  "sensitivePatterns": [
+    "sk-proj-",
+    "sk_live_",
+    "AKIA",
+    "xoxb-",
+    "SG.",
+    "api_key",
+    "secret",
+    "token",
+    "password",
+    "credentials"
+  ],
+  "attackConfig": {
+    "adaptiveRounds": 1,
+    "maxAttacksPerCategory": 10,
+    "concurrency": 1,
+    "delayBetweenRequestsMs": 600,
+    "llmProvider": "anthropic",
+    "llmModel": "claude-sonnet-4-20250514",
+    "judgeProvider": "anthropic",
+    "judgeModel": "claude-sonnet-4-20250514",
+    "enableLlmGeneration": true,
+    "enableIdealResponses": true,
+    "maxMultiTurnSteps": 3,
+    "strategiesPerRound": 5,
+    "attacksPerStrategy": 5,
+    "enableMultiTurnGeneration": true,
+    "multiTurnGenerationRate": 0.4,
+    "enableAdaptiveMultiTurn": true,
+    "maxAdaptiveTurns": 5,
+    "requireReviewConfirmation": false,
+    "skipIrrelevantCategories": false,
+    "enableDiscovery": false,
+    "appTailoredCustomPromptCount": 5,
+    "contextBudgetChars": 200000,
+    "maxAnalysisBatches": 4,
+    "enabledCategories": [
+      "prompt_injection",
+      "content_filter_bypass",
+      "identity_privilege",
+      "side_channel_inference",
+      "agentic_workflow_bypass"
+    ],
+    "enabledStrategies": [
+      "base64_context_hint",
+      "rot13_cipher_trick",
+      "reverse_instruction",
+      "leetspeak_obfuscation",
+      "attention_dilution_long_preamble"
+    ]
+  }
+}
+
