@@ -197,6 +197,20 @@ import { multiHopReasoningExploitModule } from "../attacks/multi-hop-reasoning-e
 import { emotionalManipulationModule } from "../attacks/emotional-manipulation.js";
 import { rewardHackingModule } from "../attacks/reward-hacking.js";
 import { universalAdversarialTriggerModule } from "../attacks/universal-adversarial-trigger.js";
+import { toolResultInjectionModule } from "../attacks/tool-result-injection.js";
+import { toolArgumentInjectionModule } from "../attacks/tool-argument-injection.js";
+import { reasoningTraceLeakageModule } from "../attacks/reasoning-trace-leakage.js";
+import { guardrailModeConfusionModule } from "../attacks/guardrail-mode-confusion.js";
+import { inboxPromptInjectionModule } from "../attacks/inbox-prompt-injection.js";
+import { repoPromptInjectionModule } from "../attacks/repo-prompt-injection.js";
+import { crossToolDataExfiltrationModule } from "../attacks/cross-tool-data-exfiltration.js";
+import { emailSlackExfiltrationModule } from "../attacks/email-slack-exfiltration.js";
+import { databaseExfiltrationModule } from "../attacks/database-exfiltration.js";
+import { fileSystemExfiltrationModule } from "../attacks/file-system-exfiltration.js";
+import { auditLogEvasionModule } from "../attacks/audit-log-evasion.js";
+import { provenanceForgeryModule } from "../attacks/provenance-forgery.js";
+import { multiTurnPrivilegeEscalationModule } from "../attacks/multi-turn-privilege-escalation.js";
+import { stagedExfiltrationModule } from "../attacks/staged-exfiltration.js";
 
 export const ALL_MODULES: AttackModule[] = [
   authBypassModule, rbacBypassModule, promptInjectionModule, outputEvasionModule,
@@ -255,6 +269,13 @@ export const ALL_MODULES: AttackModule[] = [
   encodingSerializationAttackModule, multiHopReasoningExploitModule,
   emotionalManipulationModule,
   rewardHackingModule, universalAdversarialTriggerModule,
+  toolResultInjectionModule, toolArgumentInjectionModule,
+  reasoningTraceLeakageModule, guardrailModeConfusionModule,
+  inboxPromptInjectionModule, repoPromptInjectionModule,
+  crossToolDataExfiltrationModule, emailSlackExfiltrationModule,
+  databaseExfiltrationModule, fileSystemExfiltrationModule,
+  auditLogEvasionModule, provenanceForgeryModule,
+  multiTurnPrivilegeEscalationModule, stagedExfiltrationModule,
 ];
 
 export const MCP_MODULES: AttackModule[] = [

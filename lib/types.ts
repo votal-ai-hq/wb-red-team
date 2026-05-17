@@ -141,7 +141,21 @@ export type AttackCategory =
   | "multi_hop_reasoning_exploit"
   | "emotional_manipulation"
   | "reward_hacking"
-  | "universal_adversarial_trigger";
+  | "universal_adversarial_trigger"
+  | "tool_result_injection"
+  | "tool_argument_injection"
+  | "reasoning_trace_leakage"
+  | "guardrail_mode_confusion"
+  | "inbox_prompt_injection"
+  | "repo_prompt_injection"
+  | "cross_tool_data_exfiltration"
+  | "email_slack_exfiltration"
+  | "database_exfiltration"
+  | "file_system_exfiltration"
+  | "audit_log_evasion"
+  | "provenance_forgery"
+  | "multi_turn_privilege_escalation"
+  | "staged_exfiltration";
 
 /** Runtime list of all attack categories (kept in sync with {@link AttackCategory}). */
 export const ALL_ATTACK_CATEGORIES: readonly AttackCategory[] = [
@@ -286,6 +300,20 @@ export const ALL_ATTACK_CATEGORIES: readonly AttackCategory[] = [
   "emotional_manipulation",
   "reward_hacking",
   "universal_adversarial_trigger",
+  "tool_result_injection",
+  "tool_argument_injection",
+  "reasoning_trace_leakage",
+  "guardrail_mode_confusion",
+  "inbox_prompt_injection",
+  "repo_prompt_injection",
+  "cross_tool_data_exfiltration",
+  "email_slack_exfiltration",
+  "database_exfiltration",
+  "file_system_exfiltration",
+  "audit_log_evasion",
+  "provenance_forgery",
+  "multi_turn_privilege_escalation",
+  "staged_exfiltration",
 ];
 
 const ATTACK_CATEGORY_SET = new Set<string>(ALL_ATTACK_CATEGORIES);
