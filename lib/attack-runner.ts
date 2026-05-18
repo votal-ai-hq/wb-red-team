@@ -661,6 +661,20 @@ export async function executeAttack(
       }
     }
 
+    if (!res.ok) {
+      console.error(`  [TARGET ERROR] ${method} ${url}`);
+      console.error(`  [TARGET ERROR] content-type=${contentType || "(none)"}`);
+      console.error(
+        `  [TARGET ERROR] response body=${typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody, null, 2)}`,
+      );
+      if (showDebug) {
+        console.error(
+          `  [TARGET ERROR] request headers=${JSON.stringify(finalHeaders, null, 2)}`,
+        );
+        console.error(`  [TARGET ERROR] request body=${requestBody}`);
+      }
+    }
+
     // Extract response using custom path if provided
     // Supports: "messages[-1].content", "messages[{type=ai}].content", "choices[0].message.content"
     if (
