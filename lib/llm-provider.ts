@@ -348,22 +348,13 @@ class AzureOpenAIProvider implements LlmProvider {
   }
 }
 
-// ── NVIDIA NIM Provider (OpenAI-compatible, with model rotation) ──
+// ── NVIDIA NIM Provider (OpenAI-compatible) ──
 // Env: NVIDIA_API_KEY
-// Default models rotate across Qwen3-Next, DeepSeek V4 Flash, and GLM-5.1
-// for cross-family diversity in attack generation.
-
-const NIM_DEFAULT_MODELS = [
-  "qwen/qwen3-next-80b-a3b-instruct",
-  "deepseek-ai/deepseek-v4-flash",
-  "z-ai/glm-5.1",
-];
+// Supported models: qwen/qwen3-next-80b-a3b-instruct, deepseek-ai/deepseek-v4-flash, z-ai/glm-5.1
 
 class NimProvider implements LlmProvider {
   private client: OpenAI;
   private requestConfig: OpenAICompatibleRequestConfig;
-  private models: string[];
-  private callIndex = 0;
 
   constructor(requestConfig: OpenAICompatibleRequestConfig = {}) {
     const key = process.env.NVIDIA_API_KEY;
@@ -379,28 +370,13 @@ class NimProvider implements LlmProvider {
       maxRetries: 3,
     });
     this.requestConfig = requestConfig;
-
-    // Allow overriding rotation models via comma-separated env var
-    const customModels = process.env.NVIDIA_NIM_MODELS;
-    this.models = customModels
-      ? customModels.split(",").map((m) => m.trim()).filter(Boolean)
-      : NIM_DEFAULT_MODELS;
-
-    console.log(`  [LLM nim] available rotation models: ${this.models.join(", ")}`);
+    console.log(`  [LLM nim] baseURL=${this.client.baseURL}`);
   }
 
   async chat(options: ChatOptions): Promise<string> {
-    // Rotate model if the caller didn't specify one explicitly,
-    // or if the model matches the generic "nim" placeholder.
-    const useRotation =
-      !options.model || options.model === "nim" || options.model === "auto";
-    const resolvedModel = useRotation
-      ? this.models[this.callIndex++ % this.models.length]
-      : options.model;
-
     return createOpenAICompatibleChatCompletion(
       this.client,
-      { ...options, model: resolvedModel },
+      options,
       this.requestConfig,
     );
   }
