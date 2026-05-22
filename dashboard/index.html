@@ -6,6 +6,7 @@
     <title>Red Team Dashboard</title>
     <style>
       :root {
+        /* Base colors */
         --bg: #0d1117;
         --surface: #161b22;
         --surface2: #21262d;
@@ -21,6 +22,31 @@
         --high: #db6d28;
         --medium: #d29922;
         --low: #8b949e;
+
+        /* Semantic color backgrounds (eliminates .replace() hack) */
+        --red-bg: rgba(248,81,73,0.1); --red-bg-subtle: rgba(248,81,73,0.06); --red-border: rgba(248,81,73,0.2);
+        --green-bg: rgba(63,185,80,0.1); --green-bg-subtle: rgba(63,185,80,0.06); --green-border: rgba(63,185,80,0.2);
+        --orange-bg: rgba(210,153,34,0.1); --orange-bg-subtle: rgba(210,153,34,0.06); --orange-border: rgba(210,153,34,0.2);
+        --accent-bg: rgba(88,166,255,0.1); --accent-bg-subtle: rgba(88,166,255,0.06); --accent-border: rgba(88,166,255,0.2);
+        --purple-bg: rgba(188,140,255,0.1); --purple-bg-subtle: rgba(188,140,255,0.06); --purple-border: rgba(188,140,255,0.2);
+        --text2-bg: rgba(139,148,158,0.1); --text2-border: rgba(139,148,158,0.2);
+
+        /* Spacing scale (4px base) */
+        --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+        --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 40px;
+
+        /* Font sizes */
+        --fs-xs: 10px; --fs-sm: 11px; --fs-base: 12px; --fs-md: 13px;
+        --fs-lg: 14px; --fs-xl: 16px; --fs-2xl: 18px; --fs-3xl: 20px; --fs-4xl: 24px; --fs-5xl: 28px;
+
+        /* Border radii */
+        --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-2xl: 12px; --r-full: 9999px;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+        --shadow-lg: 0 4px 24px rgba(0,0,0,0.2);
+        --shadow-xl: 0 12px 40px rgba(0,0,0,0.3);
       }
       * {
         box-sizing: border-box;
@@ -92,6 +118,161 @@
       ::selection {
         background: rgba(88, 166, 255, 0.25);
         color: var(--text);
+      }
+
+      /* ═══ UTILITY CLASSES ═══ */
+
+      /* Layout */
+      .u-flex { display:flex; } .u-flex-col { display:flex;flex-direction:column; }
+      .u-flex-wrap { flex-wrap:wrap; } .u-flex-1 { flex:1; } .u-flex-shrink-0 { flex-shrink:0; }
+      .u-items-center { align-items:center; } .u-items-start { align-items:flex-start; }
+      .u-justify-between { display:flex;justify-content:space-between; } .u-justify-center { justify-content:center; }
+      .u-grid { display:grid; }
+      .u-grid-2 { display:grid;grid-template-columns:repeat(2,1fr); }
+      .u-grid-3 { display:grid;grid-template-columns:repeat(3,1fr); }
+      .u-grid-4 { display:grid;grid-template-columns:repeat(4,1fr); }
+      .u-grid-5 { display:grid;grid-template-columns:repeat(5,1fr); }
+
+      /* Spacing */
+      .u-gap-1 { gap:var(--sp-1); } .u-gap-2 { gap:var(--sp-2); } .u-gap-3 { gap:var(--sp-3); }
+      .u-gap-4 { gap:var(--sp-4); } .u-gap-5 { gap:var(--sp-5); } .u-gap-6 { gap:var(--sp-6); }
+      .u-p-3 { padding:var(--sp-3); } .u-p-4 { padding:var(--sp-4); } .u-p-5 { padding:var(--sp-5); } .u-p-6 { padding:var(--sp-6); }
+      .u-px-4 { padding-left:var(--sp-4);padding-right:var(--sp-4); } .u-px-5 { padding-left:var(--sp-5);padding-right:var(--sp-5); }
+      .u-py-2 { padding-top:var(--sp-2);padding-bottom:var(--sp-2); } .u-py-3 { padding-top:var(--sp-3);padding-bottom:var(--sp-3); }
+      .u-mb-2 { margin-bottom:var(--sp-2); } .u-mb-3 { margin-bottom:var(--sp-3); } .u-mb-4 { margin-bottom:var(--sp-4); }
+      .u-mb-5 { margin-bottom:var(--sp-5); } .u-mb-6 { margin-bottom:var(--sp-6); }
+      .u-mt-3 { margin-top:var(--sp-3); } .u-mt-4 { margin-top:var(--sp-4); }
+      .u-ml-auto { margin-left:auto; }
+
+      /* Typography */
+      .u-text-xs { font-size:var(--fs-xs); } .u-text-sm { font-size:var(--fs-sm); } .u-text-base { font-size:var(--fs-base); }
+      .u-text-md { font-size:var(--fs-md); } .u-text-lg { font-size:var(--fs-lg); } .u-text-xl { font-size:var(--fs-xl); }
+      .u-text-2xl { font-size:var(--fs-2xl); } .u-text-3xl { font-size:var(--fs-3xl); }
+      .u-font-medium { font-weight:500; } .u-font-semibold { font-weight:600; } .u-font-bold { font-weight:700; }
+      .u-text-center { text-align:center; } .u-text-right { text-align:right; }
+      .u-text-muted { color:var(--text2); } .u-text-accent { color:var(--accent); }
+      .u-text-red { color:var(--red); } .u-text-green { color:var(--green); } .u-text-orange { color:var(--orange); }
+      .u-uppercase { text-transform:uppercase;letter-spacing:0.5px; }
+      .u-truncate { white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+      .u-mono { font-family:'SF Mono',Monaco,Consolas,monospace; }
+      .u-nowrap { white-space:nowrap; }
+
+      /* Visual */
+      .u-rounded-sm { border-radius:var(--r-sm); } .u-rounded-md { border-radius:var(--r-md); }
+      .u-rounded-lg { border-radius:var(--r-lg); } .u-rounded-xl { border-radius:var(--r-xl); }
+      .u-rounded-2xl { border-radius:var(--r-2xl); } .u-rounded-full { border-radius:var(--r-full); }
+      .u-border { border:1px solid var(--border); } .u-border-t { border-top:1px solid var(--border); } .u-border-b { border-bottom:1px solid var(--border); }
+      .u-bg-surface { background:var(--surface); } .u-bg-surface2 { background:var(--surface2); } .u-bg-base { background:var(--bg); }
+      .u-overflow-hidden { overflow:hidden; } .u-overflow-auto { overflow:auto; }
+      .u-cursor-pointer { cursor:pointer; } .u-select-none { user-select:none; }
+      .u-w-full { width:100%; } .u-min-w-0 { min-width:0; } .u-hidden { display:none; }
+
+      /* ═══ COMPONENT CLASSES ═══ */
+
+      /* Cards */
+      .c-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--r-2xl);padding:var(--sp-5) var(--sp-6);transition:border-color 0.2s,box-shadow 0.2s; }
+      .c-card:hover { border-color:rgba(88,166,255,0.15);box-shadow:var(--shadow-lg); }
+      .c-card-compact { background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-4);transition:border-color 0.2s,box-shadow 0.2s; }
+      .c-card-flush { background:var(--surface);border:1px solid var(--border);border-radius:var(--r-2xl);overflow:hidden; }
+      .c-card-bg { background:var(--bg);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-4); }
+
+      /* Stat & metric cards */
+      .c-stat-card { background:var(--bg);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-4);text-align:center;transition:transform 0.15s,box-shadow 0.15s; }
+      .c-stat-card:hover { transform:translateY(-2px);box-shadow:var(--shadow-md); }
+      .c-stat-val { font-size:var(--fs-5xl);font-weight:700; }
+      .c-stat-label { font-size:var(--fs-sm);color:var(--text2);margin-top:var(--sp-1);font-weight:500; }
+      .c-metric-card { background:var(--bg);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-4); }
+      .c-metric-icon { display:flex;align-items:center;gap:6px;margin-bottom:var(--sp-2);color:var(--text2); }
+      .c-metric-val { font-size:var(--fs-4xl);font-weight:700; }
+
+      /* Badges */
+      .c-badge { font-size:var(--fs-xs);font-weight:600;padding:2px 8px;border-radius:var(--r-full);text-transform:uppercase;letter-spacing:0.3px;display:inline-block; }
+      .c-badge-red { background:var(--red-bg);color:var(--red); }
+      .c-badge-green { background:var(--green-bg);color:var(--green); }
+      .c-badge-orange { background:var(--orange-bg);color:var(--orange); }
+      .c-badge-accent { background:var(--accent-bg);color:var(--accent); }
+      .c-badge-muted { background:var(--text2-bg);color:var(--text2); }
+      .c-badge-purple { background:var(--purple-bg);color:var(--purple); }
+
+      /* Score badge (data-driven color) */
+      .c-score { font-weight:700;padding:3px 10px;border-radius:var(--r-xl);font-size:var(--fs-sm); }
+      .c-score[data-c="red"] { color:var(--red);background:var(--red-bg); }
+      .c-score[data-c="green"] { color:var(--green);background:var(--green-bg); }
+      .c-score[data-c="orange"] { color:var(--orange);background:var(--orange-bg); }
+
+      /* Buttons */
+      .c-btn { border:none;border-radius:var(--r-lg);padding:8px 20px;font-size:var(--fs-md);font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;display:inline-flex;align-items:center;gap:6px; }
+      .c-btn-primary { background:var(--accent);color:#fff; }
+      .c-btn-primary:hover { opacity:0.85; }
+      .c-btn-gradient { background:linear-gradient(135deg,var(--accent) 0%,#7c6cff 100%);color:#fff;box-shadow:0 2px 8px rgba(88,166,255,0.25); }
+      .c-btn-gradient:hover { transform:translateY(-1px);box-shadow:0 4px 16px rgba(88,166,255,0.35); }
+      .c-btn-gradient:active { transform:translateY(0); }
+      .c-btn-success { background:var(--green);color:#000; }
+      .c-btn-success:hover { opacity:0.85; }
+      .c-btn-danger { background:none;border:1px solid var(--red);color:var(--red); }
+      .c-btn-ghost { background:var(--surface2);color:var(--text);border:1px solid var(--border); }
+      .c-btn-ghost:hover { border-color:var(--text2);transform:translateY(-1px);box-shadow:var(--shadow-sm); }
+      .c-btn-sm { padding:4px 12px;font-size:var(--fs-sm);border-radius:var(--r-md); }
+      .c-btn-xs { padding:3px 8px;font-size:var(--fs-xs);border-radius:var(--r-sm); }
+
+      /* Tables */
+      .c-table-card { background:var(--bg);border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden; }
+      .c-th { padding:10px 14px;color:var(--text2);font-weight:600;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:0.3px; }
+      .c-td { padding:10px 14px; }
+      .c-tr-hover:hover { background:rgba(88,166,255,0.04); }
+      .c-tr-click { cursor:pointer;transition:all 0.15s; }
+      .c-tr-click:hover { background:rgba(88,166,255,0.06); }
+
+      /* Step wizard */
+      .c-step { width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--fs-base);font-weight:700;color:#fff;flex-shrink:0; }
+      .c-step-active { background:var(--accent);box-shadow:0 0 0 3px var(--accent-bg); }
+      .c-step-done { background:var(--green);box-shadow:0 0 0 3px rgba(63,185,80,0.15); }
+      .c-step-line { display:flex;justify-content:flex-start;padding-left:34px; }
+      .c-step-line::after { content:'';display:block;width:2px;height:16px;background:var(--border); }
+
+      /* Forms */
+      .c-input { background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--r-md);padding:8px 12px;font-size:var(--fs-base);font-family:inherit;transition:border-color 0.2s,box-shadow 0.2s; }
+      .c-input:focus { outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg); }
+      .c-label { font-size:var(--fs-xs);color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.5px; }
+
+      /* Progress bar */
+      .c-progress { height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;display:flex; }
+      .c-progress-seg { transition:width 0.5s; }
+
+      /* Empty state */
+      .c-empty { text-align:center;padding:var(--sp-8);color:var(--text2); }
+      .c-empty svg { margin-bottom:var(--sp-3);opacity:0.5; }
+
+      /* Code block */
+      .c-code { background:var(--bg);border-radius:var(--r-md);padding:var(--sp-3);font-size:var(--fs-base);max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-family:'SF Mono',Monaco,Consolas,monospace;color:var(--text2); }
+
+      /* Section header with icon */
+      .c-section-icon { width:44px;height:44px;border-radius:var(--r-2xl);display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+
+      /* Template cards (New Run panel) */
+      .tpl-card { background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;cursor:pointer;text-align:center;transition:all 0.15s; }
+      .tpl-card:hover { border-color:var(--accent);background:var(--accent-bg-subtle); }
+      .tpl-card.active { background:var(--accent-bg-subtle);border-color:var(--accent); }
+
+      /* ═══ RESPONSIVE ═══ */
+      @media (max-width: 640px) {
+        .full-panel { padding:12px; }
+        .u-grid-2,.u-grid-3,.u-grid-4,.u-grid-5 { grid-template-columns:1fr; }
+        .layout { grid-template-columns:1fr !important; }
+        .sidebar { display:none; }
+        .score-banner { flex-direction:column;gap:16px;padding:16px; }
+        .filter-bar { flex-wrap:wrap; }
+        .conv-exchange,.detail-grid { grid-template-columns:1fr; }
+        .top-nav-tabs { overflow-x:auto;-webkit-overflow-scrolling:touch; }
+        .top-nav-brand-text { display:none; }
+        .two-col { grid-template-columns:1fr; }
+      }
+      @media (max-width: 768px) {
+        .u-grid-3,.u-grid-4,.u-grid-5 { grid-template-columns:repeat(2,1fr); }
+        .layout { grid-template-columns:220px 1fr; }
+      }
+      @media (min-width: 769px) and (max-width: 1000px) {
+        .u-grid-4,.u-grid-5 { grid-template-columns:repeat(3,1fr); }
       }
 
       /* Top navigation — Linear/Vercel style */
@@ -2393,6 +2574,20 @@
     <script>
       const $ = (s) => document.querySelector(s);
       const app = $("#app");
+
+      // ── Color helpers (eliminate .replace('var(','rgba(')... hack) ──
+      const _colorBgMap = {
+        'var(--red)':'var(--red-bg)','var(--green)':'var(--green-bg)','var(--orange)':'var(--orange-bg)',
+        'var(--accent)':'var(--accent-bg)','var(--text2)':'var(--text2-bg)','var(--purple)':'var(--purple-bg)',
+        'var(--critical)':'var(--red-bg)','var(--high)':'var(--orange-bg)','var(--medium)':'var(--orange-bg)','var(--low)':'var(--text2-bg)'
+      };
+      const _colorBorderMap = {
+        'var(--red)':'var(--red-border)','var(--green)':'var(--green-border)','var(--orange)':'var(--orange-border)',
+        'var(--accent)':'var(--accent-border)','var(--text2)':'var(--text2-border)','var(--purple)':'var(--purple-border)'
+      };
+      function colorBg(c) { return _colorBgMap[c] || 'var(--surface2)'; }
+      function colorBorder(c) { return _colorBorderMap[c] || 'var(--border)'; }
+      function scoreColorName(score) { return score >= 80 ? 'green' : score >= 50 ? 'orange' : 'red'; }
       let report = null;
       let activeRound = 0;
       let currentFile = null;
@@ -2810,16 +3005,16 @@
       }
 
       function buildStatCard(value, label, color) {
-        return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;">' +
-          '<div style="font-size:28px;font-weight:700;color:' + color + ';">' + value + '</div>' +
-          '<div style="font-size:11px;color:var(--text2);margin-top:4px;">' + label + '</div>' +
+        return '<div class="c-stat-card" style="background:var(--surface);">' +
+          '<div class="c-stat-val" style="color:' + color + ';">' + value + '</div>' +
+          '<div class="c-stat-label">' + label + '</div>' +
           '</div>';
       }
 
       function buildMetricCard(value, label, color, icon) {
-        return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;">' +
-          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text2);">' + icon + '<span style="font-size:11px;">' + label + '</span></div>' +
-          '<div style="font-size:24px;font-weight:700;color:' + color + ';">' + value + '</div>' +
+        return '<div class="c-metric-card">' +
+          '<div class="c-metric-icon">' + icon + '<span class="u-text-sm">' + label + '</span></div>' +
+          '<div class="c-metric-val" style="color:' + color + ';">' + value + '</div>' +
           '</div>';
       }
 
@@ -3340,42 +3535,40 @@
       }
 
       function buildReportSelectorTable(reports, tableId, filterFn, selectFn) {
-        var thStyle = 'padding:10px 16px;text-align:left;font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;';
-        var thStyleCenter = thStyle + 'text-align:center;';
-
-        var html = '<div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">' +
+        var html = '<div class="u-flex u-items-center u-gap-3 u-p-4 u-border-b">' +
           '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text2)" stroke-width="2" style="flex-shrink:0;opacity:0.5;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
-          '<input type="text" placeholder="Search by target URL or date..." oninput="' + filterFn + '(this.value)" style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:12px;font-family:inherit;transition:border-color 0.2s,box-shadow 0.2s;" onfocus="this.style.borderColor=\'var(--accent)\';this.style.boxShadow=\'0 0 0 3px rgba(88,166,255,0.12)\'" onblur="this.style.borderColor=\'var(--border)\';this.style.boxShadow=\'none\'" />' +
-          '<div style="font-size:11px;color:var(--text2);white-space:nowrap;">' + reports.length + ' reports</div>' +
+          '<input class="c-input u-flex-1" placeholder="Search by target URL or date..." oninput="' + filterFn + '(this.value)" />' +
+          '<div class="u-text-sm u-text-muted u-nowrap">' + reports.length + ' reports</div>' +
           '</div>' +
           '<div style="max-height:400px;overflow-y:auto;">' +
-          '<table style="width:100%;border-collapse:collapse;font-size:12px;" id="' + tableId + '">' +
-          '<thead><tr style="border-bottom:1px solid var(--border);background:var(--surface2);position:sticky;top:0;z-index:1;">' +
-          '<th style="' + thStyle + '">Date</th>' +
-          '<th style="' + thStyle + '">Target</th>' +
-          '<th style="' + thStyleCenter + '">Score</th>' +
-          '<th style="' + thStyleCenter + '">Attacks</th>' +
-          '<th style="' + thStyleCenter + '">Vulns</th>' +
-          '<th style="' + thStyleCenter + '">Blocked</th>' +
-          '<th style="' + thStyle + '">Run ID</th>' +
+          '<table class="u-w-full u-text-base" style="border-collapse:collapse;" id="' + tableId + '">' +
+          '<thead><tr class="u-border-b u-bg-surface2" style="position:sticky;top:0;z-index:1;">' +
+          '<th class="c-th" style="text-align:left;">Date</th>' +
+          '<th class="c-th" style="text-align:left;">Target</th>' +
+          '<th class="c-th u-text-center">Score</th>' +
+          '<th class="c-th u-text-center">Attacks</th>' +
+          '<th class="c-th u-text-center">Vulns</th>' +
+          '<th class="c-th u-text-center">Blocked</th>' +
+          '<th class="c-th" style="text-align:left;">Run ID</th>' +
           '</tr></thead><tbody>';
 
         reports.forEach(function(r, idx) {
           var d = new Date(r.timestamp);
           var dateStr = d.toLocaleDateString() + " " + d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
           var sc = typeof r.score === "number" ? scoreColor(r.score) : "var(--text2)";
+          var scn = typeof r.score === "number" ? scoreColorName(r.score) : "muted";
           var searchStr = (dateStr + " " + (r.targetUrl || r.filename)).toLowerCase();
           var vulnRate = r.totalAttacks > 0 ? Math.round((r.passed / r.totalAttacks) * 100) : 0;
           var rowBorderColor = vulnRate > 50 ? 'var(--red)' : vulnRate > 20 ? 'var(--orange)' : r.passed > 0 ? 'var(--accent)' : 'var(--green)';
 
-          html += '<tr data-search="' + esc(searchStr) + '" onclick="' + selectFn + '(\'' + esc(r.filename) + '\')" style="border-bottom:1px solid var(--border);border-left:3px solid transparent;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background=\'rgba(88,166,255,0.06)\';this.style.borderLeftColor=\'' + rowBorderColor + '\'" onmouseout="this.style.background=\'none\';this.style.borderLeftColor=\'transparent\'">' +
-            '<td style="padding:10px 16px;white-space:nowrap;"><div style="font-size:12px;">' + esc(dateStr.split(" ")[0]) + '</div><div style="font-size:10px;color:var(--text2);">' + esc(dateStr.split(" ").slice(1).join(" ")) + '</div></td>' +
-            '<td style="padding:10px 16px;max-width:300px;"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;" title="' + esc(r.targetUrl || r.filename) + '">' + esc(r.targetUrl || r.filename) + '</div></td>' +
-            '<td style="padding:10px 16px;text-align:center;"><span style="font-weight:700;color:' + sc + ';background:' + sc.replace('var(', 'rgba(').replace('--red', '248,81,73').replace('--green', '63,185,80').replace('--orange', '210,153,34').replace(')', ',0.1)') + ';padding:3px 12px;border-radius:10px;font-size:11px;">' + r.score + '</span></td>' +
-            '<td style="padding:10px 16px;text-align:center;color:var(--text2);font-weight:500;">' + r.totalAttacks + '</td>' +
-            '<td style="padding:10px 16px;text-align:center;"><span style="color:var(--red);font-weight:600;">' + r.passed + '</span></td>' +
-            '<td style="padding:10px 16px;text-align:center;"><span style="color:var(--green);font-weight:500;">' + r.failed + '</span></td>' +
-            '<td style="padding:10px 16px;"><span style="font-size:10px;color:var(--text2);background:var(--surface2);padding:2px 6px;border-radius:4px;font-family:monospace;">' + (r.runId ? r.runId.slice(0, 8) : '-') + '</span></td>' +
+          html += '<tr data-search="' + esc(searchStr) + '" onclick="' + selectFn + '(\'' + esc(r.filename) + '\')" class="c-tr-click u-border-b" style="border-left:3px solid transparent;" onmouseover="this.style.borderLeftColor=\'' + rowBorderColor + '\'" onmouseout="this.style.borderLeftColor=\'transparent\'">' +
+            '<td class="c-td u-nowrap"><div class="u-text-base">' + esc(dateStr.split(" ")[0]) + '</div><div class="u-text-xs u-text-muted">' + esc(dateStr.split(" ").slice(1).join(" ")) + '</div></td>' +
+            '<td class="c-td" style="max-width:300px;"><div class="u-truncate u-text-base" title="' + esc(r.targetUrl || r.filename) + '">' + esc(r.targetUrl || r.filename) + '</div></td>' +
+            '<td class="c-td u-text-center"><span class="c-score" data-c="' + scn + '">' + r.score + '</span></td>' +
+            '<td class="c-td u-text-center u-text-muted u-font-medium">' + r.totalAttacks + '</td>' +
+            '<td class="c-td u-text-center"><span class="u-text-red u-font-semibold">' + r.passed + '</span></td>' +
+            '<td class="c-td u-text-center"><span class="u-text-green u-font-medium">' + r.failed + '</span></td>' +
+            '<td class="c-td"><span class="u-text-xs u-text-muted u-bg-surface2 u-rounded-sm u-mono" style="padding:2px 6px;">' + (r.runId ? r.runId.slice(0, 8) : '-') + '</span></td>' +
             '</tr>';
         });
 
@@ -3873,9 +4066,9 @@
       }
 
       function buildCompStatCard(count, label, color, bg) {
-        return '<div style="background:' + bg + ';border:1px solid ' + color.replace('var(', 'rgba(').replace('--red', '248,81,73').replace('--orange', '210,153,34').replace('--green', '63,185,80').replace('--text2', '139,148,158').replace(')', ',0.2)') + ';border-radius:10px;padding:14px;text-align:center;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">' +
-          '<div style="font-size:24px;font-weight:700;color:' + color + ';">' + count + '</div>' +
-          '<div style="font-size:10px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:0.3px;font-weight:500;">' + label + '</div>' +
+        return '<div class="c-stat-card" style="background:' + bg + ';border-color:' + colorBorder(color) + ';">' +
+          '<div class="c-stat-val" style="font-size:var(--fs-4xl);color:' + color + ';">' + count + '</div>' +
+          '<div class="c-stat-label u-uppercase">' + label + '</div>' +
           '</div>';
       }
 
