@@ -848,6 +848,17 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full guide.
 - 🚧 In progress: Hermes agent integration, cross-run memory, attack path visualization
 - 🔜 Roadmap: GitHub Action, PDF reports, webhook notifications, llm-shield guardrail auto-deploy
 
+### 10x Attack Generation — Context & Memory TODO
+
+The attack pipeline already has a Planner, Prober (discovery), Generator with context, Ranker (affinity + defense-aware), and Evaluator (LLM judge). These are the gaps to close for 10x better attack generation:
+
+- [ ] **Persistent memory across sessions** — defense profiles die when CLI exits; store strategy effectiveness, defense fingerprints, and winning payloads in a local DB so subsequent runs start where the last one left off
+- [ ] **Per-payload memory** — currently only aggregated stats (block rate, dominant defense); need to remember "this exact payload worked against this target" so the generator can mutate proven winners instead of starting from scratch
+- [ ] **Cross-category learning** — auth_bypass defense patterns don't inform prompt_injection strategy; a shared defense fingerprint (e.g., "target uses keyword-based guardrail") should propagate across all categories
+- [ ] **Strategy effectiveness scoring** — only binary pass/fail tracking today; need quantitative scoring (confidence-weighted success rate, time-to-bypass, evidence strength) so the ranker can make finer-grained decisions
+- [ ] **Evidence-strength weighting** — all PASS verdicts are treated equally; a PASS with 95% judge confidence and concrete data leak should rank higher than a PASS with 71% confidence and vague evidence
+- [ ] **Target fingerprinting** — rediscovers everything from scratch each run; cache target fingerprint (model, guardrails, tools, defense posture) and only re-probe when fingerprint is stale or target changes
+
 ---
 
 ## Community

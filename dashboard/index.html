@@ -39,11 +39,66 @@
       a {
         color: var(--accent);
         text-decoration: none;
+        transition: color 0.15s ease, opacity 0.15s ease;
+      }
+      a:hover {
+        opacity: 0.85;
+      }
+
+      /* ── Global UX polish ── */
+
+      /* Smooth scrollbars for dark theme */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(139, 148, 158, 0.25);
+        border-radius: 8px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(139, 148, 158, 0.45);
+        background-clip: padding-box;
+      }
+      ::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+
+      /* Smooth focus states for accessibility */
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible,
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* Loading shimmer animation */
+      @keyframes shimmer {
+        0% { opacity: 0.5; }
+        50% { opacity: 1; }
+        100% { opacity: 0.5; }
+      }
+      .loading {
+        animation: shimmer 1.8s ease-in-out infinite;
+      }
+
+      /* Subtle selection color */
+      ::selection {
+        background: rgba(88, 166, 255, 0.25);
+        color: var(--text);
       }
 
       /* Top navigation — Linear/Vercel style */
       .top-nav {
-        background: var(--bg);
+        background: rgba(13, 17, 23, 0.82);
+        backdrop-filter: blur(16px) saturate(1.4);
+        -webkit-backdrop-filter: blur(16px) saturate(1.4);
         border-bottom: 1px solid var(--border);
         display: flex;
         align-items: center;
@@ -51,6 +106,8 @@
         height: 52px;
         gap: 0;
         flex-shrink: 0;
+        position: relative;
+        z-index: 50;
       }
       .top-nav-brand {
         display: flex;
@@ -73,6 +130,11 @@
         font-weight: 800;
         color: #fff;
         letter-spacing: -0.5px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .top-nav-brand:hover .top-nav-brand-icon {
+        transform: scale(1.1) rotate(-2deg);
+        box-shadow: 0 0 16px rgba(248, 81, 73, 0.3);
       }
       .top-nav-brand-text {
         font-size: 15px;
@@ -115,7 +177,10 @@
       }
       .top-nav-tab:hover {
         color: var(--text);
-        background: var(--surface);
+        background: var(--surface2);
+      }
+      .top-nav-tab:active {
+        transform: scale(0.96);
       }
       .top-nav-tab.active {
         color: var(--text);
@@ -147,6 +212,11 @@
         border-radius: 10px;
         min-width: 16px;
         text-align: center;
+        animation: badgePulse 2s ease-in-out infinite;
+      }
+      @keyframes badgePulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4); }
+        50% { box-shadow: 0 0 0 4px rgba(88, 166, 255, 0); }
       }
       .top-nav-spacer { flex: 1; }
       .top-nav-right {
@@ -215,7 +285,11 @@
 
       /* Tab panels */
       .tab-panel { display: none !important; height: 100%; overflow: hidden; }
-      .tab-panel.active { display: block !important; }
+      .tab-panel.active { display: block !important; animation: panelFadeIn 0.25s ease; }
+      @keyframes panelFadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
 
       /* Full-width panel (Dashboard, Runs, Audit) */
       .full-panel {
@@ -249,9 +323,20 @@
         border-radius: 6px;
         padding: 7px 10px;
         font-size: 12px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      }
+      .sidebar-search:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        background: var(--bg);
       }
       .sidebar-search::placeholder {
         color: var(--text2);
+        transition: color 0.15s ease;
+      }
+      .sidebar-search:focus::placeholder {
+        color: rgba(139, 148, 158, 0.5);
       }
 
       /* Trend chart */
@@ -291,10 +376,13 @@
         padding: 10px 16px;
         cursor: pointer;
         border-left: 3px solid transparent;
-        transition: background 0.15s;
+        transition: background 0.2s ease, border-left-color 0.2s ease, transform 0.1s ease;
       }
       .run-item:hover {
         background: var(--surface2);
+      }
+      .run-item:active {
+        transform: scale(0.995);
       }
       .run-item.active {
         background: rgba(88, 166, 255, 0.08);
@@ -373,10 +461,13 @@
         padding: 10px 16px;
         cursor: pointer;
         border-left: 3px solid transparent;
-        transition: background 0.15s;
+        transition: background 0.2s ease, border-left-color 0.2s ease, transform 0.1s ease;
       }
       .report-item:hover {
         background: var(--surface2);
+      }
+      .report-item:active {
+        transform: scale(0.995);
       }
       .report-item.active {
         background: rgba(88, 166, 255, 0.08);
@@ -393,6 +484,11 @@
         font-weight: 700;
         flex-shrink: 0;
         border: 2px solid;
+        transition: box-shadow 0.2s ease, transform 0.15s ease;
+      }
+      .report-item:hover .report-item-score {
+        box-shadow: 0 0 12px rgba(88, 166, 255, 0.15);
+        transform: scale(1.08);
       }
       .report-item-info {
         flex: 1;
@@ -456,7 +552,9 @@
         overflow-y: auto;
       }
       .main-header {
-        background: var(--surface);
+        background: rgba(22, 27, 34, 0.82);
+        backdrop-filter: blur(16px) saturate(1.4);
+        -webkit-backdrop-filter: blur(16px) saturate(1.4);
         border-bottom: 1px solid var(--border);
         padding: 12px 24px;
         display: flex;
@@ -591,6 +689,11 @@
         border-radius: 12px;
         padding: 20px 24px;
         margin-bottom: 24px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .section:hover {
+        border-color: rgba(88, 166, 255, 0.2);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
       }
       .section h2 {
         font-size: 16px;
@@ -620,6 +723,14 @@
         align-items: center;
         gap: 8px;
         padding: 6px 0;
+        transition: background 0.15s ease;
+        border-radius: 4px;
+        margin: 0 -4px;
+        padding-left: 4px;
+        padding-right: 4px;
+      }
+      .cat-row:hover {
+        background: rgba(88, 166, 255, 0.04);
       }
       .cat-name {
         width: 220px;
@@ -683,8 +794,11 @@
         font-size: 13px;
         vertical-align: top;
       }
+      tr {
+        transition: background 0.15s ease;
+      }
       tr:hover td {
-        background: rgba(88, 166, 255, 0.04);
+        background: rgba(88, 166, 255, 0.06);
       }
       .sev {
         display: inline-block;
@@ -693,6 +807,11 @@
         font-size: 11px;
         font-weight: 600;
         text-transform: uppercase;
+        letter-spacing: 0.3px;
+        transition: transform 0.15s ease;
+      }
+      .sev:hover {
+        transform: scale(1.05);
       }
       .sev-critical {
         background: rgba(248, 81, 73, 0.15);
@@ -733,6 +852,11 @@
         background: var(--bg);
         max-height: 400px;
         overflow: auto;
+        animation: detailSlideIn 0.2s ease;
+      }
+      @keyframes detailSlideIn {
+        from { opacity: 0; max-height: 0; }
+        to { opacity: 1; max-height: 400px; }
       }
       .detail-content pre {
         font-size: 12px;
@@ -774,11 +898,17 @@
         border-radius: 6px;
         cursor: pointer;
         font-size: 13px;
+        transition: all 0.2s ease;
+      }
+      .round-tab:hover {
+        color: var(--text);
+        border-color: var(--text2);
       }
       .round-tab.active {
         background: var(--accent);
         color: #fff;
         border-color: var(--accent);
+        box-shadow: 0 2px 8px rgba(88, 166, 255, 0.25);
       }
 
       /* Static analysis */
@@ -1089,6 +1219,13 @@
         padding: 4px 8px;
         font-size: 12px;
         max-width: 140px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .filter-bar select:focus,
+      .filter-bar input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.12);
       }
       .filter-bar input {
         width: 130px;
@@ -1181,19 +1318,35 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 5px 12px;
-        border-radius: 6px;
+        padding: 6px 14px;
+        border-radius: 8px;
         font-size: 12px;
         cursor: pointer;
-        transition: all 0.15s;
+        transition: all 0.2s ease;
         border: 1px solid var(--border);
         background: var(--bg);
         user-select: none;
+        color: var(--text2);
+      }
+      .fw-chip:hover {
+        border-color: var(--text2);
+        background: var(--surface2);
       }
       .fw-chip:has(input:checked) {
-        background: rgba(88, 166, 255, 0.1);
+        background: rgba(88, 166, 255, 0.12);
         border-color: var(--accent);
         color: var(--accent);
+        box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.08);
+      }
+      .fw-chip:has(input:checked):hover {
+        background: rgba(88, 166, 255, 0.18);
+      }
+      .fw-chip:has(input:checked) .fw-count {
+        background: rgba(88, 166, 255, 0.2);
+        color: var(--accent);
+      }
+      .fw-chip:active {
+        transform: scale(0.97);
       }
       .fw-chip input { display: none; }
       .fw-chip .fw-count {
@@ -1202,6 +1355,7 @@
         padding: 1px 6px;
         border-radius: 10px;
         color: var(--text2);
+        transition: all 0.2s ease;
       }
       .compliance-actions {
         display: flex;
@@ -1311,7 +1465,10 @@
         border-radius: 8px;
         border-left: 3px solid var(--border);
         overflow: hidden;
-        transition: border-color 0.15s;
+        transition: border-color 0.15s, box-shadow 0.2s ease, transform 0.15s ease;
+      }
+      .compliance-card:hover {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
       }
       .compliance-card.status-vulnerable { border-left-color: var(--red); }
       .compliance-card.status-at_risk { border-left-color: var(--orange); }
@@ -1366,6 +1523,10 @@
         border-radius: 8px;
         margin-bottom: 8px;
         overflow: hidden;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .conv-step:hover {
+        border-color: rgba(88, 166, 255, 0.15);
       }
       .conv-step-header {
         display: flex;
@@ -1435,12 +1596,15 @@
         margin: 0 2px;
       }
 
-      /* Quick action buttons hover effects */
-      button:hover {
-        background: var(--border) !important;
-        border-color: var(--text2) !important;
+      /* Quick action buttons hover effects — scoped to avoid breaking colored buttons */
+      .expand-btn:hover,
+      .sidebar-pagination button:hover,
+      .compliance-dl-btn:hover,
+      .filter-bar select:hover,
+      .top-nav-signout:hover,
+      .user-menu-signout:hover {
         transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
       }
 
       /* Row highlighting for keyboard navigation */
@@ -1587,6 +1751,9 @@
         position: fixed;
         inset: 0;
         background: var(--bg);
+        background-image:
+          radial-gradient(600px 400px at 30% 20%, rgba(88, 166, 255, 0.06), transparent 60%),
+          radial-gradient(500px 400px at 70% 70%, rgba(188, 140, 255, 0.05), transparent 60%);
         z-index: 9999;
         display: flex;
         align-items: center;
@@ -1599,8 +1766,13 @@
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+        padding: 32px;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(88, 166, 255, 0.06);
+        animation: authFadeIn 0.35s ease;
+      }
+      @keyframes authFadeIn {
+        from { opacity: 0; transform: translateY(12px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
       }
       .auth-overlay h1 { font-size: 24px; font-weight: 700; }
       .auth-overlay p { color: var(--text2); font-size: 14px; }
@@ -1628,18 +1800,40 @@
         padding: 10px 12px;
         font-size: 14px;
         font-family: inherit;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      }
+      .auth-field input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        background: var(--bg);
       }
       .auth-sign-in-btn {
-        background: var(--accent);
+        background: linear-gradient(135deg, var(--accent) 0%, #7c6cff 100%);
         color: #fff;
         border: none;
-        border-radius: 8px;
+        border-radius: 10px;
         padding: 12px 32px;
         font-size: 15px;
         font-weight: 600;
         cursor: pointer;
+        width: 100%;
+        transition: opacity 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
       }
-      .auth-sign-in-btn:hover { opacity: 0.85; }
+      .auth-sign-in-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(88, 166, 255, 0.25);
+      }
+      .auth-sign-in-btn:active {
+        transform: translateY(0);
+      }
+      .auth-sign-in-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
       .auth-error {
         min-height: 18px;
         color: var(--red);
@@ -2928,16 +3122,19 @@
         const selReport = riskSelectedReport ? reports.find(function(r) { return r.filename === riskSelectedReport; }) : null;
 
         var html = '<div style="max-width:100%;">' +
-          '<div style="margin-bottom:24px;">' +
+          '<div style="margin-bottom:24px;display:flex;align-items:flex-start;gap:16px;">' +
+          '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(248,81,73,0.15),rgba(210,153,34,0.15));display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--red)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>' +
+          '<div>' +
           '<h2 style="font-size:20px;font-weight:700;margin-bottom:4px;">Risk Quantification</h2>' +
           '<div style="font-size:13px;color:var(--text2);">Analyze business impact, exploitability, and remediation priorities for security findings.</div>' +
-          '</div>';
+          '</div></div>';
 
         // Report selector (compact)
         html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;">' +
           '<div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">' +
-          '<div style="font-size:13px;font-weight:600;">Select Report</div>' +
-          (selReport ? '<div style="font-size:12px;color:var(--text2);margin-left:auto;">' + esc(new Date(selReport.timestamp).toLocaleDateString()) + ' &middot; ' + esc(selReport.targetUrl || "") + ' &middot; Score: <span style="font-weight:700;color:' + scoreColor(selReport.score) + ';">' + selReport.score + '</span> &middot; <a href="#" onclick="event.preventDefault();riskSelectedReport=null;riskReportData=null;riskLlmResults=null;renderRiskTab();" style="color:var(--accent);">Change</a></div>' : '') +
+          '<div style="width:28px;height:28px;border-radius:50%;background:' + (selReport ? 'var(--green)' : 'var(--accent)') + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 0 0 3px ' + (selReport ? 'rgba(63,185,80,0.15)' : 'rgba(88,166,255,0.15)') + ';">' + (selReport ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>') + '</div>' +
+          '<div style="font-size:14px;font-weight:600;">Select Report</div>' +
+          (selReport ? '<div style="font-size:12px;color:var(--text2);margin-left:auto;display:flex;align-items:center;gap:8px;">' + esc(new Date(selReport.timestamp).toLocaleDateString()) + ' &middot; ' + esc(selReport.targetUrl || "") + ' &middot; Score: <span style="font-weight:700;color:' + scoreColor(selReport.score) + ';background:' + scoreColor(selReport.score).replace('var(', 'rgba(').replace('--red', '248,81,73').replace('--green', '63,185,80').replace('--orange', '210,153,34').replace(')', ',0.1)') + ';padding:2px 8px;border-radius:6px;">' + selReport.score + '</span> <a href="#" onclick="event.preventDefault();riskSelectedReport=null;riskReportData=null;riskLlmResults=null;renderRiskTab();" style="color:var(--accent);font-weight:500;">Change</a></div>' : '') +
           '</div>';
 
         if (!selReport) {
@@ -2994,7 +3191,7 @@
           .sort(function(a, b) { return b[1].passed - a[1].passed; });
 
         var html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">' +
-          '<div style="font-size:14px;font-weight:700;margin-bottom:16px;">Risk Score Breakdown</div>' +
+          '<div style="font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Risk Score Breakdown</div>' +
 
           // Score summary
           '<div style="display:grid;grid-template-columns:200px 1fr;gap:20px;margin-bottom:20px;">' +
@@ -3003,37 +3200,38 @@
           '<div style="font-size:11px;color:var(--text2);margin-top:4px;">Overall Score</div>' +
           '</div>' +
           '<div>' +
-          '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">' +
-          '<div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;">' + s.totalAttacks + '</div><div style="font-size:10px;color:var(--text2);">Total</div></div>' +
-          '<div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--red);">' + s.passed + '</div><div style="font-size:10px;color:var(--text2);">Passed</div></div>' +
-          '<div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--orange);">' + s.partial + '</div><div style="font-size:10px;color:var(--text2);">Partial</div></div>' +
-          '<div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--green);">' + s.failed + '</div><div style="font-size:10px;color:var(--text2);">Blocked</div></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">' +
+          '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-size:22px;font-weight:700;">' + s.totalAttacks + '</div><div style="font-size:10px;color:var(--text2);margin-top:2px;font-weight:500;">Total</div></div>' +
+          '<div style="background:rgba(248,81,73,0.06);border:1px solid rgba(248,81,73,0.2);border-radius:10px;padding:14px;text-align:center;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-size:22px;font-weight:700;color:var(--red);">' + s.passed + '</div><div style="font-size:10px;color:var(--text2);margin-top:2px;font-weight:500;">Passed</div></div>' +
+          '<div style="background:rgba(210,153,34,0.06);border:1px solid rgba(210,153,34,0.2);border-radius:10px;padding:14px;text-align:center;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-size:22px;font-weight:700;color:var(--orange);">' + s.partial + '</div><div style="font-size:10px;color:var(--text2);margin-top:2px;font-weight:500;">Partial</div></div>' +
+          '<div style="background:rgba(63,185,80,0.06);border:1px solid rgba(63,185,80,0.2);border-radius:10px;padding:14px;text-align:center;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-size:22px;font-weight:700;color:var(--green);">' + s.failed + '</div><div style="font-size:10px;color:var(--text2);margin-top:2px;font-weight:500;">Blocked</div></div>' +
           '</div>' +
           '<div style="font-size:11px;color:var(--text2);line-height:1.6;">Score = 100 - weighted sum of vulnerabilities. Critical categories (auth_bypass, data_exfiltration) have higher weights. Partial results count at 0.5x.</div>' +
           '</div></div>';
 
         // Category breakdown table
         if (cats.length > 0) {
-          html += '<div style="font-size:12px;font-weight:600;margin-bottom:8px;">Category Risk Contributions</div>' +
-            '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="border-bottom:1px solid var(--border);">' +
-            '<th style="padding:6px 10px;text-align:left;color:var(--text2);font-weight:500;font-size:10px;text-transform:uppercase;">Category</th>' +
-            '<th style="padding:6px 10px;text-align:center;color:var(--text2);font-weight:500;font-size:10px;text-transform:uppercase;">Total</th>' +
-            '<th style="padding:6px 10px;text-align:center;color:var(--text2);font-weight:500;font-size:10px;text-transform:uppercase;">Passed</th>' +
-            '<th style="padding:6px 10px;text-align:left;color:var(--text2);font-weight:500;font-size:10px;text-transform:uppercase;">Impact</th>' +
+          html += '<div style="font-size:12px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px;">Category Risk Contributions <span style="font-weight:400;color:var(--text2);">(' + cats.length + ' categories)</span></div>' +
+            '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;">' +
+            '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="border-bottom:1px solid var(--border);background:var(--surface2);">' +
+            '<th style="padding:10px 14px;text-align:left;color:var(--text2);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.3px;">Category</th>' +
+            '<th style="padding:10px 14px;text-align:center;color:var(--text2);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.3px;">Total</th>' +
+            '<th style="padding:10px 14px;text-align:center;color:var(--text2);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.3px;">Passed</th>' +
+            '<th style="padding:10px 14px;text-align:left;color:var(--text2);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.3px;">Impact</th>' +
             '</tr></thead><tbody>';
           cats.slice(0, 15).forEach(function(e) {
             var cat = e[0], data = e[1];
             var catLabel = cat.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
             var pct = data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0;
             var barColor = pct > 50 ? 'var(--red)' : pct > 20 ? 'var(--orange)' : 'var(--green)';
-            html += '<tr style="border-bottom:1px solid var(--border);">' +
-              '<td style="padding:8px 10px;">' + esc(catLabel) + '</td>' +
-              '<td style="padding:8px 10px;text-align:center;">' + data.total + '</td>' +
-              '<td style="padding:8px 10px;text-align:center;color:var(--red);font-weight:600;">' + data.passed + '</td>' +
-              '<td style="padding:8px 10px;"><div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';"></div></div><span style="font-size:10px;color:var(--text2);min-width:28px;">' + pct + '%</span></div></td>' +
+            html += '<tr style="border-bottom:1px solid var(--border);border-left:3px solid ' + barColor + ';transition:background 0.15s;" onmouseover="this.style.background=\'rgba(88,166,255,0.04)\'" onmouseout="this.style.background=\'none\'">' +
+              '<td style="padding:10px 14px;font-weight:500;">' + esc(catLabel) + '</td>' +
+              '<td style="padding:10px 14px;text-align:center;color:var(--text2);">' + data.total + '</td>' +
+              '<td style="padding:10px 14px;text-align:center;color:var(--red);font-weight:600;">' + data.passed + '</td>' +
+              '<td style="padding:10px 14px;"><div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:3px;transition:width 0.4s;"></div></div><span style="font-size:10px;font-weight:600;color:' + barColor + ';min-width:32px;text-align:right;">' + pct + '%</span></div></td>' +
               '</tr>';
           });
-          html += '</tbody></table>';
+          html += '</tbody></table></div>';
         }
 
         html += '</div>';
@@ -3041,7 +3239,10 @@
       }
 
       function buildExploitabilitySection(passResults) {
-        if (passResults.length === 0) return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;text-align:center;color:var(--text2);">No vulnerabilities found — no exploitability assessment needed.</div>';
+        if (passResults.length === 0) return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;margin-bottom:16px;text-align:center;">' +
+          '<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--green)" stroke-width="1.5" style="margin-bottom:12px;opacity:0.6;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
+          '<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">No Vulnerabilities Detected</div>' +
+          '<div style="font-size:12px;color:var(--text2);">All attacks were blocked — no exploitability assessment needed.</div></div>';
 
         // Score each vulnerability for exploitability
         var scored = passResults.map(function(r) {
@@ -3057,7 +3258,7 @@
         }).sort(function(a, b) { return b.exploitScore - a.exploitScore; });
 
         var html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">' +
-          '<div style="font-size:14px;font-weight:700;margin-bottom:4px;">Exploitability Assessment</div>' +
+          '<div style="font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--orange)" stroke-width="2" style="flex-shrink:0;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Exploitability Assessment</div>' +
           '<div style="font-size:11px;color:var(--text2);margin-bottom:16px;">Ranked by severity x ease of exploitation. Lower auth requirements and fewer steps = easier to exploit.</div>' +
           '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="border-bottom:1px solid var(--border);">' +
           '<th style="padding:6px 10px;text-align:left;color:var(--text2);font-weight:500;font-size:10px;text-transform:uppercase;">Attack</th>' +
@@ -3072,9 +3273,9 @@
           var sevColors = { critical: "var(--red)", high: "var(--orange)", medium: "var(--accent)", low: "var(--text2)" };
           var authLabel = a.authMethod === "none" ? "None" : a.authMethod === "body_role" ? "Low" : a.authMethod === "jwt" ? "JWT" : a.authMethod || "Unknown";
           var steps = s.result.totalSteps || 1;
-          html += '<tr style="border-bottom:1px solid var(--border);">' +
+          html += '<tr style="border-bottom:1px solid var(--border);border-left:3px solid ' + s.exploitColor + ';">' +
             '<td style="padding:8px 10px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(a.name || "") + '">' + esc(a.name || "Unknown") + '</td>' +
-            '<td style="padding:8px 10px;text-align:center;"><span style="font-size:10px;font-weight:600;text-transform:uppercase;color:' + (sevColors[a.severity] || "var(--text2)") + ';">' + (a.severity || "?") + '</span></td>' +
+            '<td style="padding:8px 10px;text-align:center;"><span style="font-size:10px;font-weight:600;text-transform:uppercase;padding:2px 8px;border-radius:8px;color:' + (sevColors[a.severity] || "var(--text2)") + ';background:' + (sevColors[a.severity] || "var(--text2)").replace('var(', 'rgba(').replace('--red', '248,81,73').replace('--orange', '210,153,34').replace('--accent', '88,166,255').replace('--text2', '139,148,158').replace(')', ',0.1)') + ';">' + (a.severity || "?") + '</span></td>' +
             '<td style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text2);">' + authLabel + '</td>' +
             '<td style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text2);">' + steps + '</td>' +
             '<td style="padding:8px 10px;text-align:center;"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:8px;color:' + s.exploitColor + ';background:' + s.exploitColor.replace('var(', 'rgba(').replace('--red', '248,81,73').replace('--orange', '210,153,34').replace('--accent', '88,166,255').replace('--text2', '139,148,158').replace(')', ',0.1)') + ';">' + s.exploitLabel + '</span></td>' +
@@ -3108,7 +3309,7 @@
         }).sort(function(a, b) { return b.priority - a.priority; });
 
         var html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">' +
-          '<div style="font-size:14px;font-weight:700;margin-bottom:4px;">Remediation Priority Matrix</div>' +
+          '<div style="font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--green)" stroke-width="2" style="flex-shrink:0;"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Remediation Priority Matrix</div>' +
           '<div style="font-size:11px;color:var(--text2);margin-bottom:16px;">Fix these categories first — ranked by severity-weighted vulnerability count.</div>';
 
         ranked.forEach(function(item, idx) {
@@ -3117,8 +3318,8 @@
           var urgencyColor = idx < 3 ? "var(--red)" : idx < 7 ? "var(--orange)" : "var(--accent)";
           var d = item.data;
 
-          html += '<div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:14px;">' +
-            '<div style="font-size:16px;font-weight:800;color:var(--text2);min-width:28px;text-align:center;">#' + (idx + 1) + '</div>' +
+          html += '<div style="border:1px solid var(--border);border-left:3px solid ' + urgencyColor + ';border-radius:8px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:14px;transition:border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.boxShadow=\'0 2px 12px rgba(0,0,0,0.15)\'" onmouseout="this.style.boxShadow=\'none\'">' +
+            '<div style="font-size:16px;font-weight:800;color:' + urgencyColor + ';min-width:28px;text-align:center;">#' + (idx + 1) + '</div>' +
             '<div style="flex:1;">' +
             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
             '<span style="font-size:13px;font-weight:600;">' + esc(catLabel) + '</span>' +
@@ -3139,15 +3340,17 @@
       }
 
       function buildReportSelectorTable(reports, tableId, filterFn, selectFn) {
-        var thStyle = 'padding:8px 16px;text-align:left;font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;';
+        var thStyle = 'padding:10px 16px;text-align:left;font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;';
         var thStyleCenter = thStyle + 'text-align:center;';
 
-        var html = '<div style="padding:12px 20px;border-bottom:1px solid var(--border);">' +
-          '<input type="text" placeholder="Search by target URL or date..." oninput="' + filterFn + '(this.value)" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:12px;font-family:inherit;" />' +
+        var html = '<div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">' +
+          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text2)" stroke-width="2" style="flex-shrink:0;opacity:0.5;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+          '<input type="text" placeholder="Search by target URL or date..." oninput="' + filterFn + '(this.value)" style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:12px;font-family:inherit;transition:border-color 0.2s,box-shadow 0.2s;" onfocus="this.style.borderColor=\'var(--accent)\';this.style.boxShadow=\'0 0 0 3px rgba(88,166,255,0.12)\'" onblur="this.style.borderColor=\'var(--border)\';this.style.boxShadow=\'none\'" />' +
+          '<div style="font-size:11px;color:var(--text2);white-space:nowrap;">' + reports.length + ' reports</div>' +
           '</div>' +
-          '<div style="max-height:380px;overflow-y:auto;">' +
+          '<div style="max-height:400px;overflow-y:auto;">' +
           '<table style="width:100%;border-collapse:collapse;font-size:12px;" id="' + tableId + '">' +
-          '<thead><tr style="border-bottom:1px solid var(--border);background:var(--bg);">' +
+          '<thead><tr style="border-bottom:1px solid var(--border);background:var(--surface2);position:sticky;top:0;z-index:1;">' +
           '<th style="' + thStyle + '">Date</th>' +
           '<th style="' + thStyle + '">Target</th>' +
           '<th style="' + thStyleCenter + '">Score</th>' +
@@ -3157,20 +3360,22 @@
           '<th style="' + thStyle + '">Run ID</th>' +
           '</tr></thead><tbody>';
 
-        reports.forEach(function(r) {
+        reports.forEach(function(r, idx) {
           var d = new Date(r.timestamp);
           var dateStr = d.toLocaleDateString() + " " + d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
           var sc = typeof r.score === "number" ? scoreColor(r.score) : "var(--text2)";
           var searchStr = (dateStr + " " + (r.targetUrl || r.filename)).toLowerCase();
+          var vulnRate = r.totalAttacks > 0 ? Math.round((r.passed / r.totalAttacks) * 100) : 0;
+          var rowBorderColor = vulnRate > 50 ? 'var(--red)' : vulnRate > 20 ? 'var(--orange)' : r.passed > 0 ? 'var(--accent)' : 'var(--green)';
 
-          html += '<tr data-search="' + esc(searchStr) + '" onclick="' + selectFn + '(\'' + esc(r.filename) + '\')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'var(--surface2)\'" onmouseout="this.style.background=\'none\'">' +
-            '<td style="padding:10px 16px;white-space:nowrap;">' + esc(dateStr) + '</td>' +
-            '<td style="padding:10px 16px;color:var(--text2);max-width:350px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(r.targetUrl || r.filename) + '</td>' +
-            '<td style="padding:10px 16px;text-align:center;"><span style="font-weight:700;color:' + sc + ';background:' + sc.replace('var(', 'rgba(').replace('--red', '248,81,73').replace('--green', '63,185,80').replace('--orange', '210,153,34').replace(')', ',0.1)') + ';padding:2px 10px;border-radius:10px;font-size:11px;">' + r.score + '</span></td>' +
-            '<td style="padding:10px 16px;text-align:center;color:var(--text2);">' + r.totalAttacks + '</td>' +
-            '<td style="padding:10px 16px;text-align:center;color:var(--red);font-weight:600;">' + r.passed + '</td>' +
-            '<td style="padding:10px 16px;text-align:center;color:var(--green);font-weight:500;">' + r.failed + '</td>' +
-            '<td style="padding:10px 16px;font-size:10px;color:var(--text2);">' + (r.runId ? r.runId.slice(0, 8) : '-') + '</td>' +
+          html += '<tr data-search="' + esc(searchStr) + '" onclick="' + selectFn + '(\'' + esc(r.filename) + '\')" style="border-bottom:1px solid var(--border);border-left:3px solid transparent;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background=\'rgba(88,166,255,0.06)\';this.style.borderLeftColor=\'' + rowBorderColor + '\'" onmouseout="this.style.background=\'none\';this.style.borderLeftColor=\'transparent\'">' +
+            '<td style="padding:10px 16px;white-space:nowrap;"><div style="font-size:12px;">' + esc(dateStr.split(" ")[0]) + '</div><div style="font-size:10px;color:var(--text2);">' + esc(dateStr.split(" ").slice(1).join(" ")) + '</div></td>' +
+            '<td style="padding:10px 16px;max-width:300px;"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;" title="' + esc(r.targetUrl || r.filename) + '">' + esc(r.targetUrl || r.filename) + '</div></td>' +
+            '<td style="padding:10px 16px;text-align:center;"><span style="font-weight:700;color:' + sc + ';background:' + sc.replace('var(', 'rgba(').replace('--red', '248,81,73').replace('--green', '63,185,80').replace('--orange', '210,153,34').replace(')', ',0.1)') + ';padding:3px 12px;border-radius:10px;font-size:11px;">' + r.score + '</span></td>' +
+            '<td style="padding:10px 16px;text-align:center;color:var(--text2);font-weight:500;">' + r.totalAttacks + '</td>' +
+            '<td style="padding:10px 16px;text-align:center;"><span style="color:var(--red);font-weight:600;">' + r.passed + '</span></td>' +
+            '<td style="padding:10px 16px;text-align:center;"><span style="color:var(--green);font-weight:500;">' + r.failed + '</span></td>' +
+            '<td style="padding:10px 16px;"><span style="font-size:10px;color:var(--text2);background:var(--surface2);padding:2px 6px;border-radius:4px;font-family:monospace;">' + (r.runId ? r.runId.slice(0, 8) : '-') + '</span></td>' +
             '</tr>';
         });
 
@@ -3190,8 +3395,8 @@
 
         var html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
-          '<div style="font-size:14px;font-weight:700;">Business Impact & Real-World Incidents</div>' +
-          '<button id="riskLlmBtn" onclick="runRiskLlmAnalysis()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:12px;font-weight:600;cursor:pointer;">' + (riskLlmResults ? 'Re-analyze Risk' : 'Analyze Risk') + '</button>' +
+          '<div style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--purple)" stroke-width="2" style="flex-shrink:0;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Business Impact & Real-World Incidents</div>' +
+          '<button id="riskLlmBtn" onclick="runRiskLlmAnalysis()" style="background:linear-gradient(135deg,var(--accent) 0%,#7c6cff 100%);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s ease;box-shadow:0 2px 8px rgba(88,166,255,0.25);" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 4px 16px rgba(88,166,255,0.35)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'0 2px 8px rgba(88,166,255,0.25)\'">' + (riskLlmResults ? 'Re-analyze Risk' : 'Analyze Risk') + '</button>' +
           (riskLlmResults && riskLlmResults.length > 0 ?
             '<button onclick="downloadRiskCsv()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;margin-left:8px;">Export CSV</button>' +
             '<button onclick="downloadRiskJson()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;margin-left:4px;">Export JSON</button>'
@@ -3199,14 +3404,14 @@
           '</div>' +
           '<div style="font-size:11px;color:var(--text2);margin-bottom:16px;">AI-powered analysis of each vulnerability — business risk, financial exposure, compliance violations, and related real-world breaches.</div>' +
 
-          // Provider/model selector
-          '<div style="display:flex;gap:16px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">' +
-          '<div><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Provider</div>' +
-          '<select id="riskProvider" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px;font-family:inherit;">' +
+          // Provider/model selector — grouped card
+          '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;">' +
+          '<div style="flex:0 0 auto;"><div style="font-size:10px;color:var(--text2);font-weight:500;margin-bottom:4px;">Provider</div>' +
+          '<select id="riskProvider" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;font-family:inherit;transition:border-color 0.2s;" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border)\'">' +
           '<option value="anthropic">Anthropic</option><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option></select></div>' +
-          '<div><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Model</div>' +
-          '<input id="riskModel" type="text" value="claude-sonnet-4-20250514" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px;width:240px;font-family:inherit;" /></div>' +
-          '<div style="align-self:flex-end;">' +
+          '<div style="flex:1;min-width:200px;"><div style="font-size:10px;color:var(--text2);font-weight:500;margin-bottom:4px;">Model</div>' +
+          '<input id="riskModel" type="text" value="claude-sonnet-4-20250514" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;width:100%;font-family:inherit;transition:border-color 0.2s;" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border)\'" /></div>' +
+          '<div style="display:flex;gap:6px;">' +
           (riskLlmResults && riskLlmResults.length > 0 ?
             '<button onclick="toggleAllRiskCards()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;margin-left:8px;" id="riskToggleAllBtn">Collapse All</button>' +
             '<button onclick="downloadRiskCsv()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;margin-left:4px;">Export CSV</button>' +
@@ -3244,7 +3449,10 @@
               '</div></div>';
           });
         } else {
-          html += '<div style="padding:20px;text-align:center;color:var(--text2);font-size:12px;">Click "Analyze Risk" to generate per-vulnerability business impact assessment with real-world incident mapping.</div>';
+          html += '<div style="padding:32px 20px;text-align:center;">' +
+            '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--text2)" stroke-width="1.5" style="margin-bottom:10px;opacity:0.4;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' +
+            '<div style="font-size:13px;color:var(--text2);">Click <strong style="color:var(--accent);">Analyze Risk</strong> to generate per-vulnerability business impact assessment with real-world incident mapping.</div>' +
+            '</div>';
         }
 
         html += '</div></div>';
@@ -3399,15 +3607,17 @@
           var html = '<div style="max-width:100%;">';
 
           // Header with context
-          html += '<div style="margin-bottom:24px;">' +
+          html += '<div style="margin-bottom:24px;display:flex;align-items:flex-start;gap:16px;">' +
+            '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(88,166,255,0.15),rgba(63,185,80,0.15));display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>' +
+            '<div>' +
             '<h2 style="font-size:20px;font-weight:700;margin-bottom:4px;">Compliance Analysis</h2>' +
             '<div style="font-size:13px;color:var(--text2);">Map security scan results against industry compliance frameworks using AI-powered analysis.</div>' +
-            '</div>';
+            '</div></div>';
 
           // Step 1: Select Report
-          html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;">' +
+          html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:0;overflow:hidden;">' +
             '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">' +
-            '<div style="width:24px;height:24px;border-radius:50%;background:' + (selReport ? 'var(--green)' : 'var(--accent)') + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">1</div>' +
+            '<div style="width:28px;height:28px;border-radius:50%;background:' + (selReport ? 'var(--green)' : 'var(--accent)') + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 0 0 3px ' + (selReport ? 'rgba(63,185,80,0.15)' : 'rgba(88,166,255,0.15)') + ';">' + (selReport ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : '1') + '</div>' +
             '<div style="font-size:14px;font-weight:600;">Select Report</div>' +
             (selReport ? '<div style="font-size:12px;color:var(--text2);margin-left:auto;">' + esc(new Date(selReport.timestamp).toLocaleDateString()) + ' &middot; ' + esc(selReport.targetUrl || "") + ' &middot; Score: <span style="font-weight:700;color:' + scoreColor(selReport.score) + ';">' + selReport.score + '</span></div>' : '') +
             '</div>';
@@ -3425,29 +3635,39 @@
 
           // Step 2: Configure & Run (only if report selected)
           if (selReport) {
-            html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;">' +
+            // Connecting line between steps
+            html += '<div style="display:flex;justify-content:flex-start;padding-left:34px;"><div style="width:2px;height:16px;background:var(--border);"></div></div>';
+
+            html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:0;overflow:hidden;">' +
               '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">' +
-              '<div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">2</div>' +
+              '<div style="width:28px;height:28px;border-radius:50%;background:' + (complianceResults.length > 0 ? 'var(--green)' : 'var(--accent)') + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 0 0 3px ' + (complianceResults.length > 0 ? 'rgba(63,185,80,0.15)' : 'rgba(88,166,255,0.15)') + ';">' + (complianceResults.length > 0 ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : '2') + '</div>' +
               '<div style="font-size:14px;font-weight:600;">Configure & Run</div>' +
               '<div style="margin-left:auto;display:flex;align-items:center;gap:10px;">' +
               '<span id="compProgressText" style="font-size:12px;color:var(--text2);"></span>' +
-              '<button id="compRunBtn" onclick="runComplianceInline()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">Start Compliance Mapping</button>' +
+              '<button id="compRunBtn" onclick="runComplianceInline()" style="background:linear-gradient(135deg,var(--accent) 0%,#7c6cff 100%);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s ease;white-space:nowrap;box-shadow:0 2px 8px rgba(88,166,255,0.25);" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 4px 16px rgba(88,166,255,0.35)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'0 2px 8px rgba(88,166,255,0.25)\'">Start Compliance Mapping</button>' +
               '</div>' +
               '</div>' +
               '<div style="padding:20px;">' +
 
-              // Provider + Model row
-              '<div style="display:flex;gap:16px;align-items:center;margin-bottom:16px;">' +
-              '<div><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Provider</div>' +
-              '<select id="compProvider" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px;font-family:inherit;">' +
+              // Provider + Model row — grouped in a card
+              '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">' +
+              '<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>LLM Configuration</div>' +
+              '<div style="display:flex;gap:16px;align-items:flex-end;">' +
+              '<div style="flex:0 0 auto;"><div style="font-size:10px;color:var(--text2);font-weight:500;margin-bottom:4px;">Provider</div>' +
+              '<select id="compProvider" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;font-family:inherit;transition:border-color 0.2s;" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border)\'">' +
               '<option value="anthropic">Anthropic</option><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option></select></div>' +
-              '<div><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Model</div>' +
-              '<input id="compModel" type="text" value="claude-sonnet-4-20250514" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px;width:240px;font-family:inherit;" /></div>' +
-              '</div>' +
+              '<div style="flex:1;"><div style="font-size:10px;color:var(--text2);font-weight:500;margin-bottom:4px;">Model</div>' +
+              '<input id="compModel" type="text" value="claude-sonnet-4-20250514" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;width:100%;font-family:inherit;transition:border-color 0.2s;" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border)\'" /></div>' +
+              '</div></div>' +
 
-              // Frameworks
-              '<div style="margin-bottom:16px;">' +
-              '<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Frameworks</div>' +
+              // Frameworks — with select all/none
+              '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+              '<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Frameworks <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text2);">(' + frameworks.length + ' available)</span></div>' +
+              '<div style="display:flex;gap:8px;">' +
+              '<button onclick="document.querySelectorAll(\'.comp-fw-checkbox\').forEach(function(c){c.checked=true;c.dispatchEvent(new Event(\'change\',{bubbles:true}))})" style="background:none;border:1px solid var(--border);color:var(--accent);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer;font-family:inherit;">Select All</button>' +
+              '<button onclick="document.querySelectorAll(\'.comp-fw-checkbox\').forEach(function(c){c.checked=false;c.dispatchEvent(new Event(\'change\',{bubbles:true}))})" style="background:none;border:1px solid var(--border);color:var(--text2);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer;font-family:inherit;">None</button>' +
+              '</div></div>' +
               '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
             frameworks.forEach(function(fw) {
               html += '<label class="fw-chip"><input type="checkbox" class="comp-fw-checkbox" value="' + esc(fw.id) + '" checked />' + esc(fw.name) + ' <span class="fw-count">' + fw.controlCount + '</span></label>';
@@ -3457,9 +3677,12 @@
 
             // Step 3: Results
             if (complianceResults.length > 0) {
+              // Connecting line between steps
+              html += '<div style="display:flex;justify-content:flex-start;padding-left:34px;"><div style="width:2px;height:16px;background:var(--border);"></div></div>';
+
               html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;">' +
                 '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">' +
-                '<div style="width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">3</div>' +
+                '<div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 0 0 3px rgba(63,185,80,0.15);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>' +
                 '<div style="font-size:14px;font-weight:600;">Results</div>' +
                 '<div style="margin-left:auto;display:flex;gap:8px;">' +
                 '<button onclick="downloadComplianceCsv()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer;">Export CSV</button>' +
@@ -3579,9 +3802,9 @@
 
           // Framework header with donut summary
           html += '<div style="margin-bottom:24px;">' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">' +
-            '<div style="font-size:15px;font-weight:700;">' + esc(fw) + '</div>' +
-            '<div style="font-size:12px;color:var(--text2);">' + items.length + ' controls evaluated</div>' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid var(--border);">' +
+            '<div style="display:flex;align-items:center;gap:10px;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><div style="font-size:16px;font-weight:700;">' + esc(fw) + '</div></div>' +
+            '<div style="font-size:12px;color:var(--text2);background:var(--bg);padding:4px 12px;border-radius:8px;border:1px solid var(--border);">' + items.length + ' controls evaluated</div>' +
             '</div>' +
 
             // Summary cards row
@@ -3593,7 +3816,7 @@
             '</div>' +
 
             // Segmented progress bar
-            '<div style="display:flex;height:4px;border-radius:2px;overflow:hidden;margin-bottom:20px;">' +
+            '<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:20px;">' +
             (vuln > 0 ? '<div style="flex:' + vuln + ';background:var(--red);"></div>' : '') +
             (risk > 0 ? '<div style="flex:' + risk + ';background:var(--orange);"></div>' : '') +
             (secure > 0 ? '<div style="flex:' + secure + ';background:var(--green);"></div>' : '') +
@@ -3650,9 +3873,9 @@
       }
 
       function buildCompStatCard(count, label, color, bg) {
-        return '<div style="background:' + bg + ';border-radius:8px;padding:12px;text-align:center;">' +
-          '<div style="font-size:22px;font-weight:700;color:' + color + ';">' + count + '</div>' +
-          '<div style="font-size:10px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:0.3px;">' + label + '</div>' +
+        return '<div style="background:' + bg + ';border:1px solid ' + color.replace('var(', 'rgba(').replace('--red', '248,81,73').replace('--orange', '210,153,34').replace('--green', '63,185,80').replace('--text2', '139,148,158').replace(')', ',0.2)') + ';border-radius:10px;padding:14px;text-align:center;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">' +
+          '<div style="font-size:24px;font-weight:700;color:' + color + ';">' + count + '</div>' +
+          '<div style="font-size:10px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:0.3px;font-weight:500;">' + label + '</div>' +
           '</div>';
       }
 
@@ -3980,47 +4203,48 @@
 
         app.innerHTML = `
     <!-- Score + Stats -->
-    <div class="score-banner">
+    <div class="score-banner" style="border:1px solid var(--border);border-top:3px solid ${ringColor};position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle at top right, ${ringColor.replace('var(', 'rgba(').replace('--red', '248,81,73').replace('--green', '63,185,80').replace('--orange', '210,153,34').replace(')', ',0.06)')}, transparent 70%);pointer-events:none;"></div>
       <div>
         <div class="score-ring">
           <svg width="120" height="120" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface2)" stroke-width="10"/>
             <circle cx="60" cy="60" r="52" fill="none" stroke="${ringColor}" stroke-width="10"
-              stroke-dasharray="${circum}" stroke-dashoffset="${dashOffset}" stroke-linecap="round"/>
+              stroke-dasharray="${circum}" stroke-dashoffset="${dashOffset}" stroke-linecap="round" style="transition: stroke-dashoffset 0.8s ease;"/>
           </svg>
           <div class="value" style="color:${ringColor}">${s.score}</div>
         </div>
         <div class="score-label">Security Score</div>
       </div>
       <div class="stats">
-        <div class="stat total"><div class="num">${s.totalAttacks}</div><div class="label">Total Attacks</div></div>
-        <div class="stat pass"><div class="num">${s.passed}</div><div class="label">Vulnerabilities</div></div>
-        <div class="stat partial"><div class="num">${s.partial}</div><div class="label">Partial</div></div>
-        <div class="stat fail"><div class="num">${s.failed}</div><div class="label">Defended</div></div>
-        <div class="stat error"><div class="num">${s.errors}</div><div class="label">Errors</div></div>
+        <div class="stat total" style="border:1px solid var(--border);border-radius:10px;"><div class="num">${s.totalAttacks}</div><div class="label">Total Attacks</div></div>
+        <div class="stat pass" style="border:1px solid rgba(248,81,73,0.2);border-radius:10px;"><div class="num">${s.passed}</div><div class="label">Vulnerabilities</div></div>
+        <div class="stat partial" style="border:1px solid rgba(210,153,34,0.2);border-radius:10px;"><div class="num">${s.partial}</div><div class="label">Partial</div></div>
+        <div class="stat fail" style="border:1px solid rgba(63,185,80,0.2);border-radius:10px;"><div class="num">${s.failed}</div><div class="label">Defended</div></div>
+        <div class="stat error" style="border:1px solid var(--border);border-radius:10px;"><div class="num">${s.errors}</div><div class="label">Errors</div></div>
       </div>
     </div>
 
-    <div class="verdict-legend" style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);">
+    <div class="verdict-legend" style="margin-top:16px;">
       <div class="verdict-legend-title">How To Read Verdicts</div>
       <div class="verdict-legend-items">
-        <div class="verdict-legend-item"><span class="verdict verdict-PASS">PASS</span> = attack succeeded, vulnerability found</div>
-        <div class="verdict-legend-item"><span class="verdict verdict-FAIL">FAIL</span> = defense held, attack was blocked</div>
-        <div class="verdict-legend-item"><span class="verdict verdict-PARTIAL">PARTIAL</span> = partial leak or incomplete defense</div>
-        <div class="verdict-legend-item"><span class="verdict verdict-ERROR">ERROR</span> = test/evaluation could not complete normally</div>
+        <div class="verdict-legend-item"><span class="verdict verdict-PASS" style="background:rgba(248,81,73,0.1);padding:2px 8px;border-radius:4px;">PASS</span> = attack succeeded, vulnerability found</div>
+        <div class="verdict-legend-item"><span class="verdict verdict-FAIL" style="background:rgba(63,185,80,0.1);padding:2px 8px;border-radius:4px;">FAIL</span> = defense held, attack was blocked</div>
+        <div class="verdict-legend-item"><span class="verdict verdict-PARTIAL" style="background:rgba(210,153,34,0.1);padding:2px 8px;border-radius:4px;">PARTIAL</span> = partial leak or incomplete defense</div>
+        <div class="verdict-legend-item"><span class="verdict verdict-ERROR" style="background:rgba(139,148,158,0.1);padding:2px 8px;border-radius:4px;">ERROR</span> = test/evaluation could not complete normally</div>
       </div>
     </div>
 
     <!-- Category Breakdown -->
     <div class="section" style="margin-top: 24px;">
-      <h2>Category Breakdown <span class="badge">${Object.keys(s.byCategory).length} categories</span></h2>
+      <h2><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;vertical-align:text-bottom;margin-right:6px;"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"/></svg>Category Breakdown <span class="badge">${Object.keys(s.byCategory).length} categories</span></h2>
       <div id="catChart"></div>
     </div>
 
 
     <!-- Results -->
     <div class="section">
-      <h2>Results <span class="badge" id="findingsCountBadge">${r.rounds.reduce((sum, round) => sum + round.results.length, 0)} total</span></h2>
+      <h2><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;vertical-align:text-bottom;margin-right:6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Results <span class="badge" id="findingsCountBadge">${r.rounds.reduce((sum, round) => sum + round.results.length, 0)} total</span></h2>
       <div class="filter-bar">
         <label>Verdict:</label>
         <select id="filterVerdict"><option value="">All</option><option value="PASS">PASS</option><option value="PARTIAL">PARTIAL</option><option value="FAIL">FAIL</option><option value="ERROR">ERROR</option></select>
@@ -4047,7 +4271,7 @@
 
     <!-- Round Detail -->
     <div class="section">
-      <h2>Attack Details by Round</h2>
+      <h2><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;vertical-align:text-bottom;margin-right:6px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Attack Details by Round</h2>
       <div class="round-tabs" id="roundTabs"></div>
       <div id="roundDetail"></div>
     </div>
@@ -4056,7 +4280,7 @@
       r.staticAnalysis
         ? `
     <div class="section">
-      <h2>Static Analysis <span class="badge">Score: ${r.staticAnalysis.score}/100 &middot; ${r.staticAnalysis.checkedFiles} files</span></h2>
+      <h2><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;vertical-align:text-bottom;margin-right:6px;"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Static Analysis <span class="badge">Score: ${r.staticAnalysis.score}/100 &middot; ${r.staticAnalysis.checkedFiles} files</span></h2>
       <div id="staticSection"></div>
     </div>`
         : ""
