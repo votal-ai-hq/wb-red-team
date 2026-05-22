@@ -3109,19 +3109,19 @@
         );
 
         let html = '<div style="max-width:100%;">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
-          '<h2 style="font-size:20px;font-weight:700;">Runs</h2>' +
-          '<button onclick="switchTab(\'reports\');document.getElementById(\'newRunPanel\').style.display=\'block\';" style="background:var(--green);color:#000;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;">+ New Run</button>' +
+          '<div class="u-flex u-items-center u-mb-2" style="justify-content:space-between;">' +
+          '<h2 class="u-text-3xl u-font-bold">Runs</h2>' +
+          '<button class="c-btn c-btn-success" onclick="switchTab(\'reports\');document.getElementById(\'newRunPanel\').style.display=\'block\';">+ New Run</button>' +
           '</div>' +
-          '<div style="font-size:12px;color:var(--text2);margin-bottom:20px;">Shows active, queued, and recently completed runs from the current session. Completed reports are available in the Reports tab.</div>';
+          '<div class="u-text-base u-text-muted u-mb-5">Shows active, queued, and recently completed runs from the current session. Completed reports are available in the Reports tab.</div>';
 
         if (allRuns.length === 0) {
-          html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:40px;text-align:center;">' +
-            '<div style="color:var(--text2);margin-bottom:8px;">No active runs</div>' +
-            '<div style="font-size:12px;color:var(--text2);">Click "+ New Run" to start a red-team security scan, or trigger one via the API.</div>' +
+          html += '<div class="c-card c-empty">' +
+            '<div class="u-text-muted u-mb-2">No active runs</div>' +
+            '<div class="u-text-base u-text-muted">Click "+ New Run" to start a red-team security scan, or trigger one via the API.</div>' +
             '</div>';
         } else {
-          html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+          html += '<div class="u-flex-col u-gap-3">';
           for (const [runId, data] of allRuns) {
             const statusColors = { queued:"var(--text2)", running:"var(--accent)", done:"var(--green)", error:"var(--red)", cancelled:"var(--orange)" };
             const statusColor = statusColors[data.status] || "var(--text2)";
@@ -3133,22 +3133,22 @@
 
             const isSelected = selectedRunId === runId;
 
-            html += '<div style="background:var(--surface);border:1px solid ' + (isSelected ? 'var(--accent)' : 'var(--border)') + ';border-radius:10px;overflow:hidden;">' +
+            html += '<div class="c-card-flush" style="border-color:' + (isSelected ? 'var(--accent)' : 'var(--border)') + ';">' +
 
               // Header (clickable)
-              '<div style="padding:16px;cursor:pointer;" onclick="toggleRunDetail(\'' + runId + '\')">' +
-              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
-              '<div style="display:flex;align-items:center;gap:10px;">' +
-              '<span style="color:' + statusColor + ';font-weight:600;font-size:12px;text-transform:uppercase;">' + data.status + '</span>' +
-              '<span style="font-size:12px;color:var(--text2);">' + esc(time) + '</span>' +
+              '<div class="u-p-4 u-cursor-pointer" onclick="toggleRunDetail(\'' + runId + '\')">' +
+              '<div class="u-flex u-items-center u-mb-2" style="justify-content:space-between;">' +
+              '<div class="u-flex u-items-center u-gap-3">' +
+              '<span class="u-font-semibold u-text-base u-uppercase" style="color:' + statusColor + ';">' + data.status + '</span>' +
+              '<span class="u-text-base u-text-muted">' + esc(time) + '</span>' +
               '</div>' +
-              '<div style="display:flex;align-items:center;gap:8px;">' +
-              '<span style="font-size:11px;color:var(--text2);">' + runId.slice(0, 8) + '</span>' +
+              '<div class="u-flex u-items-center u-gap-2">' +
+              '<span class="u-text-sm u-text-muted">' + runId.slice(0, 8) + '</span>' +
               ((data.status === "running" || data.status === "queued") ?
-                '<button onclick="event.stopPropagation();cancelRun(\'' + runId + '\')" style="background:none;border:1px solid var(--red);color:var(--red);border-radius:4px;padding:3px 10px;font-size:11px;cursor:pointer;">Cancel</button>' : '') +
+                '<button class="c-btn c-btn-danger c-btn-xs" onclick="event.stopPropagation();cancelRun(\'' + runId + '\')">Cancel</button>' : '') +
               '</div>' +
               '</div>' +
-              '<div style="font-size:13px;margin-bottom:4px;">' + esc(targetUrl) + '</div>';
+              '<div class="u-text-md u-mb-1">' + esc(targetUrl) + '</div>';
 
             // Progress bar for running jobs
             if (data.status === "running" || data.status === "queued") {
@@ -3164,36 +3164,36 @@
               var pct = Math.min(Math.round((totalResults / estimatedTotal) * 100), data.status === "done" ? 100 : 95);
               if (data.status === "queued") pct = 0;
 
-              html += '<div style="margin-top:8px;">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
-                '<div style="font-size:11px;color:var(--text2);">' +
+              html += '<div class="u-mt-2">' +
+                '<div class="u-flex u-items-center u-mb-1" style="justify-content:space-between;">' +
+                '<div class="u-text-sm u-text-muted">' +
                 (totalResults > 0 ? totalResults + ' / ~' + estimatedTotal + ' attacks (' + pct + '%)' : 'Starting...') +
                 '</div>' +
-                '<div style="font-size:11px;display:flex;gap:10px;">' +
-                (passes > 0 ? '<span style="color:var(--red);font-weight:600;">' + passes + ' vulns</span>' : '') +
-                (fails > 0 ? '<span style="color:var(--green);">' + fails + ' blocked</span>' : '') +
-                (partials > 0 ? '<span style="color:var(--orange);">' + partials + ' partial</span>' : '') +
+                '<div class="u-text-sm u-flex u-gap-3">' +
+                (passes > 0 ? '<span class="u-text-red u-font-semibold">' + passes + ' vulns</span>' : '') +
+                (fails > 0 ? '<span class="u-text-green">' + fails + ' blocked</span>' : '') +
+                (partials > 0 ? '<span class="u-text-orange">' + partials + ' partial</span>' : '') +
                 '</div>' +
                 '</div>' +
-                '<div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;display:flex;">' +
-                (passes > 0 && totalResults > 0 ? '<div style="width:' + (passes/totalResults*100) + '%;background:var(--red);transition:width 0.5s;"></div>' : '') +
-                (partials > 0 && totalResults > 0 ? '<div style="width:' + (partials/totalResults*100) + '%;background:var(--orange);transition:width 0.5s;"></div>' : '') +
-                (fails > 0 && totalResults > 0 ? '<div style="width:' + (fails/totalResults*100) + '%;background:var(--green);transition:width 0.5s;"></div>' : '') +
-                (errors > 0 && totalResults > 0 ? '<div style="width:' + (errors/totalResults*100) + '%;background:var(--text2);opacity:0.3;transition:width 0.5s;"></div>' : '') +
-                '<div style="flex:1;background:var(--surface2);"></div>' +
+                '<div class="c-progress">' +
+                (passes > 0 && totalResults > 0 ? '<div class="c-progress-seg" style="width:' + (passes/totalResults*100) + '%;background:var(--red);"></div>' : '') +
+                (partials > 0 && totalResults > 0 ? '<div class="c-progress-seg" style="width:' + (partials/totalResults*100) + '%;background:var(--orange);"></div>' : '') +
+                (fails > 0 && totalResults > 0 ? '<div class="c-progress-seg" style="width:' + (fails/totalResults*100) + '%;background:var(--green);"></div>' : '') +
+                (errors > 0 && totalResults > 0 ? '<div class="c-progress-seg" style="width:' + (errors/totalResults*100) + '%;background:var(--text2);opacity:0.3;"></div>' : '') +
+                '<div style="flex:1;"></div>' +
                 '</div>' +
                 '</div>';
             }
 
             if (summary) {
-              html += '<div style="font-size:12px;color:var(--text2);margin-top:6px;">' +
-                'Score: <span style="color:' + scoreColor(summary.score) + ';font-weight:600;">' + summary.score + '</span> &middot; ' +
+              html += '<div class="u-text-base u-text-muted u-mt-2">' +
+                'Score: <span style="color:' + scoreColor(summary.score) + ';" class="u-font-semibold">' + summary.score + '</span> &middot; ' +
                 summary.totalAttacks + ' attacks &middot; ' +
-                '<span style="color:var(--red);">' + summary.passed + ' vulns</span> &middot; ' +
-                '<span style="color:var(--green);">' + summary.failed + ' blocked</span>' +
+                '<span class="u-text-red">' + summary.passed + ' vulns</span> &middot; ' +
+                '<span class="u-text-green">' + summary.failed + ' blocked</span>' +
                 '</div>';
             } else if (progressText) {
-              html += '<div style="font-size:11px;color:var(--text2);font-family:monospace;">' + esc(progressText) + '</div>';
+              html += '<div class="u-text-sm u-text-muted u-mono">' + esc(progressText) + '</div>';
             }
 
             html += '</div>'; // close header
@@ -3251,7 +3251,7 @@
 
         // Stats row
         if (totalAttacks > 0) {
-          html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">' +
+          html += '<div class="u-grid-4 u-gap-3 u-mb-4">' +
             buildStatCard(liveScore, "Score (live)", scoreColor(liveScore)) +
             buildStatCard(totalAttacks, "Attacks", "var(--text)") +
             buildStatCard(passed, "Vulns", "var(--red)") +
@@ -3261,8 +3261,8 @@
 
         // Category bars
         if (catEntries.length > 0) {
-          html += '<div style="margin-bottom:16px;">' +
-            '<div style="font-size:13px;font-weight:600;margin-bottom:10px;">Category Breakdown</div>';
+          html += '<div class="u-mb-4">' +
+            '<div class="u-text-md u-font-semibold u-mb-3">Category Breakdown</div>';
           for (const [cat, v] of catEntries) {
             const catLabel = cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
             const barW = (v.total / maxCatTotal) * 100;
@@ -3270,15 +3270,15 @@
             const failW = v.total > 0 ? (v.fail / v.total) * barW : 0;
             const partialW = v.total > 0 ? (v.partial / v.total) * barW : 0;
             const errorW = v.total > 0 ? (v.error / v.total) * barW : 0;
-            html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">' +
-              '<div style="width:140px;text-align:right;font-size:11px;color:var(--text2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(catLabel) + '</div>' +
-              '<div style="flex:1;height:12px;background:var(--surface2);border-radius:3px;overflow:hidden;display:flex;">' +
-              (passW > 0 ? '<div style="width:' + passW + '%;background:var(--red);"></div>' : '') +
-              (partialW > 0 ? '<div style="width:' + partialW + '%;background:var(--orange);"></div>' : '') +
-              (failW > 0 ? '<div style="width:' + failW + '%;background:var(--green);"></div>' : '') +
-              (errorW > 0 ? '<div style="width:' + errorW + '%;background:var(--text2);opacity:0.4;"></div>' : '') +
+            html += '<div class="u-flex u-items-center u-gap-2 u-mb-1">' +
+              '<div class="u-text-sm u-text-muted u-flex-shrink-0 u-truncate u-text-right" style="width:140px;">' + esc(catLabel) + '</div>' +
+              '<div class="c-progress u-flex-1" style="height:12px;">' +
+              (passW > 0 ? '<div class="c-progress-seg" style="width:' + passW + '%;background:var(--red);"></div>' : '') +
+              (partialW > 0 ? '<div class="c-progress-seg" style="width:' + partialW + '%;background:var(--orange);"></div>' : '') +
+              (failW > 0 ? '<div class="c-progress-seg" style="width:' + failW + '%;background:var(--green);"></div>' : '') +
+              (errorW > 0 ? '<div class="c-progress-seg" style="width:' + errorW + '%;background:var(--text2);opacity:0.4;"></div>' : '') +
               '</div>' +
-              '<div style="width:30px;font-size:11px;color:var(--text2);text-align:right;">' + v.pass + '/' + v.total + '</div>' +
+              '<div class="u-text-sm u-text-muted u-text-right" style="width:30px;">' + v.pass + '/' + v.total + '</div>' +
               '</div>';
           }
           html += '</div>';
