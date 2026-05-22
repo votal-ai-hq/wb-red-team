@@ -699,7 +699,8 @@ ${responseBody.slice(0, 10000)}`;
   const supportsJsonMode =
     judgeProviderName !== "custom" &&
     judgeProviderName !== "together" &&
-    judgeProviderName !== "nim";
+    judgeProviderName !== "nim" &&
+    judgeProviderName !== "huggingface";
 
   let text: string | null = null;
   if (supportsJsonMode) {

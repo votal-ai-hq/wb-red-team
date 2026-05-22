@@ -88,7 +88,8 @@ ${result.llmReasoning ? `\nJUDGE REASONING:\n${result.llmReasoning}` : ""}`;
     const useJsonMode =
       judgeProviderName !== "custom" &&
       judgeProviderName !== "together" &&
-      judgeProviderName !== "nim";
+      judgeProviderName !== "nim" &&
+      judgeProviderName !== "huggingface";
     const llm = getJudgeProvider(config);
     const text = await llm.chat({
       model: judgeModel,

@@ -454,7 +454,8 @@ Be aggressive — extract EVERY piece of useful information, even if implied or 
     const useJsonMode =
       providerName !== "custom" &&
       providerName !== "together" &&
-      providerName !== "nim";
+      providerName !== "nim" &&
+      providerName !== "huggingface";
     const text = await llm.chat({
       model,
       messages: [

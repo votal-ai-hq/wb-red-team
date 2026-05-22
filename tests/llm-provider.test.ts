@@ -259,6 +259,167 @@ describe("nim provider", () => {
   });
 });
 
+describe("huggingface provider", () => {
+  const originalHfToken = process.env.HF_TOKEN;
+  const originalHfApiKey = process.env.HUGGINGFACE_API_KEY;
+  const originalHfBaseUrl = process.env.HF_BASE_URL;
+
+  beforeEach(() => {
+    createMock.mockReset();
+    createMock.mockResolvedValue({
+      choices: [{ message: { content: "ok" } }],
+    });
+    openAIConstructorMock.mockReset();
+    delete process.env.HF_TOKEN;
+    delete process.env.HUGGINGFACE_API_KEY;
+    delete process.env.HF_BASE_URL;
+    // Provider factory caches per-name/guardrails; clear ESM cache so each
+    // test gets a fresh HuggingFaceProvider that re-reads env vars.
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    if (originalHfToken !== undefined) process.env.HF_TOKEN = originalHfToken;
+    else delete process.env.HF_TOKEN;
+    if (originalHfApiKey !== undefined)
+      process.env.HUGGINGFACE_API_KEY = originalHfApiKey;
+    else delete process.env.HUGGINGFACE_API_KEY;
+    if (originalHfBaseUrl !== undefined)
+      process.env.HF_BASE_URL = originalHfBaseUrl;
+    else delete process.env.HF_BASE_URL;
+  });
+
+  it("defaults to the HuggingFace router base URL and passes model names through", async () => {
+    process.env.HF_TOKEN = "hf-test";
+    const { getLlmProvider } = await import("../lib/llm-provider.js");
+
+    const config = makeConfig();
+    config.attackConfig.llmProvider = "huggingface";
+    config.attackConfig.llmModel = "meta-llama/Llama-3.3-70B-Instruct:nvidia";
+
+    await getLlmProvider(config).chat({
+      model: config.attackConfig.llmModel,
+      messages: [{ role: "user", content: "hi" }],
+    });
+
+    expect(openAIConstructorMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseURL: "https://router.huggingface.co/v1",
+        apiKey: "hf-test",
+      }),
+    );
+    expect(createMock.mock.calls[0]?.[0]).toMatchObject({
+      model: "meta-llama/Llama-3.3-70B-Instruct:nvidia",
+    });
+  });
+
+  it("accepts HUGGINGFACE_API_KEY as a fallback for HF_TOKEN", async () => {
+    process.env.HUGGINGFACE_API_KEY = "hf-fallback";
+    const { getLlmProvider } = await import("../lib/llm-provider.js");
+
+    const config = makeConfig();
+    config.attackConfig.llmProvider = "huggingface";
+    config.attackConfig.llmModel = "any/model";
+
+    await getLlmProvider(config).chat({
+      model: config.attackConfig.llmModel,
+      messages: [{ role: "user", content: "hi" }],
+    });
+
+    expect(openAIConstructorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ apiKey: "hf-fallback" }),
+    );
+  });
+
+  it("prefers HF_TOKEN over HUGGINGFACE_API_KEY when both are set", async () => {
+    process.env.HF_TOKEN = "primary";
+    process.env.HUGGINGFACE_API_KEY = "fallback";
+    const { getLlmProvider } = await import("../lib/llm-provider.js");
+
+    const config = makeConfig();
+    config.attackConfig.llmProvider = "huggingface";
+    config.attackConfig.llmModel = "any/model";
+
+    await getLlmProvider(config).chat({
+      model: config.attackConfig.llmModel,
+      messages: [{ role: "user", content: "hi" }],
+    });
+
+    expect(openAIConstructorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ apiKey: "primary" }),
+    );
+  });
+
+  it("honors HF_BASE_URL override for dedicated Inference Endpoints", async () => {
+    process.env.HF_TOKEN = "hf-test";
+    process.env.HF_BASE_URL =
+      "https://abc123.us-east-1.aws.endpoints.huggingface.cloud/v1";
+    const { getLlmProvider } = await import("../lib/llm-provider.js");
+
+    const config = makeConfig();
+    config.attackConfig.llmProvider = "huggingface";
+    config.attackConfig.llmModel = "tgi";
+
+    await getLlmProvider(config).chat({
+      model: config.attackConfig.llmModel,
+      messages: [{ role: "user", content: "hi" }],
+    });
+
+    expect(openAIConstructorMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseURL:
+          "https://abc123.us-east-1.aws.endpoints.huggingface.cloud/v1",
+      }),
+    );
+  });
+
+  it("allows HF_BASE_URL without a token (unauthenticated dedicated endpoint)", async () => {
+    process.env.HF_BASE_URL = "http://localhost:8080/v1";
+    const { getLlmProvider } = await import("../lib/llm-provider.js");
+
+    const config = makeConfig();
+    config.attackConfig.llmProvider = "huggingface";
+    config.attackConfig.llmModel = "any/model";
+
+    expect(() => getLlmProvider(config)).not.toThrow();
+  });
+
+  it("throws a clear error when no token and no HF_BASE_URL are set", async () => {
+    const { getLlmProvider } = await import("../lib/llm-provider.js");
+
+    const config = makeConfig();
+    config.attackConfig.llmProvider = "huggingface";
+    config.attackConfig.llmModel = "meta-llama/Llama-3.3-70B-Instruct:nvidia";
+
+    expect(() => getLlmProvider(config)).toThrow(/HF_TOKEN/);
+  });
+
+  it("routes judge calls through huggingface when judgeProvider is set", async () => {
+    process.env.HF_TOKEN = "hf-test";
+    const { getJudgeProvider } = await import("../lib/llm-provider.js");
+
+    const config = makeConfig();
+    config.attackConfig.llmProvider = "openai";
+    config.attackConfig.judgeProvider = "huggingface";
+    config.attackConfig.judgeModel =
+      "nvidia/nemotron-content-safety-reasoning-4b:nvidia";
+
+    await getJudgeProvider(config).chat({
+      model: config.attackConfig.judgeModel,
+      messages: [{ role: "user", content: "judge this" }],
+    });
+
+    expect(openAIConstructorMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseURL: "https://router.huggingface.co/v1",
+      }),
+    );
+    expect(createMock.mock.calls[0]?.[0]).toMatchObject({
+      model: "nvidia/nemotron-content-safety-reasoning-4b:nvidia",
+    });
+  });
+});
+
 describe("formatErrorDetails HTML sanitization", () => {
   it("reduces nginx-style HTML error pages to the <title> text", async () => {
     const { formatErrorDetails } = await import("../lib/error-utils.js");
