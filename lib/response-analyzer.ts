@@ -696,7 +696,10 @@ ${responseBody.slice(0, 10000)}`;
 
   // Use JSON mode for providers that support it, skip for custom/internal gateways
   const judgeProviderName = config.attackConfig.judgeProvider ?? config.attackConfig.llmProvider;
-  const supportsJsonMode = judgeProviderName !== "custom" && judgeProviderName !== "together";
+  const supportsJsonMode =
+    judgeProviderName !== "custom" &&
+    judgeProviderName !== "together" &&
+    judgeProviderName !== "nim";
 
   let text: string | null = null;
   if (supportsJsonMode) {
