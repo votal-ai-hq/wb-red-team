@@ -1,0 +1,34 @@
+{
+  "target": {
+    "type": "http_agent",
+    "baseUrl": "http://localhost:8000",
+    "agentEndpoint": "/invoke",
+    "applicationDetails": "LangChain / LangServe agent exposed via the standard `/invoke` route. Replace baseUrl and applicationDetails with your own. Add `/stream` instead of `/invoke` if your runnable is streaming-only.",
+    "customApiTemplate": {
+      "method": "POST",
+      "headers": { "Content-Type": "application/json" },
+      "bodyTemplate": "{\"input\": {\"input\": \"{{message}}\"}}",
+      "responsePath": "output"
+    }
+  },
+  "codebasePath": "../my-langchain-app",
+  "codebaseGlob": "**/*.{py,ts,js}",
+  "policyFile": "policies/strict.json",
+  "auth": { "methods": ["none"], "apiKeys": {} },
+  "requestSchema": { "messageField": "input" },
+  "responseSchema": { "responsePath": "output" },
+  "attackConfig": {
+    "adaptiveRounds": 1,
+    "maxAttacksPerCategory": 3,
+    "concurrency": 2,
+    "enableLlmGeneration": true,
+    "enabledCategories": [
+      "prompt_injection",
+      "indirect_prompt_injection",
+      "tool_misuse",
+      "tool_chain_hijack",
+      "rag_poisoning",
+      "data_exfiltration"
+    ]
+  }
+}

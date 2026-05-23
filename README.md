@@ -45,6 +45,19 @@ Use it if you are building:
 
 ---
 
+## Integrations
+
+Copy-paste configs for the agent frameworks people actually use:
+
+- [LangChain / LangServe](docs/integrations/langchain.md)
+- [LlamaIndex (RAG)](docs/integrations/llamaindex.md)
+- [Vercel AI SDK (Next.js)](docs/integrations/vercel-ai-sdk.md)
+- [OpenAI Agents SDK](docs/integrations/openai-agents-sdk.md)
+
+See the full [integrations index](docs/integrations/index.md) for the shared pattern (only three config fields define an integration).
+
+---
+
 ## Try it in 2 minutes
 
 ```bash
