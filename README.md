@@ -27,7 +27,21 @@ Use it if you are building:
 
 ⭐ Star this repo if you want practical agent security tests that go beyond prompt-injection lists.
 
-<!-- TODO: add 10-second demo GIF/screenshot here (dashboard run against demo-agentic-app) -->
+<!-- TODO: add 10-second demo GIF here -->
+
+### Dashboard preview
+
+| Reports — per-run security score and category breakdown |
+|---|
+| ![Reports dashboard showing 74/100 score, 544 attacks, 119 vulnerabilities, and category breakdown](assets/reports-dashboard.png) |
+
+| Guardrails — measure block rate of bad prompts and preservation of good ones |
+|---|
+| ![Guardrails report for moonshotai/kimi-k2.5: 9/10 bad prompts blocked, 1/1 good prompts preserved](assets/guardrails-report.png) |
+
+| Compliance — OWASP LLM Top 10 (2025) and other framework mappings |
+|---|
+| ![Compliance view mapping findings to OWASP LLM Top 10 2025 controls](assets/compliance-owasp.png) |
 
 ---
 
