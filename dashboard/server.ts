@@ -264,6 +264,58 @@ const jobs = new Map<string, Job>();
 let activeRuns = 0;
 const MAX_CONCURRENT = parseInt(process.env.MAX_CONCURRENT_RUNS || "100", 10);
 
+// ── Run config persistence (file-based fallback when no DB) ──
+const RUN_CONFIGS_PATH = join(
+  import.meta.dirname ?? ".",
+  "..",
+  "report",
+  "run-configs.json",
+);
+
+function saveRunConfig(runId: string, config: Config): void {
+  try {
+    const dir = join(RUN_CONFIGS_PATH, "..");
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    let store: Record<string, unknown> = {};
+    if (existsSync(RUN_CONFIGS_PATH)) {
+      try { store = JSON.parse(readFileSync(RUN_CONFIGS_PATH, "utf-8")); } catch {}
+    }
+    store[runId] = config;
+    writeFileSync(RUN_CONFIGS_PATH, JSON.stringify(store, null, 2));
+  } catch (err) {
+    console.error("Failed to save run config to file:", err);
+  }
+}
+
+async function loadRunConfig(runId: string, tenantId?: string): Promise<Config | null> {
+  // Try in-memory first
+  const job = jobs.get(runId);
+  if (job) return job.config;
+
+  // Try DB
+  if (isDbConfigured() && tenantId) {
+    try {
+      const result = await query(
+        `SELECT config FROM runs WHERE id = $1 AND tenant_id = $2 LIMIT 1`,
+        [runId, tenantId],
+      );
+      if (result.rows.length > 0) {
+        return result.rows[0].config as Config;
+      }
+    } catch {}
+  }
+
+  // Try file-based store
+  try {
+    if (existsSync(RUN_CONFIGS_PATH)) {
+      const store = JSON.parse(readFileSync(RUN_CONFIGS_PATH, "utf-8"));
+      if (store[runId]) return store[runId] as Config;
+    }
+  } catch {}
+
+  return null;
+}
+
 /** Clone a git repo into a temp dir for white-box analysis. Returns the temp path. */
 function cloneCodebaseRepo(config: Config, jobId: string): string | null {
   if (!config.codebaseRepo || config.codebasePath) return null;
@@ -561,6 +613,9 @@ function enqueueJob(config: Config, ctx?: RequestContext | null): Job {
         job.startedAt,
       ],
     ).catch((err: unknown) => console.error("Failed to persist run:", err));
+  } else {
+    // No DB — persist config to local file for rerun support
+    saveRunConfig(job.id, config);
   }
 
   if (activeRuns < MAX_CONCURRENT) {
@@ -710,31 +765,52 @@ const server = createServer(
       }
 
       const job = jobs.get(id);
-      if (!job) {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Run not found" }));
-        return;
-      }
 
       // Return progress since a given offset (for polling)
       const since = parseInt(url.searchParams.get("since") || "0", 10);
 
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify({
-          runId: job.id,
-          status: job.status,
-          startedAt: job.startedAt,
-          finishedAt: job.finishedAt,
-          targetUrl: job.config.target.baseUrl,
-          error: job.error,
-          progressTotal: job.progress.length,
-          progress: job.progress.slice(since),
-          reportFile: job.reportFile,
-          summary: job.report?.summary,
-          estimatedTotal: job.estimatedTotal,
-        }),
-      );
+      // Include config when explicitly requested (for rerun/edit)
+      const includeConfig = url.searchParams.get("includeConfig") === "1";
+
+      if (job) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            runId: job.id,
+            status: job.status,
+            startedAt: job.startedAt,
+            finishedAt: job.finishedAt,
+            targetUrl: job.config.target.baseUrl,
+            error: job.error,
+            progressTotal: job.progress.length,
+            progress: job.progress.slice(since),
+            reportFile: job.reportFile,
+            summary: job.report?.summary,
+            estimatedTotal: job.estimatedTotal,
+            ...(includeConfig ? { config: job.config } : {}),
+          }),
+        );
+        return;
+      }
+
+      // Job not in memory — try to load config from DB or file (for rerun)
+      if (includeConfig) {
+        const savedConfig = await loadRunConfig(id, ctx?.tenantId);
+        if (savedConfig) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              runId: id,
+              status: "done",
+              config: savedConfig,
+            }),
+          );
+          return;
+        }
+      }
+
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Run not found" }));
       return;
     }
 
@@ -774,24 +850,59 @@ const server = createServer(
       return;
     }
 
-    // GET /api/runs — list all runs
+    // GET /api/runs — list all runs (in-memory + DB historical)
     if (url.pathname === "/api/runs" && req.method === "GET") {
+      const inMemoryIds = new Set<string>();
       const runs = [...jobs.values()]
         .sort(
           (a, b) =>
             new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
         )
-        .map((j) => ({
-          runId: j.id,
-          status: j.status,
-          startedAt: j.startedAt,
-          finishedAt: j.finishedAt,
-          targetUrl: j.config.target.baseUrl,
-          error: j.error,
-          progressCount: j.progress.length,
-          reportFile: j.reportFile,
-          summary: j.report?.summary,
-        }));
+        .map((j) => {
+          inMemoryIds.add(j.id);
+          return {
+            runId: j.id,
+            status: j.status,
+            startedAt: j.startedAt,
+            finishedAt: j.finishedAt,
+            targetUrl: j.config.target.baseUrl,
+            error: j.error,
+            progressCount: j.progress.length,
+            reportFile: j.reportFile,
+            summary: j.report?.summary,
+          };
+        });
+
+      // Merge historical runs from DB (not already in memory)
+      if (isDbConfigured() && ctx?.tenantId) {
+        try {
+          const dbRuns = await query(
+            `SELECT id, status, target_url, started_at, finished_at, error
+             FROM runs WHERE tenant_id = $1 ORDER BY started_at DESC LIMIT 100`,
+            [ctx.tenantId],
+          );
+          for (const row of dbRuns.rows) {
+            if (!inMemoryIds.has(row.id)) {
+              runs.push({
+                runId: row.id,
+                status: row.status,
+                startedAt: row.started_at,
+                finishedAt: row.finished_at,
+                targetUrl: row.target_url,
+                error: row.error,
+                progressCount: 0,
+                reportFile: undefined,
+                summary: undefined,
+              });
+            }
+          }
+        } catch {}
+      }
+
+      // Sort combined list by date
+      runs.sort((a, b) =>
+        new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+      );
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(runs));
