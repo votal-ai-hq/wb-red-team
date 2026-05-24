@@ -5159,6 +5159,8 @@
         );
       }
 
+      var runsSearchTerm = "";
+
       async function renderRunsTab() {
         const panel = document.getElementById("runsPanel");
 
@@ -5175,25 +5177,55 @@
           }
         } catch {}
 
-        const allRuns = [...runDataCache.entries()].sort(
-          (a, b) =>
-            new Date(b[1].startedAt).getTime() -
-            new Date(a[1].startedAt).getTime(),
-        );
+        // Filter out runs with invalid/missing dates, then sort newest first
+        const allRuns = [...runDataCache.entries()]
+          .filter(function(entry) {
+            var d = entry[1];
+            // Must have a valid startedAt date and a known status
+            if (!d.startedAt) return false;
+            var ts = new Date(d.startedAt).getTime();
+            if (isNaN(ts)) return false;
+            if (!d.status) return false;
+            return true;
+          })
+          .filter(function(entry) {
+            // Search filter
+            if (!runsSearchTerm) return true;
+            var d = entry[1];
+            var searchLower = runsSearchTerm.toLowerCase();
+            var target = (d.targetUrl || "").toLowerCase();
+            var status = (d.status || "").toLowerCase();
+            var id = entry[0].toLowerCase();
+            var error = (d.error || "").toLowerCase();
+            return target.indexOf(searchLower) !== -1 ||
+                   status.indexOf(searchLower) !== -1 ||
+                   id.indexOf(searchLower) !== -1 ||
+                   error.indexOf(searchLower) !== -1;
+          })
+          .sort(
+            (a, b) =>
+              new Date(b[1].startedAt).getTime() -
+              new Date(a[1].startedAt).getTime(),
+          );
 
         let html =
           '<div style="max-width:100%;">' +
-          '<div class="u-flex u-items-center u-mb-2" style="justify-content:space-between;">' +
+          '<div class="u-flex u-items-center u-mb-4" style="justify-content:space-between;">' +
           '<h2 class="u-text-3xl u-font-bold">Runs</h2>' +
           "<button class=\"c-btn c-btn-success\" onclick=\"switchTab('reports');document.getElementById('newRunPanel').style.display='block';\">+ New Run</button>" +
           "</div>" +
-          '<div class="u-text-base u-text-muted u-mb-5">Shows active, queued, and recently completed runs from the current session. Completed reports are available in the Reports tab.</div>';
+          '<div class="u-flex u-items-center u-gap-3 u-mb-5">' +
+          '<input type="text" class="c-input" placeholder="Search by target, status, or run ID..." ' +
+          'style="flex:1;max-width:400px;" value="' + esc(runsSearchTerm) + '" ' +
+          'oninput="runsSearchTerm=this.value;clearTimeout(window._runsSearchTimer);window._runsSearchTimer=setTimeout(renderRunsTab,300);" />' +
+          '<span class="u-text-sm u-text-muted">' + allRuns.length + ' run' + (allRuns.length !== 1 ? 's' : '') + '</span>' +
+          "</div>";
 
         if (allRuns.length === 0) {
           html +=
             '<div class="c-card c-empty">' +
-            '<div class="u-text-muted u-mb-2">No active runs</div>' +
-            '<div class="u-text-base u-text-muted">Click "+ New Run" to start a red-team security scan, or trigger one via the API.</div>' +
+            '<div class="u-text-muted u-mb-2">' + (runsSearchTerm ? 'No runs matching "' + esc(runsSearchTerm) + '"' : 'No active runs') + '</div>' +
+            '<div class="u-text-base u-text-muted">' + (runsSearchTerm ? 'Try a different search term.' : 'Click "+ New Run" to start a red-team security scan, or trigger one via the API.') + '</div>' +
             "</div>";
         } else {
           html += '<div class="u-flex-col u-gap-3">';
@@ -5236,7 +5268,7 @@
               '<span class="u-font-semibold u-text-base u-uppercase" style="color:' +
               statusColor +
               ';">' +
-              data.status +
+              (data.status || "unknown").charAt(0).toUpperCase() + (data.status || "unknown").slice(1) +
               "</span>" +
               '<span class="u-text-base u-text-muted">' +
               esc(time) +
@@ -5385,6 +5417,15 @@
 
         html += "</div>";
         panel.innerHTML = html;
+
+        // Restore search input focus if user was typing
+        if (runsSearchTerm) {
+          var searchInput = panel.querySelector('input[type="text"]');
+          if (searchInput) {
+            searchInput.focus();
+            searchInput.selectionStart = searchInput.selectionEnd = searchInput.value.length;
+          }
+        }
       }
 
       function toggleRunDetail(runId) {
