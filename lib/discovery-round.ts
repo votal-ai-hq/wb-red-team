@@ -8,7 +8,7 @@
  * Scoped to LLM / agentic AI targets — no traditional infrastructure fields.
  */
 
-import { executeAttack, sleep } from "./attack-runner.js";
+import { executeAttack, sleep, withSessionScope, runPreSetup } from "./attack-runner.js";
 import { getLlmProvider } from "./llm-provider.js";
 import type { Config, Attack } from "./types.js";
 
@@ -304,37 +304,57 @@ export async function runDiscoveryRound(
   console.log("  Sending heavyweight reconnaissance probes...\n");
 
   const probeResults: ProbeResult[] = [];
-  let probeIndex = 0;
   const totalProbes = DISCOVERY_PROBES.reduce((n, c) => n + c.probes.length, 0);
+  const concurrency = config.attackConfig.concurrency || 4;
+  let completedCount = 0;
 
+  // Flatten all probes into a work queue with category labels
+  const allProbes: { category: string; probe: string }[] = [];
   for (const group of DISCOVERY_PROBES) {
-    console.log(`  [${group.category}]`);
     for (const probe of group.probes) {
-      probeIndex++;
-      const progress = `    (${probeIndex}/${totalProbes})`;
-      const preview = probe.replace(/\s+/g, " ").slice(0, 100);
-      process.stdout.write(`${progress} ${preview}...`);
+      allProbes.push({ category: group.category, probe });
+    }
+  }
 
-      const attack = buildDiscoveryAttack(probe);
-      const { body, timeMs } = await executeAttack(config, attack);
+  // Process probes in parallel batches — each probe gets its own session scope
+  // with its own preAuthCommand (token) + setupSteps (conversationId).
+  // Nothing is global; every probe is fully isolated.
+  const needsSetup = !!(config.target.preAuthCommand || config.target.setupSteps);
 
-      const bodyStr =
-        typeof body === "string" ? body : JSON.stringify(body, null, 2);
-      const truncatedBody = bodyStr.slice(0, 6000);
+  for (let i = 0; i < allProbes.length; i += concurrency) {
+    const batch = allProbes.slice(i, i + concurrency);
+    const batchResults = await Promise.all(
+      batch.map(async ({ category, probe }) => {
+        const runProbe = async () => {
+          // Each probe runs its own preAuth + setupSteps in its own scope
+          if (needsSetup) {
+            await runPreSetup(config);
+          }
+          const attack = buildDiscoveryAttack(probe);
+          const { body, timeMs } = await executeAttack(config, attack);
+          const bodyStr =
+            typeof body === "string" ? body : JSON.stringify(body, null, 2);
+          const truncatedBody = bodyStr.slice(0, 6000);
+          completedCount++;
+          const preview = probe.replace(/\s+/g, " ").slice(0, 80);
+          console.log(`    (${completedCount}/${totalProbes}) [${category}] ${preview}... (${timeMs}ms)`);
+          return {
+            category,
+            probe,
+            response: truncatedBody,
+            analysis: "",
+            responseTimeMs: timeMs,
+          } as ProbeResult;
+        };
 
-      probeResults.push({
-        category: group.category,
-        probe,
-        response: truncatedBody,
-        analysis: "",
-        responseTimeMs: timeMs,
-      });
+        // Fully isolated session: own token, own conversationId
+        return withSessionScope(runProbe);
+      }),
+    );
+    probeResults.push(...batchResults);
 
-      console.log(` (${timeMs}ms)`);
-
-      if (config.attackConfig.delayBetweenRequestsMs > 0) {
-        await sleep(config.attackConfig.delayBetweenRequestsMs);
-      }
+    if (config.attackConfig.delayBetweenRequestsMs > 0 && i + concurrency < allProbes.length) {
+      await sleep(config.attackConfig.delayBetweenRequestsMs);
     }
   }
 
