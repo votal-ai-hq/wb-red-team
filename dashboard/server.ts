@@ -883,13 +883,17 @@ const server = createServer(
           );
           for (const row of dbRuns.rows) {
             if (!inMemoryIds.has(row.id)) {
+              const startedAt = row.started_at ? new Date(row.started_at).toISOString() : null;
+              const finishedAt = row.finished_at ? new Date(row.finished_at).toISOString() : null;
+              // Skip rows with no valid date
+              if (!startedAt) continue;
               runs.push({
                 runId: row.id,
-                status: row.status,
-                startedAt: row.started_at,
-                finishedAt: row.finished_at,
-                targetUrl: row.target_url,
-                error: row.error,
+                status: row.status || "done",
+                startedAt,
+                finishedAt,
+                targetUrl: row.target_url || "unknown",
+                error: row.error || null,
                 progressCount: 0,
                 reportFile: undefined,
                 summary: undefined,
