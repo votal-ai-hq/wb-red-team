@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual, randomUUID } from "node:crypto";
 import { query, isDbConfigured } from "./db.js";
 import { generateTenantKey } from "./encryption.js";
 import type { AuthContext } from "./auth.js";
@@ -14,7 +14,10 @@ interface SimpleAuthUser {
 
 interface SessionPayload {
   username: string;
+  role: Role;
+  sid: string;
   exp: number;
+  iat: number;
 }
 
 export interface SimpleAuthUserInfo {
@@ -27,11 +30,26 @@ export interface SimpleAuthUserInfo {
 const SESSION_COOKIE = "rt_session";
 
 function getSessionSecret(): string {
-  return (
-    process.env.SIMPLE_AUTH_SESSION_SECRET ||
-    process.env.SESSION_SECRET ||
-    "dev-only-simple-auth-secret"
-  );
+  const secret =
+    process.env.SIMPLE_AUTH_SESSION_SECRET || process.env.SESSION_SECRET;
+
+  if (!secret) {
+    if (process.env.AUTH_MODE === "simple") {
+      throw new Error(
+        "SIMPLE_AUTH_SESSION_SECRET must be set when AUTH_MODE=simple. " +
+          'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+      );
+    }
+    return "dev-only-simple-auth-secret";
+  }
+
+  if (secret.length < 32) {
+    console.warn(
+      "WARNING: SIMPLE_AUTH_SESSION_SECRET is shorter than 32 characters. Use a stronger secret in production.",
+    );
+  }
+
+  return secret;
 }
 
 function getSessionTtlSeconds(): number {
@@ -40,7 +58,8 @@ function getSessionTtlSeconds(): number {
 }
 
 function getCookieSecure(): boolean {
-  return process.env.SIMPLE_AUTH_COOKIE_SECURE === "true";
+  if (process.env.SIMPLE_AUTH_COOKIE_SECURE === "false") return false;
+  return true;
 }
 
 function base64UrlEncode(input: string): string {
@@ -208,8 +227,14 @@ function deserializeSession(token: string): SessionPayload {
     throw new Error("Invalid session signature");
   }
   const payload = JSON.parse(base64UrlDecode(encoded)) as SessionPayload;
-  if (!payload.username || typeof payload.exp !== "number") {
-    throw new Error("Invalid session payload");
+  if (
+    !payload.username ||
+    typeof payload.exp !== "number" ||
+    !payload.role ||
+    !payload.sid ||
+    typeof payload.iat !== "number"
+  ) {
+    throw new Error("Invalid session payload — please log in again");
   }
   if (payload.exp < Math.floor(Date.now() / 1000)) {
     throw new Error("Session expired");
@@ -227,9 +252,13 @@ export async function loginSimpleUser(
   }
 
   const auth = await ensureSimpleAuthContext(user);
+  const now = Math.floor(Date.now() / 1000);
   const token = serializeSession({
     username: user.username,
-    exp: Math.floor(Date.now() / 1000) + getSessionTtlSeconds(),
+    role: user.role,
+    sid: randomUUID(),
+    exp: now + getSessionTtlSeconds(),
+    iat: now,
   });
 
   return {
@@ -257,6 +286,9 @@ export async function validateSimpleSession(
   const user = findSimpleAuthUser(payload.username);
   if (!user) {
     throw new Error("User no longer exists");
+  }
+  if (user.role !== payload.role) {
+    throw new Error("Session role mismatch — please log in again");
   }
 
   return ensureSimpleAuthContext(user);

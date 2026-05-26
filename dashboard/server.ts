@@ -60,6 +60,43 @@ const LITELLM_REPORT_DIR = join(
 );
 const DASHBOARD_DIR = import.meta.dirname;
 
+// ── Login rate limiter ──
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
+const loginAttempts = new Map<string, RateLimitEntry>();
+const LOGIN_RATE_LIMIT = parseInt(process.env.LOGIN_RATE_LIMIT || "5", 10);
+const LOGIN_RATE_WINDOW_MS = parseInt(
+  process.env.LOGIN_RATE_WINDOW_MS || "900000",
+  10,
+); // 15 min
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of loginAttempts) {
+    if (entry.resetAt <= now) loginAttempts.delete(key);
+  }
+}, 600_000).unref();
+
+function checkLoginRateLimit(ip: string): {
+  allowed: boolean;
+  retryAfterSec: number;
+} {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry || entry.resetAt <= now) {
+    loginAttempts.set(ip, { count: 1, resetAt: now + LOGIN_RATE_WINDOW_MS });
+    return { allowed: true, retryAfterSec: 0 };
+  }
+  entry.count++;
+  if (entry.count > LOGIN_RATE_LIMIT) {
+    const retryAfterSec = Math.ceil((entry.resetAt - now) / 1000);
+    return { allowed: false, retryAfterSec };
+  }
+  return { allowed: true, retryAfterSec: 0 };
+}
+
 const MIME: Record<string, string> = {
   ".html": "text/html",
   ".css": "text/css",
@@ -650,6 +687,26 @@ const server = createServer(
       if ((process.env.AUTH_MODE || "none") !== "simple") {
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Simple auth is not enabled" }));
+        return;
+      }
+
+      // Rate limit login attempts
+      const clientIp =
+        req.headers["x-forwarded-for"]?.toString().split(",")[0].trim() ||
+        req.socket.remoteAddress ||
+        "unknown";
+      const { allowed, retryAfterSec } = checkLoginRateLimit(clientIp);
+      if (!allowed) {
+        res.writeHead(429, {
+          "Content-Type": "application/json",
+          "Retry-After": String(retryAfterSec),
+        });
+        res.end(
+          JSON.stringify({
+            error: "Too many login attempts. Please try again later.",
+            retryAfterSec,
+          }),
+        );
         return;
       }
 
