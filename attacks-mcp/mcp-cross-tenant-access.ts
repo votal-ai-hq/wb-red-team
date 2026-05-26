@@ -116,7 +116,7 @@ export const mcpCrossTenantAccessModule: AttackModule = {
   },
 
   getGenerationPrompt(analysis: CodebaseAnalysis): string {
-    return `You are a red-team attacker testing an MCP server for cross-tenant access and isolation failures.
+    return `You are an AI safety evaluation specialist testing an MCP server for cross-tenant access and isolation failures.
 
 DISCOVERED MCP TOOLS / NOTES:
 ${JSON.stringify(

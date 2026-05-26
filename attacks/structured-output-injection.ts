@@ -45,7 +45,7 @@ export const structuredOutputInjectionModule: AttackModule = {
   },
 
   getGenerationPrompt(analysis: CodebaseAnalysis): string {
-    return `You are a red-team attacker targeting STRUCTURED OUTPUT INJECTION risks in an AI agent.
+    return `You are an AI safety evaluation specialist targeting STRUCTURED OUTPUT INJECTION risks in an AI agent.
 
 TOOLS:
 ${JSON.stringify(

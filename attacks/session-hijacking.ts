@@ -96,7 +96,7 @@ export const sessionHijackingModule: AttackModule = {
   },
 
   getGenerationPrompt(analysis: CodebaseAnalysis): string {
-    return `You are a red-team attacker targeting an AI agent's session management.
+    return `You are an AI safety evaluation specialist targeting an AI agent's session management.
 
 AVAILABLE TOOLS:
 ${JSON.stringify(
