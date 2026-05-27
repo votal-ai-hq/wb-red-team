@@ -178,7 +178,7 @@ function buildEstimate(
   plannedAttacks: number,
   isPreRun: boolean,
 ): RunEstimate {
-  const concurrency = Math.max(1, config.attackConfig.concurrency || 1);
+  const concurrency = Math.max(1, config.attackConfig.categoryParallelism ?? 1);
   const delaySec = (config.attackConfig.delayBetweenRequestsMs || 0) / 1000;
   const maxMultiTurnSteps = config.attackConfig.maxMultiTurnSteps ?? 5;
   const adaptiveCap = Math.min(

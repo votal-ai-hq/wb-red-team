@@ -946,7 +946,7 @@ export async function runRedTeam(
         relevantModules.length,
         totalStrategies,
       );
-      const concurrency = Math.max(1, config.attackConfig.concurrency || 1);
+      const concurrency = Math.max(1, config.attackConfig.categoryParallelism ?? 1);
       log("attacks", "Pre-run estimate", { round });
       for (const line of formatEstimate(est, concurrency)) {
         log("attacks", line, { round });
@@ -976,14 +976,14 @@ export async function runRedTeam(
     });
     {
       const est = estimateRun(attacks, config);
-      const concurrency = Math.max(1, config.attackConfig.concurrency || 1);
+      const concurrency = Math.max(1, config.attackConfig.categoryParallelism ?? 1);
       for (const line of formatEstimate(est, concurrency)) {
         log("attacks", line, { round });
       }
     }
 
     const roundResults: AttackResult[] = [];
-    const concurrencyLimit = Math.max(1, config.attackConfig.categoryParallelism ?? config.attackConfig.concurrency ?? 1);
+    const categoryParallelism = Math.max(1, config.attackConfig.categoryParallelism ?? 1);
     const sharedIdx = { value: 0 };
 
     /** Execute a single attack (any type) and push the result. */
@@ -1218,8 +1218,8 @@ export async function runRedTeam(
     }
     const categoryNames = Array.from(categoryGroups.keys());
 
-    if (concurrencyLimit > 1) {
-      log("attacks", `Running ${categoryNames.length} categories with parallelism=${concurrencyLimit}`, { round });
+    if (categoryParallelism > 1) {
+      log("attacks", `Running ${categoryNames.length} categories with parallelism=${categoryParallelism}`, { round });
     }
 
     // Build one task per category — attacks within a category run sequentially
@@ -1242,7 +1242,7 @@ export async function runRedTeam(
         }
       }
       const workers = Array.from(
-        { length: Math.min(concurrencyLimit, categoryTasks.length) },
+        { length: Math.min(categoryParallelism, categoryTasks.length) },
         () => worker(),
       );
       await Promise.all(workers);
@@ -1262,7 +1262,7 @@ export async function runRedTeam(
       );
 
       if (refinedAttacks.length > 0) {
-        log("refine", `Executing ${refinedAttacks.length} refined attacks (parallelism=${concurrencyLimit})`, {
+        log("refine", `Executing ${refinedAttacks.length} refined attacks (parallelism=${categoryParallelism})`, {
           round,
         });
 
@@ -1466,7 +1466,7 @@ export async function runRedTeam(
             }
           }
           const workers = Array.from(
-            { length: Math.min(concurrencyLimit, refinedCatTasks.length) },
+            { length: Math.min(categoryParallelism, refinedCatTasks.length) },
             () => worker(),
           );
           await Promise.all(workers);
