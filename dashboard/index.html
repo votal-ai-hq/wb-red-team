@@ -5550,13 +5550,39 @@
             "</div>";
         }
 
+        // Active categories indicator (for parallel runs)
+        if (data.status === "running" && catEntries.length > 0) {
+          // Categories with results are "in progress" — find ones that have results
+          // but fewer than expected (still running)
+          const allProgress = data.progress || [];
+          const latestPhase = allProgress.length > 0 ? allProgress[allProgress.length - 1]?.phase : "";
+          if (latestPhase === "attacks" || latestPhase === "refine") {
+            // Show categories that have results (actively being attacked)
+            const activeCats = catEntries
+              .filter(([, v]) => v.total > 0)
+              .map(([cat]) => cat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
+            if (activeCats.length > 0) {
+              html +=
+                '<div style="margin-bottom:12px;padding:10px 14px;background:rgba(107,138,253,0.08);border:1px solid rgba(107,138,253,0.2);border-radius:8px;">' +
+                '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Running in Parallel (' + activeCats.length + ' categories)</div>' +
+                '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+              for (const cat of activeCats) {
+                html +=
+                  '<span style="font-size:10px;padding:2px 8px;background:rgba(107,138,253,0.12);color:var(--accent);border-radius:10px;white-space:nowrap;">' +
+                  esc(cat) + '</span>';
+              }
+              html += '</div></div>';
+            }
+          }
+        }
+
         // Progress log — preserve open/closed state across re-renders
         const progressLines = (data.progress || [])
           .filter((p) => p.phase !== "result")
           .slice(-30);
         if (progressLines.length > 0) {
           html +=
-            "<details" +
+            "<details data-progress-log" +
             (progressLogOpen ? " open" : "") +
             ' style="margin-top:12px;" ontoggle="progressLogOpen=this.open">' +
             '<summary style="font-size:12px;font-weight:600;cursor:pointer;color:var(--text2);">Progress Log (' +
@@ -12006,7 +12032,14 @@
                 // Targeted update: only re-render the inline detail panel, not the entire tab
                 const detailEl = document.getElementById("runDetailInline");
                 if (detailEl) {
+                  // Preserve scroll position across re-renders
+                  const scrollTop = detailEl.scrollTop;
+                  const progressLogEl = detailEl.querySelector("details[data-progress-log]");
+                  const progressLogScrollTop = progressLogEl?.querySelector("div")?.scrollTop || 0;
                   detailEl.innerHTML = buildRunDetailContent(runId, merged);
+                  detailEl.scrollTop = scrollTop;
+                  const newProgressLog = detailEl.querySelector("details[data-progress-log] > div");
+                  if (newProgressLog) newProgressLog.scrollTop = progressLogScrollTop;
                 } else {
                   renderRunsTab();
                 }
@@ -12319,10 +12352,29 @@
           ? `<div style="background:rgba(255,107,107,0.1);border:1px solid var(--red);border-radius:8px;padding:12px;margin-bottom:16px;color:var(--red);font-size:13px;">${esc(data.error)}</div>`
           : "";
 
+        // Active parallel categories indicator
+        let parallelHtml = "";
+        if (data.status === "running" && catEntries.length > 0) {
+          const activeCats = catEntries
+            .filter(([, v]) => v.total > 0)
+            .map(([cat]) => cat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
+          if (activeCats.length > 0) {
+            parallelHtml =
+              '<div style="margin-bottom:12px;padding:10px 14px;background:rgba(107,138,253,0.08);border:1px solid rgba(107,138,253,0.2);border-radius:8px;">' +
+              '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Running in Parallel (' + activeCats.length + ' categories)</div>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:4px;">' +
+              activeCats.map((c) => '<span style="font-size:10px;padding:2px 8px;background:rgba(107,138,253,0.12);color:var(--accent);border-radius:10px;white-space:nowrap;">' + esc(c) + '</span>').join('') +
+              '</div></div>';
+          }
+        }
+
+        // Preserve scroll position
+        const prevScrollTop = app.scrollTop;
         app.innerHTML = `
           <div style="padding:4px 0;">
             ${errorHtml}
             ${summaryHtml}
+            ${parallelHtml}
             ${categoryHtml}
             <div id="liveResultsContainer">${resultsHtml}</div>
             <details ${liveResults.length === 0 ? "open" : ""} style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;">
@@ -12336,6 +12388,7 @@
             </details>
           </div>
         `;
+        app.scrollTop = prevScrollTop;
       }
 
       async function refreshActiveRuns() {
