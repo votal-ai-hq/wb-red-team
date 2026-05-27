@@ -953,16 +953,28 @@ export async function runRedTeam(
       }
     }
 
-    const planned = skipBuiltinPlanner
-      ? []
-      : await planAttacks(
-          config,
-          analysis,
-          relevantModules,
-          allPreviousResults,
-          round,
-          defenseProfiles,
-        );
+    // Intercept console.log during planning to forward planner output as progress events
+    const origLog = console.log;
+    console.log = (...args: unknown[]) => {
+      origLog(...args);
+      const msg = args.map(String).join(" ").replace(/^\s+/, "");
+      if (msg) log("planning", msg);
+    };
+    let planned: Attack[];
+    try {
+      planned = skipBuiltinPlanner
+        ? []
+        : await planAttacks(
+            config,
+            analysis,
+            relevantModules,
+            allPreviousResults,
+            round,
+            defenseProfiles,
+          );
+    } finally {
+      console.log = origLog;
+    }
     const attacks = mergeCustomAttacksForRound(
       config,
       round,
