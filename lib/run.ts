@@ -983,7 +983,7 @@ export async function runRedTeam(
     }
 
     const roundResults: AttackResult[] = [];
-    const concurrencyLimit = Math.max(1, config.attackConfig.concurrency || 1);
+    const concurrencyLimit = Math.max(1, config.attackConfig.categoryParallelism ?? config.attackConfig.concurrency ?? 1);
     const sharedIdx = { value: 0 };
 
     /** Execute a single attack (any type) and push the result. */
@@ -1208,21 +1208,41 @@ export async function runRedTeam(
       }
     }
 
-    // Execute attacks with worker-pool concurrency
-    if (concurrencyLimit > 1) {
-      log("attacks", `Running ${attacks.length} attacks with concurrency=${concurrencyLimit}`, { round });
+    // Execute attacks grouped by category with categoryParallelism
+    // Each category runs its attacks sequentially; multiple categories run in parallel
+    const categoryGroups = new Map<string, Attack[]>();
+    for (const attack of attacks) {
+      const list = categoryGroups.get(attack.category) || [];
+      list.push(attack);
+      categoryGroups.set(attack.category, list);
     }
+    const categoryNames = Array.from(categoryGroups.keys());
+
+    if (concurrencyLimit > 1) {
+      log("attacks", `Running ${categoryNames.length} categories with parallelism=${concurrencyLimit}`, { round });
+    }
+
+    // Build one task per category — attacks within a category run sequentially
+    const categoryTasks = categoryNames.map((catName) => {
+      const catAttacks = categoryGroups.get(catName)!;
+      return async (): Promise<void> => {
+        for (const attack of catAttacks) {
+          await runOneAttack(attack);
+        }
+      };
+    });
+
+    // Worker pool over category tasks
     {
-      const taskQueue = attacks.slice();
       let nextIdx = 0;
       async function worker(): Promise<void> {
-        while (nextIdx < taskQueue.length) {
+        while (nextIdx < categoryTasks.length) {
           const myIdx = nextIdx++;
-          await runOneAttack(taskQueue[myIdx]);
+          await categoryTasks[myIdx]();
         }
       }
       const workers = Array.from(
-        { length: Math.min(concurrencyLimit, taskQueue.length) },
+        { length: Math.min(concurrencyLimit, categoryTasks.length) },
         () => worker(),
       );
       await Promise.all(workers);
