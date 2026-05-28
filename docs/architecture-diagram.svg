@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#5b6470"/>
+    </marker>
+    <marker id="arrowG" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a7f5a"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="900" fill="#f7f8fa"/>
+
+  <!-- Title -->
+  <text x="640" y="44" text-anchor="middle" font-size="26" font-weight="700" fill="#1b2733">Red-Team Framework — Architecture (White-box &amp; Black-box)</text>
+  <text x="640" y="72" text-anchor="middle" font-size="15" fill="#5b6470">Two independently configurable models · model-agnostic judge · customizable judge criteria</text>
+
+  <!-- ============ CONFIG LAYER ============ -->
+  <rect x="40" y="100" width="1200" height="120" rx="10" fill="#eef2f7" stroke="#cfd8e3"/>
+  <text x="60" y="126" font-size="14" font-weight="700" fill="#3a4756">CONFIGURATION  (config.json + policies/*.json)</text>
+
+  <!-- Attack model config -->
+  <rect x="60" y="140" width="360" height="64" rx="8" fill="#ffffff" stroke="#c0392b" filter="url(#shadow)"/>
+  <text x="74" y="162" font-size="14" font-weight="700" fill="#c0392b">① Attack Generation Model</text>
+  <text x="74" y="182" font-size="12" fill="#3a4756">attackConfig.llmProvider / llmModel</text>
+  <text x="74" y="198" font-size="11" fill="#7b8794">openai · anthropic · openrouter · together · azure · custom</text>
+
+  <!-- Judge model config -->
+  <rect x="450" y="140" width="360" height="64" rx="8" fill="#ffffff" stroke="#1a7f5a" filter="url(#shadow)"/>
+  <text x="464" y="162" font-size="14" font-weight="700" fill="#1a7f5a">② Judge / Response Evaluator Model</text>
+  <text x="464" y="182" font-size="12" fill="#3a4756">judgeProvider / judgeModel (independent)</text>
+  <text x="464" y="198" font-size="11" fill="#7b8794">any provider — decoupled from attacker &amp; target</text>
+
+  <!-- Policy config -->
+  <rect x="840" y="140" width="380" height="64" rx="8" fill="#ffffff" stroke="#8e44ad" filter="url(#shadow)"/>
+  <text x="854" y="162" font-size="14" font-weight="700" fill="#8e44ad">Customizable Judge Criteria</text>
+  <text x="854" y="182" font-size="12" fill="#3a4756">policies/*.json — pass / fail / partial criteria</text>
+  <text x="854" y="198" font-size="11" fill="#7b8794">global + per-category overrides · confidence threshold</text>
+
+  <!-- ============ PIPELINE ============ -->
+  <!-- Step 1: Codebase analysis (white-box) -->
+  <rect x="40" y="260" width="250" height="92" rx="10" fill="#ffffff" stroke="#cfd8e3" filter="url(#shadow)"/>
+  <text x="60" y="286" font-size="14" font-weight="700" fill="#1b2733">White-box Recon</text>
+  <text x="60" y="308" font-size="11.5" fill="#5b6470">Codebase analysis: tools,</text>
+  <text x="60" y="324" font-size="11.5" fill="#5b6470">roles, guardrails, auth,</text>
+  <text x="60" y="340" font-size="11.5" fill="#5b6470">framework detection</text>
+
+  <!-- Step 2: Attack planning -->
+  <rect x="330" y="260" width="250" height="92" rx="10" fill="#fdecea" stroke="#c0392b" filter="url(#shadow)"/>
+  <text x="350" y="286" font-size="14" font-weight="700" fill="#c0392b">Attack Planner</text>
+  <text x="350" y="308" font-size="11.5" fill="#5b6470">Seed attacks + LLM-generated</text>
+  <text x="350" y="324" font-size="11.5" fill="#5b6470">payloads (uses Model ①)</text>
+  <text x="350" y="340" font-size="11.5" fill="#5b6470">per category · adaptive rounds</text>
+
+  <!-- Step 3: Attack execution -->
+  <rect x="620" y="260" width="250" height="92" rx="10" fill="#ffffff" stroke="#cfd8e3" filter="url(#shadow)"/>
+  <text x="640" y="286" font-size="14" font-weight="700" fill="#1b2733">Attack Runner</text>
+  <text x="640" y="308" font-size="11.5" fill="#5b6470">Auth + serialize payload,</text>
+  <text x="640" y="324" font-size="11.5" fill="#5b6470">single / multi-turn /</text>
+  <text x="640" y="340" font-size="11.5" fill="#5b6470">adaptive / rapid-fire</text>
+
+  <!-- Target (black-box) -->
+  <rect x="920" y="260" width="320" height="92" rx="10" fill="#eaf0f6" stroke="#34495e" stroke-dasharray="5 4" filter="url(#shadow)"/>
+  <text x="940" y="286" font-size="14" font-weight="700" fill="#34495e">Target  (Black-box)</text>
+  <text x="940" y="308" font-size="11.5" fill="#5b6470">Any LLM app / agent endpoint</text>
+  <text x="940" y="324" font-size="11.5" fill="#5b6470">over HTTP — no access to</text>
+  <text x="940" y="340" font-size="11.5" fill="#5b6470">target weights required</text>
+
+  <!-- arrows row 1 -->
+  <line x1="290" y1="306" x2="328" y2="306" stroke="#5b6470" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="580" y1="306" x2="618" y2="306" stroke="#5b6470" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="870" y1="306" x2="918" y2="306" stroke="#5b6470" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- down to judge -->
+  <line x1="1080" y1="352" x2="1080" y2="392" stroke="#5b6470" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1092" y="378" font-size="11" fill="#7b8794">response</text>
+
+  <!-- ============ JUDGE ENGINE ============ -->
+  <rect x="40" y="400" width="1200" height="230" rx="12" fill="#ffffff" stroke="#1a7f5a" stroke-width="2" filter="url(#shadow)"/>
+  <text x="60" y="428" font-size="16" font-weight="700" fill="#1a7f5a">Response Analyzer / Judge Engine  —  model-agnostic, two-phase</text>
+
+  <!-- Phase 1 deterministic -->
+  <rect x="60" y="448" width="540" height="120" rx="8" fill="#f3faf6" stroke="#1a7f5a"/>
+  <text x="78" y="472" font-size="13.5" font-weight="700" fill="#1a7f5a">Phase 1 — Deterministic (no LLM)</text>
+  <text x="78" y="494" font-size="11.5" fill="#3a4756">• Sensitive-data regex / pattern matching</text>
+  <text x="78" y="512" font-size="11.5" fill="#3a4756">• Tool-call side-channel leak detection</text>
+  <text x="78" y="530" font-size="11.5" fill="#3a4756">• Status-code &amp; guardrail checks (e.g. 429)</text>
+  <text x="78" y="550" font-size="11.5" fill="#7b8794">→ early verdict when evidence is conclusive</text>
+
+  <!-- Phase 2 LLM judge -->
+  <rect x="620" y="448" width="600" height="120" rx="8" fill="#f3faf6" stroke="#1a7f5a"/>
+  <text x="638" y="472" font-size="13.5" font-weight="700" fill="#1a7f5a">Phase 2 — LLM Judge (Model ②)</text>
+  <text x="638" y="494" font-size="11.5" fill="#3a4756">• Resolves policy (global + category criteria)</text>
+  <text x="638" y="512" font-size="11.5" fill="#3a4756">• Evaluates attack + response against criteria</text>
+  <text x="638" y="530" font-size="11.5" fill="#3a4756">• Returns verdict + confidence + reasoning</text>
+  <text x="638" y="550" font-size="11.5" fill="#7b8794">→ confidence below threshold downgrades PASS → PARTIAL</text>
+
+  <!-- verdict bar -->
+  <rect x="60" y="584" width="1160" height="32" rx="6" fill="#eef7f1" stroke="#1a7f5a"/>
+  <text x="78" y="605" font-size="12.5" font-weight="700" fill="#1a7f5a">Verdict:</text>
+  <text x="150" y="605" font-size="12.5" fill="#3a4756">PASS (attack succeeded) · PARTIAL (partial leak) · FAIL (defense held)   +  severity, findings, confidence</text>
+
+  <!-- policy feeds judge -->
+  <line x1="1030" y1="204" x2="1030" y2="240" stroke="#8e44ad" stroke-width="2"/>
+  <path d="M1030,240 L1030,400" stroke="#8e44ad" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+  <text x="1042" y="392" font-size="11" fill="#8e44ad">criteria</text>
+
+  <!-- judge model feeds phase 2 -->
+  <line x1="630" y1="204" x2="630" y2="240" stroke="#1a7f5a" stroke-width="2"/>
+
+  <!-- ============ ADAPTIVE LOOP ============ -->
+  <rect x="40" y="668" width="580" height="92" rx="10" fill="#fff8ec" stroke="#d68910" filter="url(#shadow)"/>
+  <text x="60" y="694" font-size="14" font-weight="700" fill="#b9770e">Adaptive Refinement Loop</text>
+  <text x="60" y="716" font-size="11.5" fill="#5b6470">Round analyzer builds defense profile, feeds PARTIAL</text>
+  <text x="60" y="732" font-size="11.5" fill="#5b6470">results back into the planner for targeted follow-ups</text>
+  <text x="60" y="750" font-size="11.5" fill="#7b8794">repeat for N adaptive rounds</text>
+
+  <!-- Report -->
+  <rect x="660" y="668" width="580" height="92" rx="10" fill="#ffffff" stroke="#cfd8e3" filter="url(#shadow)"/>
+  <text x="680" y="694" font-size="14" font-weight="700" fill="#1b2733">Report &amp; Dashboard</text>
+  <text x="680" y="716" font-size="11.5" fill="#5b6470">Security score, per-category breakdown,</text>
+  <text x="680" y="732" font-size="11.5" fill="#5b6470">findings &amp; evidence — Markdown + JSON</text>
+  <text x="680" y="750" font-size="11.5" fill="#7b8794">visualized in dashboard</text>
+
+  <!-- loop arrow back to planner -->
+  <path d="M330,668 C300,650 300,420 330,360" fill="none" stroke="#d68910" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <line x1="620" y1="616" x2="640" y2="668" stroke="#5b6470" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Key takeaway -->
+  <rect x="40" y="788" width="1200" height="76" rx="10" fill="#1b2733"/>
+  <text x="60" y="816" font-size="14" font-weight="700" fill="#ffffff">Key point for evaluation</text>
+  <text x="60" y="840" font-size="12.5" fill="#dfe6ee">The judge/classifier is NOT tied to any specific LLM or agent. Attacker, judge, and target are fully decoupled —</text>
+  <text x="60" y="857" font-size="12.5" fill="#dfe6ee">drop in Nemotron (or any classifier) as the Judge model and point criteria at policies/*.json; the rest of the pipeline is unchanged.</text>
+</svg>
