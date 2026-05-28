@@ -348,6 +348,107 @@ class AzureOpenAIProvider implements LlmProvider {
   }
 }
 
+// ── NVIDIA NIM Provider (OpenAI-compatible API) ──
+// Cloud default: https://integrate.api.nvidia.com/v1
+// Self-hosted: set NIM_BASE_URL to override (e.g. http://localhost:8000/v1)
+// Env: NVIDIA_API_KEY (required for cloud; optional for self-hosted if NIM_BASE_URL is set)
+// Model name is passed straight through — any model NIM exposes works.
+
+function isNimModelNotFound(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  // NIM's gateway returns `404 page not found` when the model id doesn't
+  // match a registered route — there is no structured "model not found" body.
+  return /\b404\b/.test(err.message) && /page not found/i.test(err.message);
+}
+
+class NimProvider implements LlmProvider {
+  private client: OpenAI;
+  private requestConfig: OpenAICompatibleRequestConfig;
+
+  constructor(requestConfig: OpenAICompatibleRequestConfig = {}) {
+    const baseURL =
+      process.env.NIM_BASE_URL || "https://integrate.api.nvidia.com/v1";
+    const apiKey = process.env.NVIDIA_API_KEY;
+    const isSelfHosted = Boolean(process.env.NIM_BASE_URL);
+
+    if (!apiKey && !isSelfHosted) {
+      throw new Error(
+        "NVIDIA_API_KEY environment variable is required for nim provider (set NIM_BASE_URL to point at a self-hosted NIM endpoint that does not require auth)",
+      );
+    }
+
+    this.client = new OpenAI({
+      apiKey: apiKey || "no-key",
+      baseURL,
+    });
+    this.requestConfig = requestConfig;
+    console.log(`  [LLM nim] baseURL=${baseURL}`);
+  }
+
+  async chat(options: ChatOptions): Promise<string> {
+    try {
+      return await createOpenAICompatibleChatCompletion(
+        this.client,
+        options,
+        this.requestConfig,
+      );
+    } catch (err) {
+      if (isNimModelNotFound(err)) {
+        const original = err instanceof Error ? err.message : String(err);
+        const rewritten = new Error(
+          `NIM model "${options.model}" not found. Verify the model id at https://build.nvidia.com/models (or your self-hosted NIM's /v1/models). [Original: ${original}]`,
+        );
+        (rewritten as any).skipConfig = true;
+        throw rewritten;
+      }
+      throw err;
+    }
+  }
+}
+
+// ── HuggingFace Provider (OpenAI-compatible API) ──
+// Serverless default: https://router.huggingface.co/v1 (Inference Providers router).
+// Use the model id form "owner/model" or "owner/model:provider" (e.g.
+// "meta-llama/Llama-3.3-70B-Instruct:nvidia") to pin a backend provider — the
+// ":nvidia" suffix routes to NVIDIA NIM.
+// Dedicated Inference Endpoints: set HF_BASE_URL to your endpoint's /v1 URL
+// (e.g. https://<id>.<region>.aws.endpoints.huggingface.cloud/v1).
+// Env: HF_TOKEN (preferred) or HUGGINGFACE_API_KEY. Required unless HF_BASE_URL
+// points at an endpoint that does not require auth.
+
+class HuggingFaceProvider implements LlmProvider {
+  private client: OpenAI;
+  private requestConfig: OpenAICompatibleRequestConfig;
+
+  constructor(requestConfig: OpenAICompatibleRequestConfig = {}) {
+    const baseURL =
+      process.env.HF_BASE_URL || "https://router.huggingface.co/v1";
+    const apiKey = process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY;
+    const isCustomBaseUrl = Boolean(process.env.HF_BASE_URL);
+
+    if (!apiKey && !isCustomBaseUrl) {
+      throw new Error(
+        "HF_TOKEN (or HUGGINGFACE_API_KEY) environment variable is required for huggingface provider (set HF_BASE_URL to point at a dedicated/self-hosted endpoint that does not require auth)",
+      );
+    }
+
+    this.client = new OpenAI({
+      apiKey: apiKey || "no-key",
+      baseURL,
+    });
+    this.requestConfig = requestConfig;
+    console.log(`  [LLM huggingface] baseURL=${baseURL}`);
+  }
+
+  async chat(options: ChatOptions): Promise<string> {
+    return createOpenAICompatibleChatCompletion(
+      this.client,
+      options,
+      this.requestConfig,
+    );
+  }
+}
+
 // ── Custom OpenAI-compatible Provider ──
 // For internal endpoints like Trussed AI, vLLM, LiteLLM, Ollama, etc.
 // Env: CUSTOM_LLM_API_KEY, CUSTOM_LLM_BASE_URL
@@ -421,9 +522,15 @@ function createProvider(
     case "custom":
       provider = new CustomProvider(requestConfig);
       break;
+    case "nim":
+      provider = new NimProvider(requestConfig);
+      break;
+    case "huggingface":
+      provider = new HuggingFaceProvider(requestConfig);
+      break;
     default:
       throw new Error(
-        `Unknown LLM provider: "${name}". Use "openai", "anthropic", "openrouter", "together", "azure", or "custom".`,
+        `Unknown LLM provider: "${name}". Use "openai", "anthropic", "openrouter", "together", "azure", "custom", "nim", or "huggingface".`,
       );
   }
 
