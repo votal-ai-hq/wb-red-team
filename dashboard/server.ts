@@ -97,6 +97,40 @@ function checkLoginRateLimit(ip: string): {
   return { allowed: true, retryAfterSec: 0 };
 }
 
+// ── API rate limiter (for expensive endpoints) ──
+const apiRateLimits = new Map<string, RateLimitEntry>();
+const API_RATE_LIMIT = parseInt(process.env.API_RATE_LIMIT || "30", 10); // 30 requests
+const API_RATE_WINDOW_MS = parseInt(
+  process.env.API_RATE_WINDOW_MS || "60000",
+  10,
+); // 1 min
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of apiRateLimits) {
+    if (entry.resetAt <= now) apiRateLimits.delete(key);
+  }
+}, 60_000).unref();
+
+function checkApiRateLimit(
+  ip: string,
+  endpoint: string,
+): { allowed: boolean; retryAfterSec: number } {
+  const key = `${ip}:${endpoint}`;
+  const now = Date.now();
+  const entry = apiRateLimits.get(key);
+  if (!entry || entry.resetAt <= now) {
+    apiRateLimits.set(key, { count: 1, resetAt: now + API_RATE_WINDOW_MS });
+    return { allowed: true, retryAfterSec: 0 };
+  }
+  entry.count++;
+  if (entry.count > API_RATE_LIMIT) {
+    const retryAfterSec = Math.ceil((entry.resetAt - now) / 1000);
+    return { allowed: false, retryAfterSec };
+  }
+  return { allowed: true, retryAfterSec: 0 };
+}
+
 const MIME: Record<string, string> = {
   ".html": "text/html",
   ".css": "text/css",
@@ -792,6 +826,13 @@ const server = createServer(
 
     // POST /api/run — start a new red-team run
     if (url.pathname === "/api/run" && req.method === "POST") {
+      const clientIp = req.headers["x-forwarded-for"]?.toString().split(",")[0].trim() || req.socket.remoteAddress || "unknown";
+      const { allowed, retryAfterSec } = checkApiRateLimit(clientIp, "run");
+      if (!allowed) {
+        res.writeHead(429, { "Content-Type": "application/json", "Retry-After": String(retryAfterSec) });
+        res.end(JSON.stringify({ error: "Too many requests. Please try again later.", retryAfterSec }));
+        return;
+      }
       try {
         const body = JSON.parse(await readBody(req));
 
@@ -1489,6 +1530,13 @@ const server = createServer(
 
     // API: compliance analysis — LLM-powered per-item analysis
     if (url.pathname === "/api/owasp-analyze" && req.method === "POST") {
+      const clientIp = req.headers["x-forwarded-for"]?.toString().split(",")[0].trim() || req.socket.remoteAddress || "unknown";
+      const { allowed, retryAfterSec } = checkApiRateLimit(clientIp, "owasp-analyze");
+      if (!allowed) {
+        res.writeHead(429, { "Content-Type": "application/json", "Retry-After": String(retryAfterSec) });
+        res.end(JSON.stringify({ error: "Too many requests. Please try again later.", retryAfterSec }));
+        return;
+      }
       try {
         const body = JSON.parse(await readBody(req));
         const { reportFile } = body;
@@ -1674,6 +1722,13 @@ const server = createServer(
 
     // API: risk analysis — LLM-powered per-vulnerability business impact
     if (url.pathname === "/api/risk-analyze" && req.method === "POST") {
+      const clientIp = req.headers["x-forwarded-for"]?.toString().split(",")[0].trim() || req.socket.remoteAddress || "unknown";
+      const { allowed, retryAfterSec } = checkApiRateLimit(clientIp, "risk-analyze");
+      if (!allowed) {
+        res.writeHead(429, { "Content-Type": "application/json", "Retry-After": String(retryAfterSec) });
+        res.end(JSON.stringify({ error: "Too many requests. Please try again later.", retryAfterSec }));
+        return;
+      }
       try {
         const body = JSON.parse(await readBody(req));
         const { attacks, provider, model } = body;
