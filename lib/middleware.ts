@@ -44,9 +44,13 @@ async function handleRequest(
   handler: Handler,
 ): Promise<void> {
   try {
-    // Block TRACE method (prevents XST attacks)
-    if (req.method === "TRACE") {
-      res.writeHead(405, { "Content-Type": "text/plain" });
+    // Block dangerous HTTP methods (TRACE, PUT, DELETE, PATCH, CONNECT)
+    const allowedMethods = new Set(["GET", "POST", "OPTIONS", "HEAD"]);
+    if (!allowedMethods.has(req.method || "")) {
+      res.writeHead(405, {
+        "Content-Type": "text/plain",
+        Allow: "GET, POST, OPTIONS, HEAD",
+      });
       res.end("Method Not Allowed");
       return;
     }
@@ -94,7 +98,7 @@ async function handleRequest(
     res.removeHeader("X-Powered-By");
 
     if (req.method === "OPTIONS") {
-      res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, HEAD");
       res.setHeader(
         "Access-Control-Allow-Headers",
         "Content-Type, Authorization",
