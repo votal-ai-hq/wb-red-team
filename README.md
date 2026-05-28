@@ -6,6 +6,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18-green)](package.json)
 [![Status](https://img.shields.io/badge/status-beta-orange)](#project-status)
 [![LFX Health Score](https://insights.linuxfoundation.org/api/badge/health-score?project=wb-red-team)](https://insights.linuxfoundation.org/project/wb-red-team)
+[![LF Insights](https://img.shields.io/badge/Linux%20Foundation-Insights-blue?logo=linuxfoundation&logoColor=white)](https://insights.linuxfoundation.org/project/wb-red-team?timeRange=past365days&start=2025-05-28&end=2026-05-28)
 
 Most LLM red-teaming tools are black-box: they treat your agent as an opaque endpoint and fire generic adversarial prompts at it. That finds the obvious stuff. It does not find the bug where your JWT secret is hardcoded in `lib/auth.ts:47`, or the path through tools `read_file → send_email` that no single-call check would catch.
 
