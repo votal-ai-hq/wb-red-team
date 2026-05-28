@@ -15,12 +15,12 @@ Test privilege boundaries by configuring multiple roles:
     "methods": ["jwt", "api_key", "body_role"],
     "credentials": [
       { "email": "admin@company.com", "password": "admin123", "role": "admin" },
-      { "email": "user@company.com",  "password": "user123",  "role": "user"  },
+      { "email": "user@company.com", "password": "user123", "role": "user" },
       { "email": "guest@company.com", "password": "guest123", "role": "guest" }
     ],
     "apiKeys": {
       "admin": "ak_admin_001",
-      "user":  "ak_user_002",
+      "user": "ak_user_002",
       "guest": "ak_guest_003"
     }
   }

@@ -8,7 +8,11 @@
  * behavior without going through Hermes.
  */
 
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 import { TOOL_DEFS, dispatch } from "./handlers.js";
 
 const PORT = Number(process.env.HERMES_TOOL_PORT ?? 4300);
@@ -26,13 +30,17 @@ function json(res: ServerResponse, status: number, data: unknown) {
 }
 
 const server = createServer(async (req, res) => {
-  if (req.method === "GET" && req.url === "/health") return json(res, 200, { ok: true });
+  if (req.method === "GET" && req.url === "/health")
+    return json(res, 200, { ok: true });
   if (req.method === "GET" && req.url === "/tools") {
     return json(res, 200, { tools: TOOL_DEFS.map((t) => t.name) });
   }
   const match = req.url?.match(/^\/tool\/(.+)$/);
   if (req.method !== "POST" || !match) {
-    return json(res, 404, { error: "not found", tools: TOOL_DEFS.map((t) => `/tool/${t.name}`) });
+    return json(res, 404, {
+      error: "not found",
+      tools: TOOL_DEFS.map((t) => `/tool/${t.name}`),
+    });
   }
   const name = match[1];
   try {
@@ -45,6 +53,10 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`[hermes-redteam] tool server listening on http://127.0.0.1:${PORT}`);
-  console.log(`[hermes-redteam] tools: ${TOOL_DEFS.map((t) => t.name).join(", ")}`);
+  console.log(
+    `[hermes-redteam] tool server listening on http://127.0.0.1:${PORT}`,
+  );
+  console.log(
+    `[hermes-redteam] tools: ${TOOL_DEFS.map((t) => t.name).join(", ")}`,
+  );
 });

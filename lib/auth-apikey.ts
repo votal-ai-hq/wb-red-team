@@ -20,9 +20,7 @@ function hashKey(key: string): string {
 /**
  * Validate an API key and return the auth context.
  */
-export async function validateApiKey(
-  apiKey: string,
-): Promise<AuthContext> {
+export async function validateApiKey(apiKey: string): Promise<AuthContext> {
   if (!apiKey || !apiKey.startsWith("rtk_")) {
     throw new Error("Invalid API key format (must start with rtk_)");
   }

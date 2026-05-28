@@ -124,9 +124,7 @@ export function getStrategyAffinityLookup(
   configuredPath?: string,
 ): StrategyAffinityLookup | undefined {
   const trimmed = configuredPath?.trim();
-  const absPath = trimmed
-    ? resolve(trimmed)
-    : resolve(DEFAULT_AFFINITY_CSV);
+  const absPath = trimmed ? resolve(trimmed) : resolve(DEFAULT_AFFINITY_CSV);
 
   if (!existsSync(absPath)) {
     if (trimmed) {

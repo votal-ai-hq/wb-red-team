@@ -7,19 +7,19 @@ nav_order: 6
 
 ## 141 categories by domain
 
-| Domain | Key categories | Count |
-|--------|----------------|-------|
-| **Prompt & Input** | `prompt_injection`, `indirect_prompt_injection`, `content_filter_bypass`, `instruction_hierarchy_violation`, `universal_adversarial_trigger` | 11 |
-| **Auth & Access** | `auth_bypass`, `rbac_bypass`, `session_hijacking`, `cross_tenant_access`, `tool_permission_escalation` | 10 |
-| **Data & Privacy** | `data_exfiltration`, `sensitive_data`, `pii_disclosure`, `steganographic_exfiltration`, `slow_burn_exfiltration` | 14 |
-| **Agent & Tool** | `tool_misuse`, `tool_chain_hijack`, `agentic_workflow_bypass`, `rogue_agent`, `goal_hijack`, `agentic_scope_creep` | 13 |
-| **Safety & Content** | `toxic_content`, `harmful_advice`, `misinformation`, `hallucination`, `emotional_manipulation` | 15 |
-| **RAG & Retrieval** | `rag_poisoning`, `rag_corpus_poisoning`, `vector_store_manipulation`, `retrieval_tenant_bleed` | 9 |
-| **Model Security** | `model_extraction`, `alignment_faking`, `capability_elicitation`, `reward_hacking`, `backdoor_trigger` | 11 |
-| **Infrastructure** | `ssrf`, `path_traversal`, `shell_injection`, `sql_injection`, `sandbox_escape` | 12 |
-| **Supply Chain** | `supply_chain`, `mcp_server_compromise`, `plugin_manifest_spoofing` | 5 |
-| **Compliance** | `medical_safety`, `financial_compliance`, `insurance_compliance`, `housing_discrimination` | 10 |
-| **Multimodal** | `multimodal_ghost_injection`, `streaming_voice_injection`, `cross_modal_conflict`, `computer_use_injection` | 8+ |
+| Domain               | Key categories                                                                                                                               | Count |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **Prompt & Input**   | `prompt_injection`, `indirect_prompt_injection`, `content_filter_bypass`, `instruction_hierarchy_violation`, `universal_adversarial_trigger` | 11    |
+| **Auth & Access**    | `auth_bypass`, `rbac_bypass`, `session_hijacking`, `cross_tenant_access`, `tool_permission_escalation`                                       | 10    |
+| **Data & Privacy**   | `data_exfiltration`, `sensitive_data`, `pii_disclosure`, `steganographic_exfiltration`, `slow_burn_exfiltration`                             | 14    |
+| **Agent & Tool**     | `tool_misuse`, `tool_chain_hijack`, `agentic_workflow_bypass`, `rogue_agent`, `goal_hijack`, `agentic_scope_creep`                           | 13    |
+| **Safety & Content** | `toxic_content`, `harmful_advice`, `misinformation`, `hallucination`, `emotional_manipulation`                                               | 15    |
+| **RAG & Retrieval**  | `rag_poisoning`, `rag_corpus_poisoning`, `vector_store_manipulation`, `retrieval_tenant_bleed`                                               | 9     |
+| **Model Security**   | `model_extraction`, `alignment_faking`, `capability_elicitation`, `reward_hacking`, `backdoor_trigger`                                       | 11    |
+| **Infrastructure**   | `ssrf`, `path_traversal`, `shell_injection`, `sql_injection`, `sandbox_escape`                                                               | 12    |
+| **Supply Chain**     | `supply_chain`, `mcp_server_compromise`, `plugin_manifest_spoofing`                                                                          | 5     |
+| **Compliance**       | `medical_safety`, `financial_compliance`, `insurance_compliance`, `housing_discrimination`                                                   | 10    |
+| **Multimodal**       | `multimodal_ghost_injection`, `streaming_voice_injection`, `cross_modal_conflict`, `computer_use_injection`                                  | 8+    |
 
 ## Full category reference
 
@@ -69,19 +69,19 @@ reward_hacking, universal_adversarial_trigger
 
 ## 155 strategies by level
 
-| Level | Strategies | Examples |
-|-------|-----------|----------|
-| Urgency & Distress | 4 | `life_or_death_emergency`, `critical_deadline_pressure` |
-| Social Engineering | 10 | `authority_mimicry_security_manager`, `victim_narrative`, `therapeutic_relationship_exploit` |
-| Persona Override | 6 | `dan_style_persona`, `forced_persona_red_team_ai`, `developer_creator_impersonation` |
-| Academic Framing | 4 | `educational_series_framing`, `peer_review_framing`, `textbook_chapter_draft` |
-| Encoding Tricks | 12 | `base64_context_hint`, `rot13_cipher_trick`, `hex_encoding`, `morse_code_encoding`, `ascii_art_injection`, `emoji_braille_encoding` |
-| Multi-turn Advanced | 5 | `crescendo_multi_turn`, `deceptive_delight_attack`, `session_codeword_protocol`, `sandwich_context_attack` |
-| Token Smuggling | 4 | `split_payload_concatenation`, `unicode_homoglyph_hint`, `leetspeak_obfuscation` |
-| RAG/Retrieval | 5 | `retrieval_ranking_manipulation`, `corpus_poisoning_framing`, `chunk_boundary_exploit` |
-| Agent-specific | 7 | `tool_parameter_poisoning`, `tool_schema_confusion`, `orchestrator_impersonation` |
-| Register & Channel | 3 | `informal_colloquial_register`, `nato_phonetic_obfuscation`, `scrambled_word_order_evasion` |
-| Indirect / Supply-Chain | 5 | `mitm_relay_scenario`, `unwitting_relay_paste_scenario`, `ingestion_pipeline_compromise_framing` |
+| Level                   | Strategies | Examples                                                                                                                            |
+| ----------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Urgency & Distress      | 4          | `life_or_death_emergency`, `critical_deadline_pressure`                                                                             |
+| Social Engineering      | 10         | `authority_mimicry_security_manager`, `victim_narrative`, `therapeutic_relationship_exploit`                                        |
+| Persona Override        | 6          | `dan_style_persona`, `forced_persona_red_team_ai`, `developer_creator_impersonation`                                                |
+| Academic Framing        | 4          | `educational_series_framing`, `peer_review_framing`, `textbook_chapter_draft`                                                       |
+| Encoding Tricks         | 12         | `base64_context_hint`, `rot13_cipher_trick`, `hex_encoding`, `morse_code_encoding`, `ascii_art_injection`, `emoji_braille_encoding` |
+| Multi-turn Advanced     | 5          | `crescendo_multi_turn`, `deceptive_delight_attack`, `session_codeword_protocol`, `sandwich_context_attack`                          |
+| Token Smuggling         | 4          | `split_payload_concatenation`, `unicode_homoglyph_hint`, `leetspeak_obfuscation`                                                    |
+| RAG/Retrieval           | 5          | `retrieval_ranking_manipulation`, `corpus_poisoning_framing`, `chunk_boundary_exploit`                                              |
+| Agent-specific          | 7          | `tool_parameter_poisoning`, `tool_schema_confusion`, `orchestrator_impersonation`                                                   |
+| Register & Channel      | 3          | `informal_colloquial_register`, `nato_phonetic_obfuscation`, `scrambled_word_order_evasion`                                         |
+| Indirect / Supply-Chain | 5          | `mitm_relay_scenario`, `unwitting_relay_paste_scenario`, `ingestion_pipeline_compromise_framing`                                    |
 
 ## Full strategy reference
 

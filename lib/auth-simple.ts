@@ -1,4 +1,5 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual, randomUUID } from "node:crypto";
+import bcrypt from "bcryptjs";
 import { query, isDbConfigured } from "./db.js";
 import { generateTenantKey } from "./encryption.js";
 import type { AuthContext } from "./auth.js";
@@ -14,7 +15,13 @@ interface SimpleAuthUser {
 
 interface SessionPayload {
   username: string;
+  role: Role;
+  sid: string;
   exp: number;
+  iat: number;
+  nbf: number;
+  iss: string;
+  aud: string;
 }
 
 export interface SimpleAuthUserInfo {
@@ -24,14 +31,33 @@ export interface SimpleAuthUserInfo {
   name: string;
 }
 
-const SESSION_COOKIE = "rt_session";
+function getSessionCookieName(): string {
+  // Use __Host- prefix when Secure flag is enabled (prevents subdomain attacks)
+  return getCookieSecure() ? "__Host-rt_session" : "rt_session";
+}
 
 function getSessionSecret(): string {
-  return (
-    process.env.SIMPLE_AUTH_SESSION_SECRET ||
-    process.env.SESSION_SECRET ||
-    "dev-only-simple-auth-secret"
-  );
+  const secret =
+    process.env.SIMPLE_AUTH_SESSION_SECRET || process.env.SESSION_SECRET;
+
+  if (!secret) {
+    if (process.env.AUTH_MODE === "simple") {
+      throw new Error(
+        "SIMPLE_AUTH_SESSION_SECRET must be set when AUTH_MODE=simple. " +
+          'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+      );
+    }
+    return "dev-only-simple-auth-secret";
+  }
+
+  if (secret.length < 32) {
+    throw new Error(
+      "SIMPLE_AUTH_SESSION_SECRET must be at least 32 characters. " +
+        'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"',
+    );
+  }
+
+  return secret;
 }
 
 function getSessionTtlSeconds(): number {
@@ -40,7 +66,8 @@ function getSessionTtlSeconds(): number {
 }
 
 function getCookieSecure(): boolean {
-  return process.env.SIMPLE_AUTH_COOKIE_SECURE === "true";
+  if (process.env.SIMPLE_AUTH_COOKIE_SECURE === "false") return false;
+  return true;
 }
 
 function base64UrlEncode(input: string): string {
@@ -126,7 +153,9 @@ function findSimpleAuthUser(username: string): SimpleAuthUser | undefined {
   return parseSimpleAuthUsers().find((user) => user.username === username);
 }
 
-function parseCookies(cookieHeader: string | undefined): Record<string, string> {
+function parseCookies(
+  cookieHeader: string | undefined,
+): Record<string, string> {
   const cookies: Record<string, string> = {};
   if (!cookieHeader) return cookies;
   for (const part of cookieHeader.split(";")) {
@@ -190,27 +219,65 @@ async function ensureSimpleAuthContext(
   };
 }
 
+const JWT_HEADER = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+
 function serializeSession(payload: SessionPayload): string {
-  const encoded = base64UrlEncode(JSON.stringify(payload));
-  const signature = signPayload(encoded);
-  return `${encoded}.${signature}`;
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const signingInput = `${JWT_HEADER}.${encodedPayload}`;
+  const signature = signPayload(signingInput);
+  return `${JWT_HEADER}.${encodedPayload}.${signature}`;
 }
 
 function deserializeSession(token: string): SessionPayload {
-  const [encoded, signature] = token.split(".");
-  if (!encoded || !signature) {
+  const parts = token.split(".");
+  // Support both legacy 2-part (payload.sig) and standard 3-part JWT (header.payload.sig)
+  let encodedPayload: string;
+  let signature: string;
+  let signingInput: string;
+  if (parts.length === 3) {
+    // Standard JWT: header.payload.signature
+    encodedPayload = parts[1];
+    signature = parts[2];
+    signingInput = `${parts[0]}.${parts[1]}`;
+  } else if (parts.length === 2) {
+    // Legacy format: payload.signature (backward compat for active sessions)
+    encodedPayload = parts[0];
+    signature = parts[1];
+    signingInput = parts[0];
+  } else {
     throw new Error("Invalid session token");
   }
-  const expected = signPayload(encoded);
+  if (!encodedPayload || !signature) {
+    throw new Error("Invalid session token");
+  }
+  const expected = signPayload(signingInput);
   if (!safeCompare(signature, expected)) {
     throw new Error("Invalid session signature");
   }
-  const payload = JSON.parse(base64UrlDecode(encoded)) as SessionPayload;
-  if (!payload.username || typeof payload.exp !== "number") {
-    throw new Error("Invalid session payload");
+  const payload = JSON.parse(base64UrlDecode(encodedPayload)) as SessionPayload;
+  if (
+    !payload.username ||
+    typeof payload.exp !== "number" ||
+    !payload.role ||
+    !payload.sid ||
+    typeof payload.iat !== "number"
+  ) {
+    throw new Error("Invalid session payload — please log in again");
   }
-  if (payload.exp < Math.floor(Date.now() / 1000)) {
+  const now = Math.floor(Date.now() / 1000);
+  if (payload.exp < now) {
     throw new Error("Session expired");
+  }
+  // Validate not-before if present (new tokens always have it)
+  if (typeof payload.nbf === "number" && payload.nbf > now + 30) {
+    throw new Error("Token not yet valid");
+  }
+  // Validate issuer/audience if present (new tokens always have them)
+  if (payload.iss && payload.iss !== "red-team-dashboard") {
+    throw new Error("Invalid token issuer");
+  }
+  if (payload.aud && payload.aud !== "red-team-session") {
+    throw new Error("Invalid token audience");
   }
   return payload;
 }
@@ -220,14 +287,32 @@ export async function loginSimpleUser(
   password: string,
 ): Promise<{ auth: AuthContext; user: SimpleAuthUserInfo; token: string }> {
   const user = findSimpleAuthUser(username);
-  if (!user || user.password !== password) {
+  if (!user) {
+    // Constant-time: always run a bcrypt compare even if user not found
+    await bcrypt.compare(password, "$2a$10$invalidhashplaceholderXXXXXXXXXXXXXXXXXXXXXXX");
+    throw new Error("Invalid username or password");
+  }
+
+  // Support bcrypt hashes ($2a$, $2b$, $2y$) and plaintext (backward compat)
+  const isBcrypt = /^\$2[aby]\$\d+\$/.test(user.password);
+  const passwordValid = isBcrypt
+    ? await bcrypt.compare(password, user.password)
+    : user.password === password;
+  if (!passwordValid) {
     throw new Error("Invalid username or password");
   }
 
   const auth = await ensureSimpleAuthContext(user);
+  const now = Math.floor(Date.now() / 1000);
   const token = serializeSession({
     username: user.username,
-    exp: Math.floor(Date.now() / 1000) + getSessionTtlSeconds(),
+    role: user.role,
+    sid: randomUUID(),
+    exp: now + getSessionTtlSeconds(),
+    iat: now,
+    nbf: now,
+    iss: "red-team-dashboard",
+    aud: "red-team-session",
   });
 
   return {
@@ -246,7 +331,8 @@ export async function validateSimpleSession(
   cookieHeader: string | undefined,
 ): Promise<AuthContext> {
   const cookies = parseCookies(cookieHeader);
-  const token = cookies[SESSION_COOKIE];
+  // Check current cookie name, fall back to legacy name for active sessions during migration
+  const token = cookies[getSessionCookieName()] || cookies["rt_session"] || cookies["__Host-rt_session"];
   if (!token) {
     throw new Error("Missing session cookie");
   }
@@ -255,6 +341,9 @@ export async function validateSimpleSession(
   const user = findSimpleAuthUser(payload.username);
   if (!user) {
     throw new Error("User no longer exists");
+  }
+  if (user.role !== payload.role) {
+    throw new Error("Session role mismatch — please log in again");
   }
 
   return ensureSimpleAuthContext(user);
@@ -279,10 +368,10 @@ export async function getSimpleSessionUser(
 export function buildSimpleSessionCookie(token: string): string {
   const maxAge = getSessionTtlSeconds();
   const secure = getCookieSecure() ? "; Secure" : "";
-  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
+  return `${getSessionCookieName()}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
 }
 
 export function buildSimpleLogoutCookie(): string {
   const secure = getCookieSecure() ? "; Secure" : "";
-  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+  return `${getSessionCookieName()}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
 }

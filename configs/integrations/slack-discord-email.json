@@ -1,0 +1,39 @@
+{
+  "target": {
+    "type": "http_agent",
+    "baseUrl": "http://localhost:8000",
+    "agentEndpoint": "/test/message",
+    "applicationDetails": "Chat-platform agent (Slack, Discord, Microsoft Teams) or email bot. DO NOT point this at your production Slack/Discord/email webhook — instead expose a test-mode HTTP endpoint inside your bot service that calls the same handler with a synthetic payload, bypassing the platform delivery.",
+    "customApiTemplate": {
+      "method": "POST",
+      "headers": { "Content-Type": "application/json" },
+      "bodyTemplate": "{\"user\": \"test-user\", \"channel\": \"test-channel\", \"text\": \"{{message}}\"}",
+      "responsePath": "reply"
+    }
+  },
+  "codebasePath": "../my-bot",
+  "codebaseGlob": "**/*.{ts,js,py}",
+  "policyFile": "policies/strict.json",
+  "auth": { "methods": ["none"], "apiKeys": {} },
+  "requestSchema": { "messageField": "text" },
+  "responseSchema": { "responsePath": "reply" },
+  "attackConfig": {
+    "adaptiveRounds": 1,
+    "maxAttacksPerCategory": 3,
+    "concurrency": 2,
+    "enableLlmGeneration": true,
+    "enabledCategories": [
+      "prompt_injection",
+      "indirect_prompt_injection",
+      "social_engineering",
+      "brand_impersonation",
+      "tool_misuse",
+      "tool_chain_hijack",
+      "cross_session_injection",
+      "data_exfiltration",
+      "pii_disclosure",
+      "markdown_link_injection",
+      "psychological_manipulation"
+    ]
+  }
+}

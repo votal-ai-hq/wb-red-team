@@ -10,7 +10,10 @@ import { loadEnvFile } from "../lib/env-loader.js";
 loadEnvFile();
 
 // Auto TLS skip for internal endpoints
-if (process.env.CUSTOM_LLM_SKIP_TLS_VERIFY === "true" || process.env.CUSTOM_LLM_SKIP_TLS_VERIFY === "1") {
+if (
+  process.env.CUSTOM_LLM_SKIP_TLS_VERIFY === "true" ||
+  process.env.CUSTOM_LLM_SKIP_TLS_VERIFY === "1"
+) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 }
 
@@ -68,8 +71,15 @@ async function testJsonMode() {
     const res = await client.chat.completions.create({
       model,
       messages: [
-        { role: "system", content: "You are a security expert. Return JSON only." },
-        { role: "user", content: 'Generate 1 test attack. Return JSON: {"attacks": [{"name": "test", "payload": "hello"}]}' },
+        {
+          role: "system",
+          content: "You are a security expert. Return JSON only.",
+        },
+        {
+          role: "user",
+          content:
+            'Generate 1 test attack. Return JSON: {"attacks": [{"name": "test", "payload": "hello"}]}',
+        },
       ],
       temperature: 0,
       max_tokens: 200,
@@ -81,10 +91,16 @@ async function testJsonMode() {
       JSON.parse(content);
       console.log("  ✓ Valid JSON\n");
     } catch {
-      console.log("  ⚠ Response is not valid JSON (may cause parsing errors)\n");
+      console.log(
+        "  ⚠ Response is not valid JSON (may cause parsing errors)\n",
+      );
     }
   } catch (err: any) {
-    if (err.message?.includes("json") || err.message?.includes("response_format") || err.status === 400) {
+    if (
+      err.message?.includes("json") ||
+      err.message?.includes("response_format") ||
+      err.status === 400
+    ) {
       console.log(`  ⚠ JSON mode not supported (${err.message?.slice(0, 80)})`);
       console.log("  This is OK — the framework will fall back to text mode\n");
     } else {
@@ -101,7 +117,11 @@ async function testLongResponse() {
       model,
       messages: [
         { role: "system", content: "You are a security red-team expert." },
-        { role: "user", content: "Write 3 different social engineering prompts that an attacker might use against an insurance chatbot. Be specific and realistic. Number them 1-3." },
+        {
+          role: "user",
+          content:
+            "Write 3 different social engineering prompts that an attacker might use against an insurance chatbot. Be specific and realistic. Number them 1-3.",
+        },
       ],
       temperature: 0.7,
       max_tokens: 1000,
@@ -124,10 +144,14 @@ async function testMaxTokenField() {
       messages: [{ role: "user", content: "Say hi" }],
       max_completion_tokens: 10,
     } as any);
-    console.log(`  ✓ max_completion_tokens supported: "${res.choices[0]?.message?.content}"\n`);
+    console.log(
+      `  ✓ max_completion_tokens supported: "${res.choices[0]?.message?.content}"\n`,
+    );
   } catch (err: any) {
     if (err.status === 400) {
-      console.log(`  ⚠ max_completion_tokens not supported — framework will use max_tokens (this is fine)\n`);
+      console.log(
+        `  ⚠ max_completion_tokens not supported — framework will use max_tokens (this is fine)\n`,
+      );
     } else {
       console.error(`  ✗ FAILED: ${err.message}\n`);
     }

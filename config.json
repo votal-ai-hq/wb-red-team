@@ -68,12 +68,25 @@
     "maxMultiTurnSteps": 5,
     "strategiesPerRound": 2,
     "attacksPerStrategy":2,
+    "categoryParallelism": 4,
     "enableAdaptiveMultiTurn": true,
     "multiTurnGenerationRate": 0.6,
     "llmProvider": "anthropic",
     "llmModel": "claude-sonnet-4-20250514",
     "judgeProvider": "anthropic",
     "judgeModel": "claude-sonnet-4-20250514",
+    "enabledCategories": [
+      "insurance_challenegr_remote_whitehat",
+      "indirect_prompt_injection",
+      "context_window_attack",
+      "conversation_manipulation",
+      "goal_hijack",
+      "multi_turn_escalation",
+      "toxic_content",
+      "harmful_advice",
+      "misinformation",
+      "bias_exploitation"
+    ],
     "enabledStrategies": [
       "life_or_death_emergency",
       "template_variable_injection",
@@ -107,10 +120,6 @@
       "multi_language_obfuscation",
       "markdown_html_injection",
       "base64_context_hint"
-    ],
-    "enabledCategories": [
-      "prompt_injection",
-      "indirect_prompt_injection"
     ]
   }
 }

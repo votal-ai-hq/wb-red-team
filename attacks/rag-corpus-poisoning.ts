@@ -45,7 +45,7 @@ export const ragCorpusPoisoningModule: AttackModule = {
   },
 
   getGenerationPrompt(analysis: CodebaseAnalysis): string {
-    return `You are a red-team attacker targeting RAG CORPUS POISONING in an AI system.
+    return `You are an AI safety evaluation specialist targeting RAG CORPUS POISONING in an AI system.
 
 TOOLS:
 ${JSON.stringify(

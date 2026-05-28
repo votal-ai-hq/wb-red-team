@@ -1,0 +1,40 @@
+{
+  "target": {
+    "type": "http_agent",
+    "baseUrl": "http://localhost:8000",
+    "agentEndpoint": "/query",
+    "applicationDetails": "Framework-agnostic RAG app — any service that retrieves over a vector store and answers grounded questions. Surface area: retrieval poisoning, chunk boundaries, embedding-space attacks, cross-tenant bleed in shared indices.",
+    "customApiTemplate": {
+      "method": "POST",
+      "headers": { "Content-Type": "application/json" },
+      "bodyTemplate": "{\"query\": \"{{message}}\"}",
+      "responsePath": "answer"
+    }
+  },
+  "codebasePath": "../my-rag-app",
+  "codebaseGlob": "**/*.{py,ts,js}",
+  "policyFile": "policies/strict.json",
+  "auth": { "methods": ["none"], "apiKeys": {} },
+  "requestSchema": { "messageField": "query" },
+  "responseSchema": { "responsePath": "answer" },
+  "attackConfig": {
+    "adaptiveRounds": 1,
+    "maxAttacksPerCategory": 3,
+    "concurrency": 2,
+    "enableLlmGeneration": true,
+    "enabledCategories": [
+      "rag_poisoning",
+      "rag_corpus_poisoning",
+      "rag_attribution",
+      "vector_store_manipulation",
+      "chunk_boundary_injection",
+      "retrieval_ranking_attack",
+      "retrieval_tenant_bleed",
+      "embedding_inversion",
+      "indirect_prompt_injection",
+      "data_exfiltration",
+      "pii_disclosure",
+      "hallucination"
+    ]
+  }
+}

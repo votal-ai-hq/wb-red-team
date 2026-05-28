@@ -44,15 +44,65 @@ async function handleRequest(
   handler: Handler,
 ): Promise<void> {
   try {
-    // CORS
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    // Block dangerous HTTP methods (TRACE, PUT, DELETE, PATCH, CONNECT)
+    const allowedMethods = new Set(["GET", "POST", "OPTIONS", "HEAD"]);
+    if (!allowedMethods.has(req.method || "")) {
+      res.writeHead(405, {
+        "Content-Type": "text/plain",
+        Allow: "GET, POST, OPTIONS, HEAD",
+      });
+      res.end("Method Not Allowed");
+      return;
+    }
+
+    // ── CORS (origin allowlist) ──
+    const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const origin = req.headers.origin;
+    if (origin && allowedOrigins.length > 0) {
+      // Only allow explicitly configured origins
+      if (allowedOrigins.includes(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Vary", "Origin");
+      }
+    } else if (origin && !process.env.CORS_ALLOWED_ORIGINS && !isDbConfigured()) {
+      // Local dev only: allow localhost when no DB configured
+      if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Vary", "Origin");
+      }
+    }
+    // ── Security headers ──
     res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization",
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload",
     );
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=(), payment=()",
+    );
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.hcaptcha.com https://newassets.hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.hcaptcha.com; frame-src https://newassets.hcaptcha.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+    );
+    // Prevent caching of API responses (sensitive data)
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    // Remove server fingerprinting
+    res.removeHeader("X-Powered-By");
 
     if (req.method === "OPTIONS") {
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, HEAD");
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization",
+      );
       res.writeHead(204);
       res.end();
       return;
@@ -84,7 +134,9 @@ async function handleRequest(
     try {
       if (authMode === "dev") {
         // Dev mode: auto-authenticate all requests as admin
-        authCtx = await validateDevToken("Bearer " + (process.env.DEV_API_KEY || "dev-key"));
+        authCtx = await validateDevToken(
+          "Bearer " + (process.env.DEV_API_KEY || "dev-key"),
+        );
       } else if (authMode === "simple") {
         authCtx = await validateSimpleSession(req.headers.cookie);
       } else if (req.headers["x-api-key"]) {

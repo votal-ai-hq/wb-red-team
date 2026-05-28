@@ -46,7 +46,11 @@ const server = createServer((req, res) => {
                 args: {
                   agent_name: "policy_agent",
                   task: userMessage,
-                  task_params: { policy_number: "POL-12345", line_of_business: "Auto", skill: "policy-details-retrieval" },
+                  task_params: {
+                    policy_number: "POL-12345",
+                    line_of_business: "Auto",
+                    skill: "policy-details-retrieval",
+                  },
                 },
               },
             ],
@@ -65,8 +69,26 @@ const server = createServer((req, res) => {
           username: "TestUser",
           messages: [
             { type: "human", content: userMessage },
-            { type: "ai", content: "", tool_calls: [{ name: "send-message", args: { agent_name: "policy_agent", task: userMessage } }] },
-            { type: "tool", name: "send-message", content: "Policy details retrieved", artifact: { subagent_name: "policy_agent", routing_outcome: "success", task_status: "completed" } },
+            {
+              type: "ai",
+              content: "",
+              tool_calls: [
+                {
+                  name: "send-message",
+                  args: { agent_name: "policy_agent", task: userMessage },
+                },
+              ],
+            },
+            {
+              type: "tool",
+              name: "send-message",
+              content: "Policy details retrieved",
+              artifact: {
+                subagent_name: "policy_agent",
+                routing_outcome: "success",
+                task_status: "completed",
+              },
+            },
             { type: "ai", content: aiResponse },
           ],
           policy_number: "POL-12345",

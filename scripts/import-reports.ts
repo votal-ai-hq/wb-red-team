@@ -19,7 +19,11 @@ import type { Report } from "../lib/types.js";
 
 loadEnvFile();
 
-const REPORT_DIR = resolve(import.meta.dirname ?? process.cwd(), "..", "report");
+const REPORT_DIR = resolve(
+  import.meta.dirname ?? process.cwd(),
+  "..",
+  "report",
+);
 
 async function main() {
   if (!isDbConfigured()) {
@@ -28,7 +32,9 @@ async function main() {
   }
 
   if (!process.env.MASTER_ENCRYPTION_KEY) {
-    console.error("MASTER_ENCRYPTION_KEY is not set. Generate one with: openssl rand -hex 32");
+    console.error(
+      "MASTER_ENCRYPTION_KEY is not set. Generate one with: openssl rand -hex 32",
+    );
     process.exit(1);
   }
 
@@ -66,7 +72,9 @@ async function main() {
   // Find report files
   let files: string[];
   try {
-    files = readdirSync(REPORT_DIR).filter((f) => f.endsWith(".json")).sort();
+    files = readdirSync(REPORT_DIR)
+      .filter((f) => f.endsWith(".json"))
+      .sort();
   } catch {
     console.error(`No report directory found at ${REPORT_DIR}`);
     process.exit(1);
@@ -101,7 +109,10 @@ async function main() {
       const s = report.summary;
 
       // Encrypt
-      const { ciphertext, iv, authTag } = encryptWithTenantKey(raw, tenantKeyEnc);
+      const { ciphertext, iv, authTag } = encryptWithTenantKey(
+        raw,
+        tenantKeyEnc,
+      );
 
       await query(
         `INSERT INTO reports (
@@ -127,14 +138,18 @@ async function main() {
         ],
       );
 
-      console.log(`  OK   ${file} (score: ${s.score}, ${s.totalAttacks} attacks)`);
+      console.log(
+        `  OK   ${file} (score: ${s.score}, ${s.totalAttacks} attacks)`,
+      );
       imported++;
     } catch (err) {
       console.error(`  FAIL ${file}: ${(err as Error).message}`);
     }
   }
 
-  console.log(`\nDone. Imported: ${imported}, Skipped: ${skipped}, Total: ${files.length}`);
+  console.log(
+    `\nDone. Imported: ${imported}, Skipped: ${skipped}, Total: ${files.length}`,
+  );
   await closePool();
 }
 

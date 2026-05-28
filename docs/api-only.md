@@ -131,18 +131,18 @@ Configure arbitrary request shapes via `customApiTemplate`:
 
 ## Effective categories for API-only mode
 
-| Category | Effectiveness | Description |
-|----------|---------------|-------------|
-| `prompt_injection` | ⭐⭐⭐⭐⭐ | System prompt override, jailbreaks |
-| `output_evasion` | ⭐⭐⭐⭐⭐ | Guardrail bypass, filter evasion |
-| `api_abuse` | ⭐⭐⭐⭐⭐ | Parameter pollution, endpoint enumeration |
-| `rate_limit` | ⭐⭐⭐⭐⭐ | Throttling and abuse prevention |
-| `data_exfiltration` | ⭐⭐⭐⭐ | Extract API keys, configs via responses |
-| `sensitive_data` | ⭐⭐⭐⭐ | Leak detection in responses |
-| `conversation_manipulation` | ⭐⭐⭐⭐ | Context switching, anchoring |
-| `toxic_content` | ⭐⭐⭐⭐ | Content policy testing |
-| `social_engineering` | ⭐⭐⭐ | Authority manipulation, pretexting |
-| `misinformation` | ⭐⭐⭐ | False information generation |
+| Category                    | Effectiveness | Description                               |
+| --------------------------- | ------------- | ----------------------------------------- |
+| `prompt_injection`          | ⭐⭐⭐⭐⭐    | System prompt override, jailbreaks        |
+| `output_evasion`            | ⭐⭐⭐⭐⭐    | Guardrail bypass, filter evasion          |
+| `api_abuse`                 | ⭐⭐⭐⭐⭐    | Parameter pollution, endpoint enumeration |
+| `rate_limit`                | ⭐⭐⭐⭐⭐    | Throttling and abuse prevention           |
+| `data_exfiltration`         | ⭐⭐⭐⭐      | Extract API keys, configs via responses   |
+| `sensitive_data`            | ⭐⭐⭐⭐      | Leak detection in responses               |
+| `conversation_manipulation` | ⭐⭐⭐⭐      | Context switching, anchoring              |
+| `toxic_content`             | ⭐⭐⭐⭐      | Content policy testing                    |
+| `social_engineering`        | ⭐⭐⭐        | Authority manipulation, pretexting        |
+| `misinformation`            | ⭐⭐⭐        | False information generation              |
 
 {: .warning }
 **Limitations vs source-code analysis:** cannot discover internal tool implementations, limited visibility into backend controls, no insight into data flow, cannot detect dependency-level supply chain issues.

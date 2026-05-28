@@ -1648,7 +1648,9 @@ export function loadCustomStrategies(filePath: string): AttackStrategy[] {
       promptModifier: c.promptModifier,
     }));
   } catch (err) {
-    console.warn(`Failed to load custom strategies from ${filePath}: ${(err as Error).message}`);
+    console.warn(
+      `Failed to load custom strategies from ${filePath}: ${(err as Error).message}`,
+    );
     return [];
   }
 }
@@ -1660,7 +1662,9 @@ export function getAllStrategies(customFile?: string): AttackStrategy[] {
   if (!customFile) return ALL_STRATEGIES;
   const custom = loadCustomStrategies(customFile);
   if (custom.length > 0) {
-    console.log(`  Loaded ${custom.length} custom strategies from ${customFile}`);
+    console.log(
+      `  Loaded ${custom.length} custom strategies from ${customFile}`,
+    );
   }
   return [...ALL_STRATEGIES, ...custom];
 }

@@ -465,7 +465,10 @@ class CustomProvider implements LlmProvider {
       );
 
     // Skip TLS verification for internal endpoints with self-signed/corporate certs
-    if (process.env.CUSTOM_LLM_SKIP_TLS_VERIFY === "true" || process.env.CUSTOM_LLM_SKIP_TLS_VERIFY === "1") {
+    if (
+      process.env.CUSTOM_LLM_SKIP_TLS_VERIFY === "true" ||
+      process.env.CUSTOM_LLM_SKIP_TLS_VERIFY === "1"
+    ) {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
     }
 

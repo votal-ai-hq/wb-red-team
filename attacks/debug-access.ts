@@ -44,7 +44,7 @@ export const debugAccessModule: AttackModule = {
   },
 
   getGenerationPrompt(analysis: CodebaseAnalysis): string {
-    return `You are a red-team attacker probing for exposed debug endpoints and admin backdoors.
+    return `You are an AI safety evaluation specialist probing for exposed debug endpoints and admin backdoors.
 
 TOOLS:
 \${JSON.stringify(analysis.tools.map((t) => t.name))}

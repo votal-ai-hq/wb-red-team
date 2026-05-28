@@ -11,7 +11,7 @@ Answers to the questions buyers, security architects, and AppSec teams ask when 
 
 Three layers stacked together:
 
-1. **Static analysis reads your actual code** — the analyzer extracts tools, roles, guardrails, hardcoded secrets, RBAC logic, and the tool call graph. Every attack is generated *from that context*, not from a fixed library.
+1. **Static analysis reads your actual code** — the analyzer extracts tools, roles, guardrails, hardcoded secrets, RBAC logic, and the tool call graph. Every attack is generated _from that context_, not from a fixed library.
 2. **LLM attack planner** — for each category, a per-category generation prompt is handed to the LLM along with the discovered analysis. The LLM produces novel attacks tailored to your stack (e.g. a JWT forge using the actual secret it found, or a `read_file → send_email` chain using your real tool names).
 3. **155 strategies × 141 categories composed orthogonally** — roughly 21,000 base combinations before adaptive rounds. The runner mutates and re-targets across rounds based on what almost worked.
 
@@ -22,7 +22,7 @@ It is not a fixed payload list. The same scan run twice produces different attac
 No. There are three escape valves:
 
 - **LLM generation is on by default** — each category module ships seed attacks (3–5) plus a generation prompt that produces novel ones at runtime.
-- **Adaptive multi-turn** generates each follow-up turn from the *previous response*, not a script — so the path is decided live by the model.
+- **Adaptive multi-turn** generates each follow-up turn from the _previous response_, not a script — so the path is decided live by the model.
 - **Custom extension points** — drop in your own attack categories (TypeScript, ~30 lines), custom strategies (JSON), custom policies, and custom compliance mappings without modifying core code.
 
 ## Does it have any context into how the AI infrastructure is structured?
@@ -52,15 +52,15 @@ The honest recommendation is to run against staging or a mirrored environment fo
 
 ## What means do users have to minimize risk of accidental crashes, overwhelming databases, or corrupting AI application state?
 
-| Control | What it does |
-|---------|--------------|
-| **Throttling** | `concurrency: 1–3` + `delayBetweenRequestsMs: 200+` for respectful pacing |
-| **Scoping** | Enable or disable categories and strategies per run; start with safe categories before destructive ones |
-| **Auth isolation** | Credentials per role mean you can test with a sandbox user that has limited blast radius |
-| **Isolated environments** | Every deployment guide recommends staging or synthetic data, never production with real PII |
-| **Cancel in flight** | Every run has `DELETE /api/run/:id` to abort cleanly |
-| **Audit log** (enterprise) | Every attack is recorded — provable trail of what was sent and when |
-| **Dry-run mode** | `customAttacksOnly` + `enableLlmGeneration: false` replays a known set without LLM generation |
+| Control                    | What it does                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Throttling**             | `concurrency: 1–3` + `delayBetweenRequestsMs: 200+` for respectful pacing                               |
+| **Scoping**                | Enable or disable categories and strategies per run; start with safe categories before destructive ones |
+| **Auth isolation**         | Credentials per role mean you can test with a sandbox user that has limited blast radius                |
+| **Isolated environments**  | Every deployment guide recommends staging or synthetic data, never production with real PII             |
+| **Cancel in flight**       | Every run has `DELETE /api/run/:id` to abort cleanly                                                    |
+| **Audit log** (enterprise) | Every attack is recorded — provable trail of what was sent and when                                     |
+| **Dry-run mode**           | `customAttacksOnly` + `enableLlmGeneration: false` replays a known set without LLM generation           |
 
 ## How easy is setup and kickoff — steps, time, and on-prem vs cloud differences?
 

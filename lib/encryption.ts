@@ -3,11 +3,7 @@
  * Master key encrypts per-tenant keys; tenant keys encrypt data.
  */
 
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes,
-} from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 const ALGO = "aes-256-gcm";
 const IV_LEN = 12;

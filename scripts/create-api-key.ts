@@ -84,7 +84,9 @@ async function main() {
   console.log(`  Role:   ${role}`);
   console.log(`  Name:   ${name}`);
   console.log("\n  Usage:\n");
-  console.log(`  curl -H "X-API-Key: ${rawKey}" http://localhost:4200/api/runs`);
+  console.log(
+    `  curl -H "X-API-Key: ${rawKey}" http://localhost:4200/api/runs`,
+  );
   console.log(`\n  curl -X POST http://localhost:4200/api/run \\`);
   console.log(`    -H "X-API-Key: ${rawKey}" \\`);
   console.log(`    -H "Content-Type: application/json" \\`);

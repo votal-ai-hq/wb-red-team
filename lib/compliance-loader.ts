@@ -5,7 +5,10 @@
 
 import { readFileSync, readdirSync } from "fs";
 import { join, resolve } from "path";
-import type { ComplianceFramework, ComplianceItem } from "./compliance-mappings.js";
+import type {
+  ComplianceFramework,
+  ComplianceItem,
+} from "./compliance-mappings.js";
 
 // Fallback: built-in frameworks from compliance-mappings.ts
 import { ALL_FRAMEWORKS as BUILTIN_FRAMEWORKS } from "./compliance-mappings.js";
@@ -55,9 +58,7 @@ export function loadComplianceFrameworks(
         }
 
         if (validItems.length === 0) {
-          console.warn(
-            `  Compliance: skipping ${file} — no valid items found`,
-          );
+          console.warn(`  Compliance: skipping ${file} — no valid items found`);
           continue;
         }
 

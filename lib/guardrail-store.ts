@@ -54,7 +54,9 @@ export function extractGuardrailSummary(parsed: any): {
     return (
       g.status_code === 400 ||
       g.status_code === 403 ||
-      (g.response_text || "").toLowerCase().includes("blocked by votal guardrails")
+      (g.response_text || "")
+        .toLowerCase()
+        .includes("blocked by votal guardrails")
     );
   }).length;
 
@@ -156,7 +158,12 @@ export async function getGuardrailReport(
   );
   const tenantKeyEnc = tenantResult.rows[0].encryption_key_enc;
 
-  return decryptWithTenantKey(row.report_enc, row.iv, row.auth_tag, tenantKeyEnc);
+  return decryptWithTenantKey(
+    row.report_enc,
+    row.iv,
+    row.auth_tag,
+    tenantKeyEnc,
+  );
 }
 
 /**

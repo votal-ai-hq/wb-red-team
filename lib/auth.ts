@@ -71,8 +71,7 @@ export async function validateToken(
     throw new Error("JWT missing sub claim");
   }
 
-  const email =
-    typeof payload.email === "string" ? payload.email : undefined;
+  const email = typeof payload.email === "string" ? payload.email : undefined;
 
   // Extract role from JWT claim or default to viewer
   let role: Role = "viewer";

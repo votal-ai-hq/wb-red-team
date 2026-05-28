@@ -12,20 +12,20 @@ For SDK integration examples (LangChain, CrewAI, OpenAI, Anthropic, Vercel AI SD
 
 The framework exposes 12 MCP tools via `hermes-redteam/mcp-server.ts` for use with any MCP-compatible agent:
 
-| Tool | Purpose |
-|------|---------|
-| `read_repo` | Scan source code for tools, roles, guardrails, secrets |
-| `probe_target` | Send benign test message to observe API shape |
-| `read_prior_reports` | Load previous scan results for adaptive planning |
-| `write_config` | Generate and save a red-team config |
-| `write_custom_attacks` | Create custom attack CSV/JSON files |
-| `write_policy` | Create judge policy with per-category overrides |
-| `run_scan` | Start a red-team scan via dashboard API |
-| `check_run_status` | Poll scan progress (attacks completed, phase) |
-| `get_run_results` | Get full results with verdicts and findings |
-| `cancel_run` | Cancel a running scan |
+| Tool                             | Purpose                                                           |
+| -------------------------------- | ----------------------------------------------------------------- |
+| `read_repo`                      | Scan source code for tools, roles, guardrails, secrets            |
+| `probe_target`                   | Send benign test message to observe API shape                     |
+| `read_prior_reports`             | Load previous scan results for adaptive planning                  |
+| `write_config`                   | Generate and save a red-team config                               |
+| `write_custom_attacks`           | Create custom attack CSV/JSON files                               |
+| `write_policy`                   | Create judge policy with per-category overrides                   |
+| `run_scan`                       | Start a red-team scan via dashboard API                           |
+| `check_run_status`               | Poll scan progress (attacks completed, phase)                     |
+| `get_run_results`                | Get full results with verdicts and findings                       |
+| `cancel_run`                     | Cancel a running scan                                             |
 | `list_categories_and_strategies` | List all 141 categories + 155 strategies with compliance mappings |
-| `suggest_guardrails` | Map vulnerabilities to Votal Shield guardrail configs |
+| `suggest_guardrails`             | Map vulnerabilities to Votal Shield guardrail configs             |
 
 **Register with Hermes:**
 
@@ -63,16 +63,16 @@ Natural-language terminal interface with intent classification, LLM-powered conf
 
 When vulnerabilities are found, the framework maps them to specific [Votal Shield](https://github.com/sundi133/llm-shield) guardrail configurations:
 
-| Vulnerability | Shield Guardrail | Endpoint |
-|---------------|------------------|----------|
-| Prompt injection | `adversarial-prompt-detection` | `/guardrails/input` |
-| Toxic content | `toxicity-detection` | `/guardrails/output` |
-| PII disclosure | `pii-detection + output-redaction` | `/guardrails/output` |
-| Hallucination | `hallucination-detection` | `/guardrails/output` |
-| Data exfiltration | `pii-detection + keyword-blocklist` | `/guardrails/output` |
-| Tool misuse | `agentic tool authorization` | `/guardrails/output` |
-| Content filter bypass | `keyword-blocklist + adversarial-prompt-detection` | `/guardrails/input` |
-| Harmful advice | `topic-restriction + toxicity-detection` | `/guardrails/input + output` |
+| Vulnerability         | Shield Guardrail                                   | Endpoint                     |
+| --------------------- | -------------------------------------------------- | ---------------------------- |
+| Prompt injection      | `adversarial-prompt-detection`                     | `/guardrails/input`          |
+| Toxic content         | `toxicity-detection`                               | `/guardrails/output`         |
+| PII disclosure        | `pii-detection + output-redaction`                 | `/guardrails/output`         |
+| Hallucination         | `hallucination-detection`                          | `/guardrails/output`         |
+| Data exfiltration     | `pii-detection + keyword-blocklist`                | `/guardrails/output`         |
+| Tool misuse           | `agentic tool authorization`                       | `/guardrails/output`         |
+| Content filter bypass | `keyword-blocklist + adversarial-prompt-detection` | `/guardrails/input`          |
+| Harmful advice        | `topic-restriction + toxicity-detection`           | `/guardrails/input + output` |
 
 Deploy Shield as a proxy — no code changes needed:
 

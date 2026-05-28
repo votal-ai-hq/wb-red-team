@@ -57,7 +57,7 @@ this workflow.
    - Healthcare → ["MRN", "\\bNPI\\b", "SSN", "DOB"]
    - Fintech → ["account_number", "routing", "SSN", "card"]
    - Generic → ["sk-", "AKIA", "postgres://", "password"]
-   (Adjust based on appDetails.)
+     (Adjust based on appDetails.)
 6. Set auth based on authHint. If it says "(none)" or is empty:
    `"auth": { "methods": [] }` and omit `bearerToken`.
    If it mentions a bearer token env var:

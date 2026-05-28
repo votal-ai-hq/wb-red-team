@@ -93,6 +93,7 @@ function validateAndNormalizeConfig(config: Config): Config {
     adaptiveRounds: 3,
     maxAttacksPerCategory: 15,
     concurrency: 3,
+    categoryParallelism: 1,
     delayBetweenRequestsMs: 200,
     llmProvider: "openai",
     llmModel: "gpt-4o",

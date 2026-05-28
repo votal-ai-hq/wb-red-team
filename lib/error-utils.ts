@@ -58,7 +58,8 @@ export function formatErrorDetails(err: unknown): string {
     // Capture HTTP response details if available
     if (e.response) {
       const r = e.response;
-      if (r.status) meta.push(`response_status=${r.status} ${r.statusText ?? ""}`);
+      if (r.status)
+        meta.push(`response_status=${r.status} ${r.statusText ?? ""}`);
       if (r.url) meta.push(`response_url=${r.url}`);
     }
 
@@ -82,7 +83,11 @@ export function formatErrorDetails(err: unknown): string {
   // Add env context so the user knows what was configured (skip if already embedded)
   const topErr = err as any;
   const baseUrl = process.env.CUSTOM_LLM_BASE_URL;
-  if (baseUrl && !topErr.skipConfig && !lines.some(l => l.includes("CUSTOM_LLM_BASE_URL"))) {
+  if (
+    baseUrl &&
+    !topErr.skipConfig &&
+    !lines.some((l) => l.includes("CUSTOM_LLM_BASE_URL"))
+  ) {
     lines.push(`  [config] CUSTOM_LLM_BASE_URL=${baseUrl}`);
   }
 
@@ -91,7 +96,11 @@ export function formatErrorDetails(err: unknown): string {
   // Clean up trailing "reason: " (OpenAI SDK bug)
   result = result.replace(/,?\s*reason:\s*$/gm, "").trim();
 
-  if (!result || result === "Connection error." || result === "Connection error") {
+  if (
+    !result ||
+    result === "Connection error." ||
+    result === "Connection error"
+  ) {
     return `Connection error — CUSTOM_LLM_BASE_URL=${baseUrl ?? "<not set>"} is unreachable. Check network, proxy, SSL certs, and firewall.`;
   }
 

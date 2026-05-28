@@ -9,21 +9,22 @@ Eleven compliance frameworks are built in; more can be added by dropping JSON in
 
 ## Bundled frameworks
 
-| Framework | Controls |
-|-----------|----------|
-| OWASP LLM Top 10 (2025) | 10 |
-| OWASP Agentic Security Top 10 | 10 |
-| MITRE ATLAS | 15 |
-| NIST AI RMF (AI 600-1) | 10 |
-| NIST SP 800-53 Rev 5 | 12 |
-| EU AI Act | 10 |
-| GDPR | 12 |
-| HIPAA Part 164 | 10 |
-| ISO 27001:2022 | 11 |
-| PCI DSS v4.0.1 | 11 |
-| Saudi PDPL | 10 |
+| Framework                     | Controls |
+| ----------------------------- | -------- |
+| OWASP LLM Top 10 (2025)       | 10       |
+| OWASP Agentic Security Top 10 | 10       |
+| MITRE ATLAS                   | 15       |
+| NIST AI RMF (AI 600-1)        | 10       |
+| NIST SP 800-53 Rev 5          | 12       |
+| EU AI Act                     | 10       |
+| GDPR                          | 12       |
+| HIPAA Part 164                | 10       |
+| ISO 27001:2022                | 11       |
+| PCI DSS v4.0.1                | 11       |
+| Saudi PDPL                    | 10       |
 
 Files shipped in `compliance/`:
+
 - `owasp-llm-top10-2025.json`
 - `owasp-agentic-top10.json`
 - `nist-ai-rmf.json`
@@ -51,15 +52,15 @@ Drop a JSON file in `compliance/` — auto-discovered and shown in the dashboard
 
 **Fields:**
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `id` | Yes | Unique identifier (used in API calls) |
-| `name` | Yes | Display name shown in the dashboard |
-| `items` | Yes | Array of controls/requirements |
-| `items[].code` | Yes | Control code (e.g., `LLM01:2025`, `NIST-1`) |
-| `items[].title` | Yes | Short title |
-| `items[].description` | Yes | What this control covers |
-| `items[].categories` | Yes | Array of attack category IDs to map |
+| Field                 | Required | Description                                 |
+| --------------------- | -------- | ------------------------------------------- |
+| `id`                  | Yes      | Unique identifier (used in API calls)       |
+| `name`                | Yes      | Display name shown in the dashboard         |
+| `items`               | Yes      | Array of controls/requirements              |
+| `items[].code`        | Yes      | Control code (e.g., `LLM01:2025`, `NIST-1`) |
+| `items[].title`       | Yes      | Short title                                 |
+| `items[].description` | Yes      | What this control covers                    |
+| `items[].categories`  | Yes      | Array of attack category IDs to map         |
 
 Common category IDs for mapping: `prompt_injection`, `indirect_prompt_injection`, `content_filter_bypass`, `auth_bypass`, `rbac_bypass`, `session_hijacking`, `cross_tenant_access`, `data_exfiltration`, `sensitive_data`, `pii_disclosure`, `tool_misuse`, `tool_chain_hijack`, `tool_output_manipulation`, `hallucination`, `misinformation`, `overreliance`, `supply_chain`, `rag_poisoning`, `memory_poisoning`.
 

@@ -398,7 +398,9 @@ describe("analyzeResponse", () => {
       );
       expect(mockChat).not.toHaveBeenCalled();
       expect(result403.verdict).toBe("ERROR");
-      expect(result403.findings.some((f) => f.includes("authentication failure"))).toBe(true);
+      expect(
+        result403.findings.some((f) => f.includes("authentication failure")),
+      ).toBe(true);
 
       // Test 422
       const result422 = await analyzeResponse(
@@ -421,7 +423,8 @@ describe("analyzeResponse", () => {
           attack_succeeded: false,
           partial: false,
           confidence: 93,
-          reasoning: "The model discussed authentication concepts but the request succeeded and returned a normal refusal.",
+          reasoning:
+            "The model discussed authentication concepts but the request succeeded and returned a normal refusal.",
         }),
       );
       vi.mocked(getJudgeProvider).mockReturnValue({ chat: mockChat });
@@ -438,7 +441,9 @@ describe("analyzeResponse", () => {
       );
 
       expect(result.verdict).toBe("FAIL");
-      expect(result.findings.some((f) => f.includes("authentication failure"))).toBe(false);
+      expect(
+        result.findings.some((f) => f.includes("authentication failure")),
+      ).toBe(false);
       expect(mockChat).toHaveBeenCalledOnce();
     });
 
@@ -625,7 +630,7 @@ describe("analyzeResponse", () => {
       const mockChat = vi.fn().mockResolvedValue(
         JSON.stringify({
           evidence_for:
-            'Agent refused the direct request but still complied with the indirect one: "I can\'t do that directly, but here\'s the info..."',
+            "Agent refused the direct request but still complied with the indirect one: \"I can't do that directly, but here's the info...\"",
           evidence_against: "",
           attack_succeeded: true,
           partial: false,

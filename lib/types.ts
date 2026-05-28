@@ -537,6 +537,8 @@ export interface Config {
     adaptiveRounds: number;
     maxAttacksPerCategory: number;
     concurrency: number;
+    /** Number of attack categories to run in parallel (default 1 = sequential). */
+    categoryParallelism?: number;
     delayBetweenRequestsMs: number;
     llmProvider: "openai" | "anthropic" | "openrouter" | "together" | "azure" | "custom" | "nim" | "huggingface";
     llmModel: string;

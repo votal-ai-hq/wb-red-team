@@ -706,12 +706,12 @@ echo "config-prod.json" >> .gitignore
 
 ### Deployment Modes
 
-| Mode | Use Case | Auth | Storage |
-|------|----------|------|---------|
-| **CLI** (`npx tsx red-team.ts config.json`) | Local testing, one-off scans | None | JSON files on disk |
-| **Docker standalone** (no `DATABASE_URL`) | Quick setup, demos | None | JSON files via volume mount |
-| **Docker + Postgres** (`AUTH_MODE=dev`) | Local dev with enterprise backend | Auto-admin, no login | Encrypted in Postgres |
-| **Enterprise** (no `AUTH_MODE`) | Production deployment | OIDC SSO + API keys | Encrypted in Postgres |
+| Mode                                        | Use Case                          | Auth                 | Storage                     |
+| ------------------------------------------- | --------------------------------- | -------------------- | --------------------------- |
+| **CLI** (`npx tsx red-team.ts config.json`) | Local testing, one-off scans      | None                 | JSON files on disk          |
+| **Docker standalone** (no `DATABASE_URL`)   | Quick setup, demos                | None                 | JSON files via volume mount |
+| **Docker + Postgres** (`AUTH_MODE=dev`)     | Local dev with enterprise backend | Auto-admin, no login | Encrypted in Postgres       |
+| **Enterprise** (no `AUTH_MODE`)             | Production deployment             | OIDC SSO + API keys  | Encrypted in Postgres       |
 
 ### 139 Attack Categories
 
@@ -720,6 +720,7 @@ Covering prompt injection, data exfiltration, auth bypass, tool misuse, RAG pois
 ### Compliance Frameworks
 
 Extensible compliance framework system — add custom frameworks by dropping JSON files in `compliance/`:
+
 - OWASP LLM Top 10 (2025)
 - OWASP Agentic Security Top 10
 - NIST AI Risk Management Framework (AI 600-1)
@@ -737,19 +738,19 @@ Extensible compliance framework system — add custom frameworks by dropping JSO
 
 ### API Endpoints
 
-| Endpoint | Method | Description | Auth |
-|----------|--------|-------------|------|
-| `/api/run` | POST | Start a red-team run | admin |
-| `/api/run/:id` | GET | Poll run status + progress | admin, viewer |
-| `/api/run/:id` | DELETE | Cancel a run | admin |
-| `/api/runs` | GET | List all runs | admin, viewer |
-| `/api/reports-meta` | GET | Paginated report listing | admin, viewer |
-| `/api/report/:file` | GET | Full report JSON | admin, viewer |
-| `/api/report-csv/:file` | GET | CSV export | admin, viewer |
-| `/api/compliance-frameworks` | GET | List frameworks | all roles |
-| `/api/owasp-analyze` | POST | Run compliance analysis | admin, auditor |
-| `/api/audit-log` | GET | Query audit trail | admin, auditor |
-| `/api/auth-config` | GET | Auth configuration | public |
+| Endpoint                     | Method | Description                | Auth           |
+| ---------------------------- | ------ | -------------------------- | -------------- |
+| `/api/run`                   | POST   | Start a red-team run       | admin          |
+| `/api/run/:id`               | GET    | Poll run status + progress | admin, viewer  |
+| `/api/run/:id`               | DELETE | Cancel a run               | admin          |
+| `/api/runs`                  | GET    | List all runs              | admin, viewer  |
+| `/api/reports-meta`          | GET    | Paginated report listing   | admin, viewer  |
+| `/api/report/:file`          | GET    | Full report JSON           | admin, viewer  |
+| `/api/report-csv/:file`      | GET    | CSV export                 | admin, viewer  |
+| `/api/compliance-frameworks` | GET    | List frameworks            | all roles      |
+| `/api/owasp-analyze`         | POST   | Run compliance analysis    | admin, auditor |
+| `/api/audit-log`             | GET    | Query audit trail          | admin, auditor |
+| `/api/auth-config`           | GET    | Auth configuration         | public         |
 
 ### CI/CD Integration
 
@@ -788,27 +789,29 @@ curl -X POST http://redteam-server/api/run \
 
 The framework exposes 12 MCP tools via `hermes-redteam/mcp-server.ts` for use with any MCP-compatible agent:
 
-| Tool | Purpose |
-|------|---------|
-| `read_repo` | Scan source code for tools, roles, guardrails, secrets |
-| `probe_target` | Send benign test message to observe API shape |
-| `read_prior_reports` | Load previous scan results for adaptive planning |
-| `write_config` | Generate and save a red-team config |
-| `write_custom_attacks` | Create custom attack CSV/JSON files |
-| `write_policy` | Create judge policy with per-category overrides |
-| `run_scan` | Start a red-team scan via dashboard API |
-| `check_run_status` | Poll scan progress (attacks completed, phase) |
-| `get_run_results` | Get full results with verdicts and findings |
-| `cancel_run` | Cancel a running scan |
+| Tool                             | Purpose                                                           |
+| -------------------------------- | ----------------------------------------------------------------- |
+| `read_repo`                      | Scan source code for tools, roles, guardrails, secrets            |
+| `probe_target`                   | Send benign test message to observe API shape                     |
+| `read_prior_reports`             | Load previous scan results for adaptive planning                  |
+| `write_config`                   | Generate and save a red-team config                               |
+| `write_custom_attacks`           | Create custom attack CSV/JSON files                               |
+| `write_policy`                   | Create judge policy with per-category overrides                   |
+| `run_scan`                       | Start a red-team scan via dashboard API                           |
+| `check_run_status`               | Poll scan progress (attacks completed, phase)                     |
+| `get_run_results`                | Get full results with verdicts and findings                       |
+| `cancel_run`                     | Cancel a running scan                                             |
 | `list_categories_and_strategies` | List all 141 categories + 155 strategies with compliance mappings |
-| `suggest_guardrails` | Map vulnerabilities to Votal Shield guardrail configs |
+| `suggest_guardrails`             | Map vulnerabilities to Votal Shield guardrail configs             |
 
 **Register with Hermes:**
+
 ```bash
 hermes mcp add wb-redteam -- npx tsx $(pwd)/hermes-redteam/mcp-server.ts
 ```
 
 **Natural conversation with Hermes:**
+
 ```
 You: test my chatbot at http://localhost:3000 for safety issues
 Hermes: [calls probe_target, write_config, run_scan]
@@ -866,18 +869,19 @@ curl http://localhost:4200/api/audit-log
 
 When vulnerabilities are found, the framework maps them to specific [Votal Shield](https://github.com/sundi133/llm-shield) guardrail configurations:
 
-| Vulnerability | Shield Guardrail | Endpoint |
-|--------------|-----------------|----------|
-| Prompt injection | `adversarial-prompt-detection` | `/guardrails/input` |
-| Toxic content | `toxicity-detection` | `/guardrails/output` |
-| PII disclosure | `pii-detection + output-redaction` | `/guardrails/output` |
-| Hallucination | `hallucination-detection` | `/guardrails/output` |
-| Data exfiltration | `pii-detection + keyword-blocklist` | `/guardrails/output` |
-| Tool misuse | `agentic tool authorization` | `/guardrails/output` |
-| Content filter bypass | `keyword-blocklist + adversarial-prompt-detection` | `/guardrails/input` |
-| Harmful advice | `topic-restriction + toxicity-detection` | `/guardrails/input + output` |
+| Vulnerability         | Shield Guardrail                                   | Endpoint                     |
+| --------------------- | -------------------------------------------------- | ---------------------------- |
+| Prompt injection      | `adversarial-prompt-detection`                     | `/guardrails/input`          |
+| Toxic content         | `toxicity-detection`                               | `/guardrails/output`         |
+| PII disclosure        | `pii-detection + output-redaction`                 | `/guardrails/output`         |
+| Hallucination         | `hallucination-detection`                          | `/guardrails/output`         |
+| Data exfiltration     | `pii-detection + keyword-blocklist`                | `/guardrails/output`         |
+| Tool misuse           | `agentic tool authorization`                       | `/guardrails/output`         |
+| Content filter bypass | `keyword-blocklist + adversarial-prompt-detection` | `/guardrails/input`          |
+| Harmful advice        | `topic-restriction + toxicity-detection`           | `/guardrails/input + output` |
 
 Deploy Votal Shield as a proxy — no code changes needed:
+
 ```bash
 # Replace your LLM endpoint with Shield's proxy
 /v1/shield/chat/completions  # instead of /v1/chat/completions

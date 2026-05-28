@@ -20,6 +20,7 @@ Check for undefined arrays in attack processing. Add defensive checks to array o
   }
 }
 ```
+
 Verify the relevant API key in `.env`.
 
 **`Rate limit exceeded`**
@@ -50,6 +51,7 @@ DEBUG=red-team:* npm start config.json
 ## Security Considerations
 
 **Safe testing practices:**
+
 - Use dedicated test instances, not production
 - Implement network isolation for testing
 - Use synthetic test data, not real user data
@@ -81,6 +83,7 @@ echo "config-prod.json" >> .gitignore
 
 ```markdown
 ## Vulnerability Report
+
 **Severity**: High/Medium/Low
 **Category**: prompt_injection/data_exfiltration/etc
 **Attack Vector**: Detailed reproduction steps

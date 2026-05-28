@@ -23,7 +23,7 @@ metadata:
     app.kubernetes.io/part-of: red-team-ai
 type: Opaque
 stringData:
-  POSTGRES_PASSWORD: "CHANGE-ME-STRONG"    # REQUIRED: change this
+  POSTGRES_PASSWORD: "CHANGE-ME-STRONG" # REQUIRED: change this
 
 ---
 # PVC: Postgres data

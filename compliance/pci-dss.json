@@ -12,13 +12,24 @@
       "code": "REQ-2",
       "title": "Apply Secure Configurations to All System Components",
       "description": "Vendor-supplied defaults and other security parameters are managed to reduce the risk of compromise.",
-      "categories": ["debug_access", "sandbox_escape", "shell_injection", "path_traversal"]
+      "categories": [
+        "debug_access",
+        "sandbox_escape",
+        "shell_injection",
+        "path_traversal"
+      ]
     },
     {
       "code": "REQ-3",
       "title": "Protect Stored Account Data",
       "description": "Protection methods such as encryption, truncation, masking, and hashing are used to protect stored account data.",
-      "categories": ["sensitive_data", "data_exfiltration", "training_data_extraction", "pii_disclosure", "financial_fraud_facilitation"]
+      "categories": [
+        "sensitive_data",
+        "data_exfiltration",
+        "training_data_extraction",
+        "pii_disclosure",
+        "financial_fraud_facilitation"
+      ]
     },
     {
       "code": "REQ-4",
@@ -30,43 +41,80 @@
       "code": "REQ-5",
       "title": "Protect All Systems and Networks from Malicious Software",
       "description": "Malicious software (malware) is prevented, detected, and addressed.",
-      "categories": ["backdoor_trigger", "data_poisoning", "rag_poisoning", "supply_chain"]
+      "categories": [
+        "backdoor_trigger",
+        "data_poisoning",
+        "rag_poisoning",
+        "supply_chain"
+      ]
     },
     {
       "code": "REQ-6",
       "title": "Develop and Maintain Secure Systems and Software",
       "description": "Bespoke and custom software are developed securely, and security vulnerabilities in systems and software are identified and addressed timely.",
-      "categories": ["prompt_injection", "indirect_prompt_injection", "insecure_output_handling", "sql_injection", "shell_injection", "supply_chain"]
+      "categories": [
+        "prompt_injection",
+        "indirect_prompt_injection",
+        "insecure_output_handling",
+        "sql_injection",
+        "shell_injection",
+        "supply_chain"
+      ]
     },
     {
       "code": "REQ-7",
       "title": "Restrict Access to System Components and Cardholder Data by Business Need to Know",
       "description": "Access to system components and cardholder data is limited to only those individuals whose job requires such access.",
-      "categories": ["rbac_bypass", "auth_bypass", "identity_privilege", "cross_tenant_access"]
+      "categories": [
+        "rbac_bypass",
+        "auth_bypass",
+        "identity_privilege",
+        "cross_tenant_access"
+      ]
     },
     {
       "code": "REQ-8",
       "title": "Identify Users and Authenticate Access to System Components",
       "description": "Systems and processes are in place to identify users and authenticate access to system components.",
-      "categories": ["auth_bypass", "session_hijacking", "identity_privilege", "social_engineering"]
+      "categories": [
+        "auth_bypass",
+        "session_hijacking",
+        "identity_privilege",
+        "social_engineering"
+      ]
     },
     {
       "code": "REQ-10",
       "title": "Log and Monitor All Access to System Components and Cardholder Data",
       "description": "Logging mechanisms and the ability to track user activities are implemented to prevent, detect, or minimize the impact of a data compromise.",
-      "categories": ["content_filter_bypass", "output_evasion", "api_abuse", "rate_limit"]
+      "categories": [
+        "content_filter_bypass",
+        "output_evasion",
+        "api_abuse",
+        "rate_limit"
+      ]
     },
     {
       "code": "REQ-11",
       "title": "Test Security of Systems and Networks Regularly",
       "description": "Vulnerabilities are identified and addressed through regular security testing of systems and networks.",
-      "categories": ["prompt_injection", "content_filter_bypass", "model_extraction", "capability_elicitation"]
+      "categories": [
+        "prompt_injection",
+        "content_filter_bypass",
+        "model_extraction",
+        "capability_elicitation"
+      ]
     },
     {
       "code": "REQ-12",
       "title": "Support Information Security with Organizational Policies and Programs",
       "description": "An information security policy is established, maintained, and disseminated, and all personnel are aware of and follow it.",
-      "categories": ["regulatory_violation", "overreliance", "financial_fraud_facilitation", "ecommerce_security"]
+      "categories": [
+        "regulatory_violation",
+        "overreliance",
+        "financial_fraud_facilitation",
+        "ecommerce_security"
+      ]
     }
   ]
 }

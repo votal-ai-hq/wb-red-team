@@ -88,7 +88,11 @@ export async function probeTarget({
       body: parsed,
     };
   } catch (e: any) {
-    return { status: 0, timeMs: Date.now() - started, error: String(e?.message ?? e) };
+    return {
+      status: 0,
+      timeMs: Date.now() - started,
+      error: String(e?.message ?? e),
+    };
   }
 }
 
@@ -97,7 +101,10 @@ export interface ReadPriorReportsArgs {
   limit?: number;
 }
 
-export async function readPriorReports({ dir = "report", limit = 3 }: ReadPriorReportsArgs) {
+export async function readPriorReports({
+  dir = "report",
+  limit = 3,
+}: ReadPriorReportsArgs) {
   const abs = resolve(dir);
   if (!existsSync(abs)) return { dir: abs, reports: [] };
   const files = (await glob("report-*.json", { cwd: abs, absolute: true }))
@@ -141,7 +148,10 @@ export interface WriteCustomAttacksArgs {
   rows: Array<Record<string, string>>;
 }
 
-export async function writeCustomAttacks({ path, rows }: WriteCustomAttacksArgs) {
+export async function writeCustomAttacks({
+  path,
+  rows,
+}: WriteCustomAttacksArgs) {
   const abs = resolve(path);
   await mkdir(dirname(abs), { recursive: true });
   if (abs.endsWith(".json")) {
@@ -149,7 +159,10 @@ export async function writeCustomAttacks({ path, rows }: WriteCustomAttacksArgs)
   } else {
     const headers = Array.from(new Set(rows.flatMap((r) => Object.keys(r))));
     const esc = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const lines = [headers.join(","), ...rows.map((r) => headers.map((h) => esc(r[h] ?? "")).join(","))];
+    const lines = [
+      headers.join(","),
+      ...rows.map((r) => headers.map((h) => esc(r[h] ?? "")).join(",")),
+    ];
     await writeFile(abs, lines.join("\n"));
   }
   return { written: abs, rows: rows.length };
@@ -178,10 +191,23 @@ export const TOOL_DEFS = [
       type: "object",
       required: ["path"],
       properties: {
-        path: { type: "string", description: "Absolute or relative path to the target repo root" },
-        pattern: { type: "string", description: "Glob pattern (default: **/*.{ts,tsx,js,py,md,json,yaml,yml})" },
-        maxFiles: { type: "integer", description: "Max files to return (default 40)" },
-        maxBytesPerFile: { type: "integer", description: "Max bytes per file (default 20000)" },
+        path: {
+          type: "string",
+          description: "Absolute or relative path to the target repo root",
+        },
+        pattern: {
+          type: "string",
+          description:
+            "Glob pattern (default: **/*.{ts,tsx,js,py,md,json,yaml,yml})",
+        },
+        maxFiles: {
+          type: "integer",
+          description: "Max files to return (default 40)",
+        },
+        maxBytesPerFile: {
+          type: "integer",
+          description: "Max bytes per file (default 20000)",
+        },
       },
     },
   },
@@ -196,8 +222,14 @@ export const TOOL_DEFS = [
         baseUrl: { type: "string" },
         endpoint: { type: "string" },
         message: { type: "string" },
-        headers: { type: "object", description: "Additional headers (e.g. Authorization)" },
-        body: { type: "object", description: "Additional body fields merged with {message}" },
+        headers: {
+          type: "object",
+          description: "Additional headers (e.g. Authorization)",
+        },
+        body: {
+          type: "object",
+          description: "Additional body fields merged with {message}",
+        },
       },
     },
   },
@@ -234,7 +266,8 @@ export const TOOL_DEFS = [
   },
   {
     name: "write_policy",
-    description: "Emit a judge policy JSON with target-specific category overrides.",
+    description:
+      "Emit a judge policy JSON with target-specific category overrides.",
     inputSchema: {
       type: "object",
       required: ["path", "policy"],
@@ -250,8 +283,14 @@ export const TOOL_DEFS = [
       type: "object",
       required: ["config"],
       properties: {
-        config: { type: "object", description: "The full wb-red-team config JSON object" },
-        dashboardUrl: { type: "string", description: "Dashboard URL (default: http://localhost:4200)" },
+        config: {
+          type: "object",
+          description: "The full wb-red-team config JSON object",
+        },
+        dashboardUrl: {
+          type: "string",
+          description: "Dashboard URL (default: http://localhost:4200)",
+        },
       },
     },
   },
@@ -264,7 +303,10 @@ export const TOOL_DEFS = [
       required: ["runId"],
       properties: {
         runId: { type: "string" },
-        dashboardUrl: { type: "string", description: "Default: http://localhost:4200" },
+        dashboardUrl: {
+          type: "string",
+          description: "Default: http://localhost:4200",
+        },
       },
     },
   },
@@ -277,7 +319,10 @@ export const TOOL_DEFS = [
       required: ["runId"],
       properties: {
         runId: { type: "string" },
-        dashboardUrl: { type: "string", description: "Default: http://localhost:4200" },
+        dashboardUrl: {
+          type: "string",
+          description: "Default: http://localhost:4200",
+        },
       },
     },
   },
@@ -289,7 +334,10 @@ export const TOOL_DEFS = [
       required: ["runId"],
       properties: {
         runId: { type: "string" },
-        dashboardUrl: { type: "string", description: "Default: http://localhost:4200" },
+        dashboardUrl: {
+          type: "string",
+          description: "Default: http://localhost:4200",
+        },
       },
     },
   },
@@ -300,7 +348,10 @@ export const TOOL_DEFS = [
     inputSchema: {
       type: "object",
       properties: {
-        dashboardUrl: { type: "string", description: "Default: http://localhost:4200" },
+        dashboardUrl: {
+          type: "string",
+          description: "Default: http://localhost:4200",
+        },
       },
     },
   },
@@ -314,7 +365,8 @@ export const TOOL_DEFS = [
       properties: {
         vulnerabilities: {
           type: "array",
-          description: "Array of {category, name, severity, reasoning} for PASS results",
+          description:
+            "Array of {category, name, severity, reasoning} for PASS results",
           items: {
             type: "object",
             properties: {
@@ -334,7 +386,13 @@ export const TOOL_DEFS = [
 
 const DEFAULT_DASHBOARD = "http://localhost:4200";
 
-async function runScan({ config, dashboardUrl }: { config: unknown; dashboardUrl?: string }) {
+async function runScan({
+  config,
+  dashboardUrl,
+}: {
+  config: unknown;
+  dashboardUrl?: string;
+}) {
   const url = (dashboardUrl || DEFAULT_DASHBOARD) + "/api/run";
   const res = await fetch(url, {
     method: "POST",
@@ -348,13 +406,19 @@ async function runScan({ config, dashboardUrl }: { config: unknown; dashboardUrl
   return res.json();
 }
 
-async function checkRunStatus({ runId, dashboardUrl }: { runId: string; dashboardUrl?: string }) {
+async function checkRunStatus({
+  runId,
+  dashboardUrl,
+}: {
+  runId: string;
+  dashboardUrl?: string;
+}) {
   const url = (dashboardUrl || DEFAULT_DASHBOARD) + "/api/run/" + runId;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Run not found: ${res.status}`);
-  const data = await res.json() as Record<string, unknown>;
-  const progress = data.progress as Record<string, unknown>[] || [];
-  const results = progress.filter(p => (p as Record<string, unknown>).result);
+  const data = (await res.json()) as Record<string, unknown>;
+  const progress = (data.progress as Record<string, unknown>[]) || [];
+  const results = progress.filter((p) => (p as Record<string, unknown>).result);
   const lastMsg = progress.length > 0 ? progress[progress.length - 1] : null;
 
   return {
@@ -362,25 +426,39 @@ async function checkRunStatus({ runId, dashboardUrl }: { runId: string; dashboar
     status: data.status,
     attacksCompleted: results.length,
     latestPhase: (lastMsg as Record<string, unknown>)?.phase,
-    latestMessage: ((lastMsg as Record<string, unknown>)?.message as string)?.slice(0, 100),
+    latestMessage: (
+      (lastMsg as Record<string, unknown>)?.message as string
+    )?.slice(0, 100),
     summary: data.summary,
     error: data.error,
   };
 }
 
-async function getRunResults({ runId, dashboardUrl }: { runId: string; dashboardUrl?: string }) {
+async function getRunResults({
+  runId,
+  dashboardUrl,
+}: {
+  runId: string;
+  dashboardUrl?: string;
+}) {
   const url = (dashboardUrl || DEFAULT_DASHBOARD) + "/api/run/" + runId;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Run not found: ${res.status}`);
-  const data = await res.json() as Record<string, unknown>;
-  const progress = data.progress as Record<string, unknown>[] || [];
+  const data = (await res.json()) as Record<string, unknown>;
+  const progress = (data.progress as Record<string, unknown>[]) || [];
   const results = progress
-    .filter(p => (p as Record<string, unknown>).result)
-    .map(p => (p as Record<string, unknown>).result);
+    .filter((p) => (p as Record<string, unknown>).result)
+    .map((p) => (p as Record<string, unknown>).result);
 
-  const passes = results.filter(r => (r as Record<string, unknown>).verdict === "PASS");
-  const partials = results.filter(r => (r as Record<string, unknown>).verdict === "PARTIAL");
-  const fails = results.filter(r => (r as Record<string, unknown>).verdict === "FAIL");
+  const passes = results.filter(
+    (r) => (r as Record<string, unknown>).verdict === "PASS",
+  );
+  const partials = results.filter(
+    (r) => (r as Record<string, unknown>).verdict === "PARTIAL",
+  );
+  const fails = results.filter(
+    (r) => (r as Record<string, unknown>).verdict === "FAIL",
+  );
 
   return {
     runId,
@@ -408,13 +486,23 @@ async function getRunResults({ runId, dashboardUrl }: { runId: string; dashboard
   };
 }
 
-async function cancelRun({ runId, dashboardUrl }: { runId: string; dashboardUrl?: string }) {
+async function cancelRun({
+  runId,
+  dashboardUrl,
+}: {
+  runId: string;
+  dashboardUrl?: string;
+}) {
   const url = (dashboardUrl || DEFAULT_DASHBOARD) + "/api/run/" + runId;
   const res = await fetch(url, { method: "DELETE" });
   return res.json();
 }
 
-async function listCategoriesAndStrategies({ dashboardUrl }: { dashboardUrl?: string }) {
+async function listCategoriesAndStrategies({
+  dashboardUrl,
+}: {
+  dashboardUrl?: string;
+}) {
   const url = (dashboardUrl || DEFAULT_DASHBOARD) + "/api/reference";
   try {
     const res = await fetch(url);
@@ -427,50 +515,128 @@ async function listCategoriesAndStrategies({ dashboardUrl }: { dashboardUrl?: st
   const { ALL_STRATEGIES } = await import("../lib/attack-strategies.js");
   return {
     categories: ALL_ATTACK_CATEGORIES,
-    strategies: ALL_STRATEGIES.map((s: { slug: string; name: string; levelName: string }) => ({
-      slug: s.slug, name: s.name, level: s.levelName,
-    })),
+    strategies: ALL_STRATEGIES.map(
+      (s: { slug: string; name: string; levelName: string }) => ({
+        slug: s.slug,
+        name: s.name,
+        level: s.levelName,
+      }),
+    ),
   };
 }
 
 // Votal Shield guardrail mapping
-const SHIELD_GUARDRAIL_MAP: Record<string, { guardrail: string; endpoint: string; config: string }> = {
-  prompt_injection: { guardrail: "adversarial-prompt-detection", endpoint: "/guardrails/input", config: '{"adversarial-prompt-detection": {"enabled": true, "action": "block", "threshold": 0.8}}' },
-  indirect_prompt_injection: { guardrail: "adversarial-prompt-detection + topic-restriction", endpoint: "/guardrails/input", config: '{"adversarial-prompt-detection": {"enabled": true, "threshold": 0.7}, "topic-restriction": {"enabled": true, "customRules": {"mode": "whitelist", "topics": ["allowed-topics"]}}}' },
-  content_filter_bypass: { guardrail: "keyword-blocklist + adversarial-prompt-detection", endpoint: "/guardrails/input", config: '{"keyword-blocklist": {"enabled": true, "action": "block"}, "adversarial-prompt-detection": {"enabled": true}}' },
-  toxic_content: { guardrail: "toxicity-detection", endpoint: "/guardrails/output", config: '{"toxicity-detection": {"enabled": true, "action": "block", "threshold": 0.7}}' },
-  hallucination: { guardrail: "hallucination-detection", endpoint: "/guardrails/output", config: '{"hallucination-detection": {"enabled": true, "action": "flag", "threshold": 0.6}}' },
-  pii_disclosure: { guardrail: "pii-detection + output-redaction", endpoint: "/guardrails/output", config: '{"pii-detection": {"enabled": true, "action": "redact"}}' },
-  sensitive_data: { guardrail: "pii-detection + keyword-blocklist", endpoint: "/guardrails/output", config: '{"pii-detection": {"enabled": true, "action": "block"}, "keyword-blocklist": {"enabled": true, "blocklist": ["sk-proj-", "AKIA", "password"]}}' },
-  data_exfiltration: { guardrail: "pii-detection + output-redaction", endpoint: "/guardrails/output", config: '{"pii-detection": {"enabled": true, "action": "block"}, "output-redaction": {"enabled": true, "clearanceLevel": "restricted"}}' },
-  harmful_advice: { guardrail: "topic-restriction + toxicity-detection", endpoint: "/guardrails/input + /guardrails/output", config: '{"topic-restriction": {"enabled": true, "customRules": {"mode": "blacklist", "topics": ["weapons", "drugs", "self-harm"]}}}' },
-  misinformation: { guardrail: "hallucination-detection", endpoint: "/guardrails/output", config: '{"hallucination-detection": {"enabled": true, "action": "flag"}}' },
-  output_evasion: { guardrail: "output-format-validation + pii-detection", endpoint: "/guardrails/output", config: '{"pii-detection": {"enabled": true, "action": "block"}}' },
-  tool_misuse: { guardrail: "agentic tool authorization", endpoint: "/guardrails/output (agentic)", config: '{"agentic": {"enabled": true, "toolPolicies": {"dangerous_tool": {"allowed": false}}}}' },
+const SHIELD_GUARDRAIL_MAP: Record<
+  string,
+  { guardrail: string; endpoint: string; config: string }
+> = {
+  prompt_injection: {
+    guardrail: "adversarial-prompt-detection",
+    endpoint: "/guardrails/input",
+    config:
+      '{"adversarial-prompt-detection": {"enabled": true, "action": "block", "threshold": 0.8}}',
+  },
+  indirect_prompt_injection: {
+    guardrail: "adversarial-prompt-detection + topic-restriction",
+    endpoint: "/guardrails/input",
+    config:
+      '{"adversarial-prompt-detection": {"enabled": true, "threshold": 0.7}, "topic-restriction": {"enabled": true, "customRules": {"mode": "whitelist", "topics": ["allowed-topics"]}}}',
+  },
+  content_filter_bypass: {
+    guardrail: "keyword-blocklist + adversarial-prompt-detection",
+    endpoint: "/guardrails/input",
+    config:
+      '{"keyword-blocklist": {"enabled": true, "action": "block"}, "adversarial-prompt-detection": {"enabled": true}}',
+  },
+  toxic_content: {
+    guardrail: "toxicity-detection",
+    endpoint: "/guardrails/output",
+    config:
+      '{"toxicity-detection": {"enabled": true, "action": "block", "threshold": 0.7}}',
+  },
+  hallucination: {
+    guardrail: "hallucination-detection",
+    endpoint: "/guardrails/output",
+    config:
+      '{"hallucination-detection": {"enabled": true, "action": "flag", "threshold": 0.6}}',
+  },
+  pii_disclosure: {
+    guardrail: "pii-detection + output-redaction",
+    endpoint: "/guardrails/output",
+    config: '{"pii-detection": {"enabled": true, "action": "redact"}}',
+  },
+  sensitive_data: {
+    guardrail: "pii-detection + keyword-blocklist",
+    endpoint: "/guardrails/output",
+    config:
+      '{"pii-detection": {"enabled": true, "action": "block"}, "keyword-blocklist": {"enabled": true, "blocklist": ["sk-proj-", "AKIA", "password"]}}',
+  },
+  data_exfiltration: {
+    guardrail: "pii-detection + output-redaction",
+    endpoint: "/guardrails/output",
+    config:
+      '{"pii-detection": {"enabled": true, "action": "block"}, "output-redaction": {"enabled": true, "clearanceLevel": "restricted"}}',
+  },
+  harmful_advice: {
+    guardrail: "topic-restriction + toxicity-detection",
+    endpoint: "/guardrails/input + /guardrails/output",
+    config:
+      '{"topic-restriction": {"enabled": true, "customRules": {"mode": "blacklist", "topics": ["weapons", "drugs", "self-harm"]}}}',
+  },
+  misinformation: {
+    guardrail: "hallucination-detection",
+    endpoint: "/guardrails/output",
+    config: '{"hallucination-detection": {"enabled": true, "action": "flag"}}',
+  },
+  output_evasion: {
+    guardrail: "output-format-validation + pii-detection",
+    endpoint: "/guardrails/output",
+    config: '{"pii-detection": {"enabled": true, "action": "block"}}',
+  },
+  tool_misuse: {
+    guardrail: "agentic tool authorization",
+    endpoint: "/guardrails/output (agentic)",
+    config:
+      '{"agentic": {"enabled": true, "toolPolicies": {"dangerous_tool": {"allowed": false}}}}',
+  },
 };
 
-function suggestGuardrails({ vulnerabilities }: { vulnerabilities: { category: string; name: string; severity: string; reasoning?: string }[] }) {
-  const suggestions = vulnerabilities.map(v => {
+function suggestGuardrails({
+  vulnerabilities,
+}: {
+  vulnerabilities: {
+    category: string;
+    name: string;
+    severity: string;
+    reasoning?: string;
+  }[];
+}) {
+  const suggestions = vulnerabilities.map((v) => {
     const shield = SHIELD_GUARDRAIL_MAP[v.category];
     return {
       vulnerability: v.name,
       category: v.category,
       severity: v.severity,
-      shieldGuardrail: shield ? {
-        guardrail: shield.guardrail,
-        endpoint: shield.endpoint,
-        config: shield.config,
-        deployUrl: "https://github.com/sundi133/llm-shield",
-      } : null,
-      generalFix: shield ? null : `Add input/output validation for ${v.category} attacks. Consider implementing a content filter or policy engine.`,
+      shieldGuardrail: shield
+        ? {
+            guardrail: shield.guardrail,
+            endpoint: shield.endpoint,
+            config: shield.config,
+            deployUrl: "https://github.com/sundi133/llm-shield",
+          }
+        : null,
+      generalFix: shield
+        ? null
+        : `Add input/output validation for ${v.category} attacks. Consider implementing a content filter or policy engine.`,
     };
   });
 
   return {
     totalVulnerabilities: vulnerabilities.length,
-    withShieldGuardrail: suggestions.filter(s => s.shieldGuardrail).length,
+    withShieldGuardrail: suggestions.filter((s) => s.shieldGuardrail).length,
     suggestions,
-    deploymentNote: "Deploy Votal Shield as a proxy: replace your LLM endpoint with /v1/shield/chat/completions. No code changes needed.",
+    deploymentNote:
+      "Deploy Votal Shield as a proxy: replace your LLM endpoint with /v1/shield/chat/completions. No code changes needed.",
   };
 }
 

@@ -21,15 +21,15 @@ Drop JSON files in this directory to add custom compliance frameworks. Each file
 
 ## Fields
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `id` | Yes | Unique identifier (used in API calls) |
-| `name` | Yes | Display name shown in the dashboard |
-| `items` | Yes | Array of controls/requirements |
-| `items[].code` | Yes | Control code (e.g., "LLM01:2025", "NIST-1") |
-| `items[].title` | Yes | Short title |
-| `items[].description` | Yes | What this control covers |
-| `items[].categories` | Yes | Array of attack category IDs to map |
+| Field                 | Required | Description                                 |
+| --------------------- | -------- | ------------------------------------------- |
+| `id`                  | Yes      | Unique identifier (used in API calls)       |
+| `name`                | Yes      | Display name shown in the dashboard         |
+| `items`               | Yes      | Array of controls/requirements              |
+| `items[].code`        | Yes      | Control code (e.g., "LLM01:2025", "NIST-1") |
+| `items[].title`       | Yes      | Short title                                 |
+| `items[].description` | Yes      | What this control covers                    |
+| `items[].categories`  | Yes      | Array of attack category IDs to map         |
 
 ## Available Attack Categories
 

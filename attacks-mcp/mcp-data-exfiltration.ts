@@ -115,7 +115,7 @@ export const mcpDataExfiltrationModule: AttackModule = {
   },
 
   getGenerationPrompt(analysis: CodebaseAnalysis): string {
-    return `You are a red-team attacker testing an MCP server for data exfiltration paths.
+    return `You are an AI safety evaluation specialist testing an MCP server for data exfiltration paths.
 
 DISCOVERED MCP TOOLS:
 ${JSON.stringify(

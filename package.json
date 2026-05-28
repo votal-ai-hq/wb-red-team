@@ -1,7 +1,7 @@
 {
   "name": "wb-red-team",
   "version": "1.0.0",
-  "description": "White-box red-teaming framework for agentic AI apps — analyzes source code, generates LLM-powered attacks across 129 categories, and produces scored security reports",
+  "description": "White-box red-teaming framework for agentic AI apps — analyzes source code, generates LLM-powered attacks across 141 categories, and produces scored security reports",
   "type": "module",
   "license": "MIT",
   "author": "Jyotirmoy Sundi",
@@ -39,6 +39,7 @@
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "scan": "tsx scripts/run-with-progress.ts",
+    "demo": "tsx red-team.ts config-quick-test.json",
     "ai": "tsx scripts/ai-assistant.ts",
     "gen:interactive": "tsx scripts/gen-interactive.ts",
     "dashboard": "tsx dashboard/server.ts 4200",
@@ -52,6 +53,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "bcryptjs": "^3.0.3",
     "csv-parse": "^6.2.1",
     "glob": "^11.1.0",
     "jose": "^5.0.0",
@@ -61,6 +63,7 @@
     "ws": "^8.20.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.0.0",
     "@types/pg": "^8.20.0",
     "@types/ws": "^8.18.1",

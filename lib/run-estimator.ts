@@ -41,7 +41,11 @@ export interface RunEstimate {
   refinedExpected: number;
   totalAttacksExpected: number;
   httpCalls: { min: number; expected: number; max: number };
-  attackTypes: { singleTurn: number; predefinedMultiTurn: number; adaptiveMultiTurn: number };
+  attackTypes: {
+    singleTurn: number;
+    predefinedMultiTurn: number;
+    adaptiveMultiTurn: number;
+  };
   wallTimeSec: { min: number; expected: number; max: number };
   isPreRun: boolean;
   /** Mode + math breakdown. Populated only for pre-run estimates. */
@@ -72,7 +76,8 @@ export function estimatePreRun(
   totalAvailableStrategies: number,
 ): RunEstimate {
   const ac = config.attackConfig;
-  const enabledStratLen = ac.enabledStrategies?.length || totalAvailableStrategies;
+  const enabledStratLen =
+    ac.enabledStrategies?.length || totalAvailableStrategies;
   const poolLen = enabledStratLen || totalAvailableStrategies;
   const strategiesPerRound = ac.strategiesPerRound ?? 5;
   const attacksPerStrategy = Math.max(1, ac.attacksPerStrategy ?? 1);
@@ -81,7 +86,8 @@ export function estimatePreRun(
 
   const isFullPool =
     poolLen > 0 &&
-    (strategiesPerRound >= FULL_POOL_THRESHOLD || strategiesPerRound >= poolLen);
+    (strategiesPerRound >= FULL_POOL_THRESHOLD ||
+      strategiesPerRound >= poolLen);
   const effectiveStrategies = Math.min(strategiesPerRound, poolLen);
 
   // Round 1 attacks per category = seeds + generated
@@ -106,7 +112,8 @@ export function estimatePreRun(
 
   const generatedAttacks = plannedAttacks - numCategories * SEEDS_PER_CATEGORY;
   const predefinedMt = Math.round(generatedAttacks * mtRate);
-  const remaining = generatedAttacks - predefinedMt + numCategories * SEEDS_PER_CATEGORY;
+  const remaining =
+    generatedAttacks - predefinedMt + numCategories * SEEDS_PER_CATEGORY;
   const adaptiveMt = adaptiveEnabled ? remaining : 0;
   const singleTurn = adaptiveEnabled ? 0 : remaining;
 
@@ -171,7 +178,7 @@ function buildEstimate(
   plannedAttacks: number,
   isPreRun: boolean,
 ): RunEstimate {
-  const concurrency = Math.max(1, config.attackConfig.concurrency || 1);
+  const concurrency = Math.max(1, config.attackConfig.categoryParallelism ?? 1);
   const delaySec = (config.attackConfig.delayBetweenRequestsMs || 0) / 1000;
   const maxMultiTurnSteps = config.attackConfig.maxMultiTurnSteps ?? 5;
   const adaptiveCap = Math.min(
@@ -183,11 +190,11 @@ function buildEstimate(
   // Predefined multi-turn HTTP = avg ~3 steps per attack when shape is predicted;
   // when called from estimateRun, real step counts are passed in.
   const predefinedHttp =
-    shape.predefinedHttp ??
-    predefinedMt * Math.min(3, maxMultiTurnSteps);
+    shape.predefinedHttp ?? predefinedMt * Math.min(3, maxMultiTurnSteps);
 
   const httpMin = singleTurn + predefinedHttp + adaptiveMt * ADAPTIVE_MIN_TURNS;
-  const httpExpected = singleTurn + predefinedHttp + adaptiveMt * ADAPTIVE_AVG_TURNS;
+  const httpExpected =
+    singleTurn + predefinedHttp + adaptiveMt * ADAPTIVE_AVG_TURNS;
   const httpMax = singleTurn + predefinedHttp + adaptiveMt * adaptiveCap;
 
   // Refinement adds ~REFINEMENT_PARTIAL_RATE × REFINED_PER_PARTIAL extra attacks.
@@ -202,12 +209,15 @@ function buildEstimate(
   const httpTime = totalHttpExpected * AVG_HTTP_SEC;
   const judgeTime = totalHttpExpected * AVG_JUDGE_SEC;
   const adaptiveGenTime =
-    (adaptiveMt + refinedExpected) * (ADAPTIVE_AVG_TURNS - 1) * AVG_ADAPTIVE_GEN_SEC;
+    (adaptiveMt + refinedExpected) *
+    (ADAPTIVE_AVG_TURNS - 1) *
+    AVG_ADAPTIVE_GEN_SEC;
   const totalAttacks = plannedAttacks + refinedExpected;
   const idealTime = totalAttacks * IDEAL_RATE * AVG_IDEAL_SEC;
   const delayTime = totalHttpExpected * delaySec;
 
-  const workSec = httpTime + judgeTime + adaptiveGenTime + idealTime + delayTime;
+  const workSec =
+    httpTime + judgeTime + adaptiveGenTime + idealTime + delayTime;
   const wallExpected = workSec / concurrency;
 
   return {
@@ -248,7 +258,10 @@ function row(label: string, value: string, width = 16): string {
   return `${label.padEnd(width)}${value}`;
 }
 
-export function formatEstimate(est: RunEstimate, concurrency: number): string[] {
+export function formatEstimate(
+  est: RunEstimate,
+  concurrency: number,
+): string[] {
   const t = est.attackTypes;
   const lines: string[] = [];
   const tilde = est.isPreRun ? "~" : "";
@@ -260,7 +273,10 @@ export function formatEstimate(est: RunEstimate, concurrency: number): string[] 
     if (m.isFullPool) {
       const variantWord = m.attacksPerStrategy === 1 ? "variant" : "variants";
       lines.push(
-        row("Mode", `full-pool — every strategy runs ${m.attacksPerStrategy}× ${variantWord}`),
+        row(
+          "Mode",
+          `full-pool — every strategy runs ${m.attacksPerStrategy}× ${variantWord}`,
+        ),
       );
       lines.push(
         row(
@@ -269,9 +285,15 @@ export function formatEstimate(est: RunEstimate, concurrency: number): string[] 
         ),
       );
     } else {
-      const generated = Math.min(m.maxAttacksPerCategory, m.effectiveStrategies);
+      const generated = Math.min(
+        m.maxAttacksPerCategory,
+        m.effectiveStrategies,
+      );
       lines.push(
-        row("Mode", `batch — sample ${m.effectiveStrategies} of ${m.poolLen} strategies/category`),
+        row(
+          "Mode",
+          `batch — sample ${m.effectiveStrategies} of ${m.poolLen} strategies/category`,
+        ),
       );
       lines.push(
         row(
@@ -287,7 +309,12 @@ export function formatEstimate(est: RunEstimate, concurrency: number): string[] 
       ),
     );
     if (m.adaptiveRounds > 1) {
-      lines.push(row("Rounds", `${m.adaptiveRounds} adaptive rounds (round 2+ skips seeds)`));
+      lines.push(
+        row(
+          "Rounds",
+          `${m.adaptiveRounds} adaptive rounds (round 2+ skips seeds)`,
+        ),
+      );
     }
     lines.push(""); // blank line separator before totals
   }
@@ -302,8 +329,10 @@ export function formatEstimate(est: RunEstimate, concurrency: number): string[] 
   // ── Type mix ─────────────────────────────────────────
   const breakdown: string[] = [];
   if (t.singleTurn) breakdown.push(`${tilde}${t.singleTurn} single-turn`);
-  if (t.predefinedMultiTurn) breakdown.push(`${tilde}${t.predefinedMultiTurn} predefined multi-turn`);
-  if (t.adaptiveMultiTurn) breakdown.push(`${tilde}${t.adaptiveMultiTurn} adaptive multi-turn`);
+  if (t.predefinedMultiTurn)
+    breakdown.push(`${tilde}${t.predefinedMultiTurn} predefined multi-turn`);
+  if (t.adaptiveMultiTurn)
+    breakdown.push(`${tilde}${t.adaptiveMultiTurn} adaptive multi-turn`);
   if (breakdown.length > 0) {
     lines.push(row("Types", breakdown.join(", ")));
   }

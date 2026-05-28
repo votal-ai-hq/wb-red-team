@@ -75,7 +75,10 @@ STRATEGY CATALOG (slug list, grouped by level):
 ${STRATEGY_CATALOG}
 `;
 
-async function callAnthropic(messages: { role: "user" | "assistant"; content: string }[], system: string): Promise<string> {
+async function callAnthropic(
+  messages: { role: "user" | "assistant"; content: string }[],
+  system: string,
+): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY not set");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -97,12 +100,17 @@ async function callAnthropic(messages: { role: "user" | "assistant"; content: st
     throw new Error(`Anthropic ${res.status}: ${err}`);
   }
   const data = (await res.json()) as any;
-  const text = (data.content ?? []).map((b: any) => b.text ?? "").join("").trim();
+  const text = (data.content ?? [])
+    .map((b: any) => b.text ?? "")
+    .join("")
+    .trim();
   if (!text) throw new Error("Empty response from Anthropic");
   return text;
 }
 
-async function callOpenAI(messages: { role: "system" | "user" | "assistant"; content: string }[]): Promise<string> {
+async function callOpenAI(
+  messages: { role: "system" | "user" | "assistant"; content: string }[],
+): Promise<string> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error("OPENAI_API_KEY not set");
   const client = new OpenAI({ apiKey: key });
@@ -152,7 +160,9 @@ Produce a single wb-red-team config JSON object for this target. JSON only.`;
       { role: "user", content: user },
     ]);
   } else {
-    throw new Error(`unsupported PROVIDER=${PROVIDER}. Use anthropic or openai.`);
+    throw new Error(
+      `unsupported PROVIDER=${PROVIDER}. Use anthropic or openai.`,
+    );
   }
 
   const cleaned = stripJsonFences(raw);
@@ -176,7 +186,9 @@ Produce a single wb-red-team config JSON object for this target. JSON only.`;
   console.log();
   console.log(`enabledStrategies (${strats.length}): ${strats.join(", ")}`);
   console.log();
-  console.log(`next: npx tsx red-team.ts ${OUT_PATH.replace(REPO_ROOT + "/", "")}`);
+  console.log(
+    `next: npx tsx red-team.ts ${OUT_PATH.replace(REPO_ROOT + "/", "")}`,
+  );
 }
 
 main().catch((e) => {

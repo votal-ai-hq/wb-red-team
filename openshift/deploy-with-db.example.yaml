@@ -24,13 +24,13 @@ metadata:
     app.kubernetes.io/part-of: red-team-ai
 type: Opaque
 stringData:
-  ANTHROPIC_API_KEY: ""                    # REQUIRED
-  OPENAI_API_KEY: ""                       # optional
-  POSTGRES_PASSWORD: "CHANGE-ME-STRONG"    # REQUIRED: strong password
+  ANTHROPIC_API_KEY: "" # REQUIRED
+  OPENAI_API_KEY: "" # optional
+  POSTGRES_PASSWORD: "CHANGE-ME-STRONG" # REQUIRED: strong password
   DATABASE_URL: "postgres://redteam:CHANGE-ME-STRONG@postgres:5432/redteam"
-  MASTER_ENCRYPTION_KEY: ""                # REQUIRED: openssl rand -hex 32
-  SIMPLE_AUTH_SESSION_SECRET: ""           # REQUIRED: openssl rand -hex 32
-  SIMPLE_AUTH_PASSWORD: ""                 # REQUIRED: dashboard login password
+  MASTER_ENCRYPTION_KEY: "" # REQUIRED: openssl rand -hex 32
+  SIMPLE_AUTH_SESSION_SECRET: "" # REQUIRED: openssl rand -hex 32
+  SIMPLE_AUTH_PASSWORD: "" # REQUIRED: dashboard login password
 
 ---
 # PVC: Postgres data

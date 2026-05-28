@@ -212,9 +212,8 @@ export function generateReport(
     ).length;
     vulnWeight += partialCount * w * 0.5;
   }
-  let score = totalWeight > 0
-    ? Math.round(100 * (1 - vulnWeight / totalWeight))
-    : 100;
+  let score =
+    totalWeight > 0 ? Math.round(100 * (1 - vulnWeight / totalWeight)) : 100;
   score = Math.max(0, Math.min(100, score));
 
   const findings = allResults

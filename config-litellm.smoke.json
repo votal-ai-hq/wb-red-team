@@ -67,13 +67,7 @@
     "enableAdaptiveMultiTurn": true,
     "maxAdaptiveTurns": 3,
     "requireReviewConfirmation": false,
-    "enabledCategories": [
-      "prompt_injection",
-      "over_refusal"
-    ],
-    "enabledStrategies": [
-      "life_or_death_emergency",
-      "poetic_metaphor_request"
-    ]
+    "enabledCategories": ["prompt_injection", "over_refusal"],
+    "enabledStrategies": ["life_or_death_emergency", "poetic_metaphor_request"]
   }
 }

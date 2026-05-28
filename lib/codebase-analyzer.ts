@@ -1452,7 +1452,8 @@ const CATEGORY_FILE_PATTERNS: Partial<Record<AttackCategory, FilePattern[]>> = {
   ],
   computer_use_injection: [
     {
-      pathPattern: /browser|playwright|puppeteer|dom|computer.?use|screenshot|page\./i,
+      pathPattern:
+        /browser|playwright|puppeteer|dom|computer.?use|screenshot|page\./i,
       contentPatterns: [/click|navigate|screenshot|dom|browser|page|a11y/i],
       reason: "Browser or computer-use agent surface",
     },

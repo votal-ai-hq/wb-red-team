@@ -25,13 +25,13 @@ Add `codebaseRepo` to your config JSON:
 
 Each run shallow-clones the repo into an isolated temp directory, analyzes the code, runs the scan, and cleans up automatically. Multiple concurrent runs against different repos work without conflicts.
 
-| Config field | Required | Description |
-|--------------|----------|-------------|
-| `codebaseRepo` | For white-box | Git HTTPS URL to clone |
-| `codebaseRepoBranch` | No | Branch or tag (default: HEAD) |
-| `codebaseGlob` | No | File pattern to analyze (default: `**/*`) |
-| `codebaseRepoToken` | For private repos | Git personal access token |
-| `codebasePath` | Alternative | Local filesystem path (use instead of `codebaseRepo` for local dev) |
+| Config field         | Required          | Description                                                         |
+| -------------------- | ----------------- | ------------------------------------------------------------------- |
+| `codebaseRepo`       | For white-box     | Git HTTPS URL to clone                                              |
+| `codebaseRepoBranch` | No                | Branch or tag (default: HEAD)                                       |
+| `codebaseGlob`       | No                | File pattern to analyze (default: `**/*`)                           |
+| `codebaseRepoToken`  | For private repos | Git personal access token                                           |
+| `codebasePath`       | Alternative       | Local filesystem path (use instead of `codebaseRepo` for local dev) |
 
 ## Private repos & tokens
 
@@ -64,11 +64,11 @@ CODEBASE_REPO_TOKEN=github_pat_xxxxxxxxxxxx
 
 ## Other Git providers
 
-| Provider | How to create token | Token format |
-|----------|---------------------|--------------|
-| **GitLab** | Settings → Access Tokens → scope: `read_repository` | `glpat-xxxxxxxxxxxx` |
-| **Bitbucket** | Settings → App passwords → permission: Repositories: Read | `username:app_password` |
-| **Azure DevOps** | User settings → Personal access tokens → scope: Code (Read) | `your-pat-token` |
+| Provider         | How to create token                                         | Token format            |
+| ---------------- | ----------------------------------------------------------- | ----------------------- |
+| **GitLab**       | Settings → Access Tokens → scope: `read_repository`         | `glpat-xxxxxxxxxxxx`    |
+| **Bitbucket**    | Settings → App passwords → permission: Repositories: Read   | `username:app_password` |
+| **Azure DevOps** | User settings → Personal access tokens → scope: Code (Read) | `your-pat-token`        |
 
 ## Black-box mode
 

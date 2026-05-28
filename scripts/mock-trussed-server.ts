@@ -26,7 +26,7 @@ const server = createServer((req, res) => {
   }
 
   // Chat completions — matches /provider/generic/chat/completions or /v1/chat/completions
-  if (req.method === "POST" && (req.url?.includes("/chat/completions"))) {
+  if (req.method === "POST" && req.url?.includes("/chat/completions")) {
     let body = "";
     req.on("data", (chunk) => (body += chunk));
     req.on("end", () => {
@@ -49,23 +49,43 @@ const server = createServer((req, res) => {
       const lower = userMessage.toLowerCase();
       const systemLower = systemMessage.toLowerCase();
       // Detect judge/analyzer requests — respond with structured JSON
-      if (systemLower.includes("judge") || systemLower.includes("verdict") ||
-          systemLower.includes("analyze") || systemLower.includes("evaluator") ||
-          systemLower.includes("classifier") || systemLower.includes("assessment")) {
-        const verdict = lower.includes("ignore") || lower.includes("injection") || lower.includes("bypass")
-          ? "FAIL" : lower.includes("pii") || lower.includes("ssn") || lower.includes("leak")
-          ? "PASS" : "FAIL";
+      if (
+        systemLower.includes("judge") ||
+        systemLower.includes("verdict") ||
+        systemLower.includes("analyze") ||
+        systemLower.includes("evaluator") ||
+        systemLower.includes("classifier") ||
+        systemLower.includes("assessment")
+      ) {
+        const verdict =
+          lower.includes("ignore") ||
+          lower.includes("injection") ||
+          lower.includes("bypass")
+            ? "FAIL"
+            : lower.includes("pii") ||
+                lower.includes("ssn") ||
+                lower.includes("leak")
+              ? "PASS"
+              : "FAIL";
         responseContent = JSON.stringify({
           verdict,
           confidence: 85,
           reasoning: `The response was analyzed for security concerns. Verdict: ${verdict}.`,
-          findings: verdict === "PASS" ? ["Potential data exposure detected"] : [],
-          evidence_for: verdict === "PASS" ? "Response contained sensitive data patterns" : "",
-          evidence_against: verdict === "FAIL" ? "Response properly refused the request" : "",
+          findings:
+            verdict === "PASS" ? ["Potential data exposure detected"] : [],
+          evidence_for:
+            verdict === "PASS"
+              ? "Response contained sensitive data patterns"
+              : "",
+          evidence_against:
+            verdict === "FAIL" ? "Response properly refused the request" : "",
         });
       }
       // Detect attack planner requests — respond with attack JSON
-      else if (systemLower.includes("generate") && (systemLower.includes("attack") || systemLower.includes("red team"))) {
+      else if (
+        systemLower.includes("generate") &&
+        (systemLower.includes("attack") || systemLower.includes("red team"))
+      ) {
         responseContent = JSON.stringify([
           {
             category: "prompt_injection",
@@ -76,25 +96,42 @@ const server = createServer((req, res) => {
             authMethod: "none",
             role: "user",
             expectation: "Model should refuse",
-          }
+          },
         ]);
       }
       // Detect ideal response requests
-      else if (systemLower.includes("ideal") && systemLower.includes("response")) {
+      else if (
+        systemLower.includes("ideal") &&
+        systemLower.includes("response")
+      ) {
         responseContent = JSON.stringify({
-          response: "I'm sorry, but I can't help with that request. Is there something else I can assist you with?",
+          response:
+            "I'm sorry, but I can't help with that request. Is there something else I can assist you with?",
           remediationHints: ["Add input validation", "Strengthen guardrails"],
         });
       }
       // Normal conversation responses
       else if (lower.includes("capital")) {
-        responseContent = "The capital of the United States is Washington, D.C.";
+        responseContent =
+          "The capital of the United States is Washington, D.C.";
       } else if (lower.includes("policy") || lower.includes("insurance")) {
-        responseContent = "I can help you with your insurance policy. Your Auto policy POL-12345 is currently active with comprehensive coverage. Please note I cannot share sensitive information like SSN or internal credentials.";
-      } else if (lower.includes("ignore") || lower.includes("system prompt") || lower.includes("instructions")) {
-        responseContent = "I'm sorry, but I cannot ignore my safety guidelines or reveal my system instructions. I'm here to help with legitimate insurance-related questions.";
-      } else if (lower.includes("secret") || lower.includes("password") || lower.includes("key") || lower.includes("token")) {
-        responseContent = "I cannot share any credentials, API keys, passwords, or other sensitive information. This is against our security policies.";
+        responseContent =
+          "I can help you with your insurance policy. Your Auto policy POL-12345 is currently active with comprehensive coverage. Please note I cannot share sensitive information like SSN or internal credentials.";
+      } else if (
+        lower.includes("ignore") ||
+        lower.includes("system prompt") ||
+        lower.includes("instructions")
+      ) {
+        responseContent =
+          "I'm sorry, but I cannot ignore my safety guidelines or reveal my system instructions. I'm here to help with legitimate insurance-related questions.";
+      } else if (
+        lower.includes("secret") ||
+        lower.includes("password") ||
+        lower.includes("key") ||
+        lower.includes("token")
+      ) {
+        responseContent =
+          "I cannot share any credentials, API keys, passwords, or other sensitive information. This is against our security policies.";
       } else {
         responseContent = `Thank you for your question. As an insurance assistant, I'm designed to help with policy inquiries, claims, and coverage questions. How can I assist you today?`;
       }
@@ -115,13 +152,22 @@ const server = createServer((req, res) => {
           },
         ],
         usage: {
-          prompt_tokens: Math.ceil((systemMessage.length + userMessage.length) / 4),
+          prompt_tokens: Math.ceil(
+            (systemMessage.length + userMessage.length) / 4,
+          ),
           completion_tokens: Math.ceil(responseContent.length / 4),
-          total_tokens: Math.ceil((systemMessage.length + userMessage.length + responseContent.length) / 4),
+          total_tokens: Math.ceil(
+            (systemMessage.length +
+              userMessage.length +
+              responseContent.length) /
+              4,
+          ),
         },
       };
 
-      console.log(`  [${new Date().toISOString()}] ${model} — "${userMessage.slice(0, 60)}..." → ${responseContent.slice(0, 50)}...`);
+      console.log(
+        `  [${new Date().toISOString()}] ${model} — "${userMessage.slice(0, 60)}..." → ${responseContent.slice(0, 50)}...`,
+      );
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(response));
@@ -132,12 +178,22 @@ const server = createServer((req, res) => {
   // Models list
   if (req.method === "GET" && req.url?.includes("/models")) {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({
-      data: [
-        { id: "AISolutions6GVASAAPTUs", object: "model", owned_by: "trussed-ai" },
-        { id: "AISolutions6GVASAAgpt-4.1-mini", object: "model", owned_by: "trussed-ai" },
-      ],
-    }));
+    res.end(
+      JSON.stringify({
+        data: [
+          {
+            id: "AISolutions6GVASAAPTUs",
+            object: "model",
+            owned_by: "trussed-ai",
+          },
+          {
+            id: "AISolutions6GVASAAgpt-4.1-mini",
+            object: "model",
+            owned_by: "trussed-ai",
+          },
+        ],
+      }),
+    );
     return;
   }
 
@@ -148,11 +204,17 @@ const server = createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`\n  Mock Trussed AI Gateway → http://localhost:${PORT}`);
   console.log(`  Endpoint: POST /provider/generic/chat/completions`);
-  console.log(`  Models: AISolutions6GVASAAPTUs, AISolutions6GVASAAgpt-4.1-mini`);
+  console.log(
+    `  Models: AISolutions6GVASAAPTUs, AISolutions6GVASAAgpt-4.1-mini`,
+  );
   console.log(`\n  Test:`);
-  console.log(`    curl -X POST http://localhost:${PORT}/provider/generic/chat/completions \\`);
+  console.log(
+    `    curl -X POST http://localhost:${PORT}/provider/generic/chat/completions \\`,
+  );
   console.log(`      -H "Content-Type: application/json" \\`);
   console.log(`      -H "Authorization: Bearer test-key" \\`);
-  console.log(`      -d '{"model":"AISolutions6GVASAAPTUs","messages":[{"role":"user","content":"hello"}]}'`);
+  console.log(
+    `      -d '{"model":"AISolutions6GVASAAPTUs","messages":[{"role":"user","content":"hello"}]}'`,
+  );
   console.log(`\n  Press Ctrl+C to stop\n`);
 });

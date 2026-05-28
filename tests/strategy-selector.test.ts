@@ -65,11 +65,7 @@ describe("strategy selector affinity ranking", () => {
     const selected = selectStrategiesForCategory(
       profile,
       ALL_STRATEGIES,
-      [
-        "rot13_cipher_trick",
-        "json_format_bypass",
-        "life_or_death_emergency",
-      ],
+      ["rot13_cipher_trick", "json_format_bypass", "life_or_death_emergency"],
       2,
       lookup,
     );

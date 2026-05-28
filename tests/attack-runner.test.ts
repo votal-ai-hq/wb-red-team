@@ -62,19 +62,13 @@ function makeAttack(overrides: Partial<Attack> = {}): Attack {
 describe("executeAttack validation", () => {
   it("throws INVALID_ATTACK when attack name is missing", async () => {
     await expect(
-      executeAttack(
-        makeConfig(),
-        makeAttack({ name: "" }) as Attack,
-      ),
+      executeAttack(makeConfig(), makeAttack({ name: "" }) as Attack),
     ).rejects.toThrow("INVALID_ATTACK: missing attack.name");
   });
 
   it("throws INVALID_ATTACK when payload.message is missing", async () => {
     await expect(
-      executeAttack(
-        makeConfig(),
-        makeAttack({ payload: {} }) as Attack,
-      ),
+      executeAttack(makeConfig(), makeAttack({ payload: {} }) as Attack),
     ).rejects.toThrow("INVALID_ATTACK: missing attack.payload.message");
   });
 });
@@ -106,7 +100,10 @@ describe("executeAttack custom API template", () => {
       responsePath: "choices[0].message.content",
     };
 
-    await executeAttack(config, makeAttack({ payload: { message: "user message" } }));
+    await executeAttack(
+      config,
+      makeAttack({ payload: { message: "user message" } }),
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit;
@@ -158,8 +155,8 @@ describe("prepareConversation", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    expect((requestInit.headers as Record<string, string>)["e-sso-token"]).toMatch(
-      /^\*MOCK_ESSO\*/,
-    );
+    expect(
+      (requestInit.headers as Record<string, string>)["e-sso-token"],
+    ).toMatch(/^\*MOCK_ESSO\*/);
   });
 });

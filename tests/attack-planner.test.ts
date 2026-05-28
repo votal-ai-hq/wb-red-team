@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type {
-  AttackModule,
-  CodebaseAnalysis,
-  Config,
-} from "../lib/types.js";
+import type { AttackModule, CodebaseAnalysis, Config } from "../lib/types.js";
 
 const { chatMock } = vi.hoisted(() => ({
   chatMock: vi.fn(),

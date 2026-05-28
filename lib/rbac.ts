@@ -20,9 +20,17 @@ const PERMISSIONS: RoutePermission[] = [
 
   // Reports
   { method: "GET", pattern: /^\/api\/reports$/, roles: ["admin", "viewer"] },
-  { method: "GET", pattern: /^\/api\/reports-meta/, roles: ["admin", "viewer"] },
+  {
+    method: "GET",
+    pattern: /^\/api\/reports-meta/,
+    roles: ["admin", "viewer"],
+  },
   { method: "GET", pattern: /^\/api\/report\//, roles: ["admin", "viewer"] },
-  { method: "GET", pattern: /^\/api\/report-csv\//, roles: ["admin", "viewer"] },
+  {
+    method: "GET",
+    pattern: /^\/api\/report-csv\//,
+    roles: ["admin", "viewer"],
+  },
 
   // Compliance
   {
@@ -47,9 +55,21 @@ const PERMISSIONS: RoutePermission[] = [
   },
 
   // LiteLLM Guardrails Reports
-  { method: "GET", pattern: /^\/api\/litellm-reports$/, roles: ["admin", "viewer"] },
-  { method: "GET", pattern: /^\/api\/litellm-report\//, roles: ["admin", "viewer"] },
-  { method: "POST", pattern: /^\/api\/litellm-report-upload$/, roles: ["admin"] },
+  {
+    method: "GET",
+    pattern: /^\/api\/litellm-reports$/,
+    roles: ["admin", "viewer"],
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/litellm-report\//,
+    roles: ["admin", "viewer"],
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/litellm-report-upload$/,
+    roles: ["admin"],
+  },
 
   // Audit log
   { method: "GET", pattern: /^\/api\/audit-log/, roles: ["admin", "auditor"] },

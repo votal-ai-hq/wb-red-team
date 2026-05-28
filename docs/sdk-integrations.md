@@ -648,17 +648,17 @@ print("PASS")
 
 ## API Reference
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/run` | POST | Start a new scan |
-| `/api/run/:id` | GET | Get run status + progress |
-| `/api/run/:id` | DELETE | Cancel a running scan |
-| `/api/runs` | GET | List all runs |
-| `/api/reports` | GET | List report filenames |
-| `/api/reports-meta` | GET | Paginated reports with metadata |
-| `/api/report/:filename` | GET | Full report JSON |
-| `/api/report-csv/:filename` | GET | Export as CSV |
-| `/api/owasp-analyze` | POST | OWASP compliance analysis (NDJSON stream) |
-| `/api/risk-analyze` | POST | Business risk analysis (NDJSON stream) |
-| `/api/compliance-frameworks` | GET | List compliance frameworks |
-| `/api/audit-log` | GET | Query audit log (enterprise) |
+| Endpoint                     | Method | Description                               |
+| ---------------------------- | ------ | ----------------------------------------- |
+| `/api/run`                   | POST   | Start a new scan                          |
+| `/api/run/:id`               | GET    | Get run status + progress                 |
+| `/api/run/:id`               | DELETE | Cancel a running scan                     |
+| `/api/runs`                  | GET    | List all runs                             |
+| `/api/reports`               | GET    | List report filenames                     |
+| `/api/reports-meta`          | GET    | Paginated reports with metadata           |
+| `/api/report/:filename`      | GET    | Full report JSON                          |
+| `/api/report-csv/:filename`  | GET    | Export as CSV                             |
+| `/api/owasp-analyze`         | POST   | OWASP compliance analysis (NDJSON stream) |
+| `/api/risk-analyze`          | POST   | Business risk analysis (NDJSON stream)    |
+| `/api/compliance-frameworks` | GET    | List compliance frameworks                |
+| `/api/audit-log`             | GET    | Query audit log (enterprise)              |

@@ -10,13 +10,13 @@ Tested against **Hermes Agent v0.10.x**. Tools are exposed to Hermes via MCP
 
 ## Files in this directory
 
-| File | Role |
-|---|---|
-| `mcp-server.ts` | MCP stdio server — this is what Hermes actually calls |
-| `tool-server.ts` | Optional HTTP mirror for manual `curl` testing |
-| `handlers.ts` | Six shared tool implementations used by both transports |
-| `skills/target-analyst.md` | The Hermes skill that drives the workflow |
-| `setup.sh` | One-shot installer / registrar (`npm run hermes:setup`) |
+| File                       | Role                                                    |
+| -------------------------- | ------------------------------------------------------- |
+| `mcp-server.ts`            | MCP stdio server — this is what Hermes actually calls   |
+| `tool-server.ts`           | Optional HTTP mirror for manual `curl` testing          |
+| `handlers.ts`              | Six shared tool implementations used by both transports |
+| `skills/target-analyst.md` | The Hermes skill that drives the workflow               |
+| `setup.sh`                 | One-shot installer / registrar (`npm run hermes:setup`) |
 
 ## Step-by-step (local)
 
@@ -65,6 +65,7 @@ hermes mcp add wb-redteam -- npx tsx "$(pwd)/hermes-redteam/mcp-server.ts"
 hermes skills list     # should include target-analyst
 hermes mcp list        # should include wb-redteam
 ```
+
 </details>
 
 ### 2. Make sure the target is reachable
@@ -190,4 +191,4 @@ behave as expected without going through Hermes.
   the actual attacks; Hermes just produces its configs.
 - Does **not** need Ollama. Any provider Hermes supports works.
 - Does **not** write outside `./configs/`, `$HERMES_HOME`, and files you pass
-  explicitly to the write_* tools.
+  explicitly to the write\_\* tools.
