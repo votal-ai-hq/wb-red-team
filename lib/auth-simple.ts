@@ -30,7 +30,10 @@ export interface SimpleAuthUserInfo {
   name: string;
 }
 
-const SESSION_COOKIE = "rt_session";
+function getSessionCookieName(): string {
+  // Use __Host- prefix when Secure flag is enabled (prevents subdomain attacks)
+  return getCookieSecure() ? "__Host-rt_session" : "rt_session";
+}
 
 function getSessionSecret(): string {
   const secret =
@@ -320,7 +323,8 @@ export async function validateSimpleSession(
   cookieHeader: string | undefined,
 ): Promise<AuthContext> {
   const cookies = parseCookies(cookieHeader);
-  const token = cookies[SESSION_COOKIE];
+  // Check current cookie name, fall back to legacy name for active sessions during migration
+  const token = cookies[getSessionCookieName()] || cookies["rt_session"] || cookies["__Host-rt_session"];
   if (!token) {
     throw new Error("Missing session cookie");
   }
@@ -356,10 +360,10 @@ export async function getSimpleSessionUser(
 export function buildSimpleSessionCookie(token: string): string {
   const maxAge = getSessionTtlSeconds();
   const secure = getCookieSecure() ? "; Secure" : "";
-  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
+  return `${getSessionCookieName()}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
 }
 
 export function buildSimpleLogoutCookie(): string {
   const secure = getCookieSecure() ? "; Secure" : "";
-  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+  return `${getSessionCookieName()}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
 }
