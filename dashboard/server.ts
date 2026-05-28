@@ -1923,6 +1923,22 @@ Be specific and factual. Reference real incidents and realistic financial figure
       return;
     }
 
+    // ── Well-known endpoints ──
+    if (url.pathname === "/.well-known/security.txt" || url.pathname === "/security.txt") {
+      const contactEmail = process.env.SECURITY_CONTACT_EMAIL || "security@votal.ai";
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end(
+        `Contact: mailto:${contactEmail}\nPreferred-Languages: en\nCanonical: https://cart.votal.ai/.well-known/security.txt\n`,
+      );
+      return;
+    }
+
+    if (url.pathname === "/robots.txt") {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("User-agent: *\nDisallow: /api/\nDisallow: /report/\n");
+      return;
+    }
+
     // Serve static files from dashboard dir
     let filePath = url.pathname === "/" ? "/index.html" : url.pathname;
     // Prevent path traversal (relative and absolute)
