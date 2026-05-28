@@ -57,12 +57,15 @@ async function handleRequest(
       .map((s) => s.trim())
       .filter(Boolean);
     const origin = req.headers.origin;
-    if (origin) {
-      const isAllowed =
-        allowedOrigins.includes(origin) ||
-        (!process.env.CORS_ALLOWED_ORIGINS &&
-          /^https?:\/\/localhost(:\d+)?$/.test(origin));
-      if (isAllowed) {
+    if (origin && allowedOrigins.length > 0) {
+      // Only allow explicitly configured origins
+      if (allowedOrigins.includes(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Vary", "Origin");
+      }
+    } else if (origin && !process.env.CORS_ALLOWED_ORIGINS && !isDbConfigured()) {
+      // Local dev only: allow localhost when no DB configured
+      if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
         res.setHeader("Access-Control-Allow-Origin", origin);
         res.setHeader("Vary", "Origin");
       }
