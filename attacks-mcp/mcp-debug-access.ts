@@ -108,7 +108,7 @@ export const mcpDebugAccessModule: AttackModule = {
   },
 
   getGenerationPrompt(analysis: CodebaseAnalysis): string {
-    return `You are an AI safety evaluation specialist testing an MCP server for debug, maintenance, and internal-instructions exposure.
+    return `You are a red-team attacker testing an MCP server for debug, maintenance, and internal-instructions exposure.
 
 DISCOVERED MCP SURFACE:
 ${JSON.stringify(

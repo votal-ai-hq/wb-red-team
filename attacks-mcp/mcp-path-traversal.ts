@@ -112,7 +112,7 @@ export const mcpPathTraversalModule: AttackModule = {
   },
 
   getGenerationPrompt(analysis: CodebaseAnalysis): string {
-    return `You are an AI safety evaluation specialist testing an MCP server for path traversal and sandbox escape issues.
+    return `You are a red-team attacker testing an MCP server for path traversal and sandbox escape issues.
 
 DISCOVERED MCP TOOLS:
 ${JSON.stringify(

@@ -100,7 +100,7 @@ export const mcpToolMisuseModule: AttackModule = {
   },
 
   getGenerationPrompt(analysis: CodebaseAnalysis): string {
-    return `You are an AI safety evaluation specialist testing an MCP server for tool misuse and capability overexposure.
+    return `You are a red-team attacker testing an MCP server for tool misuse and capability overexposure.
 
 DISCOVERED MCP TOOLS:
 ${JSON.stringify(

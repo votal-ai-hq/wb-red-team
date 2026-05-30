@@ -45,7 +45,7 @@ export const retrievalRankingAttackModule: AttackModule = {
   },
 
   getGenerationPrompt(analysis: CodebaseAnalysis): string {
-    return `You are an AI safety evaluation specialist targeting RETRIEVAL RANKING ATTACKS in a RAG system.
+    return `You are a red-team attacker targeting RETRIEVAL RANKING ATTACKS in a RAG system.
 
 TOOLS:
 ${JSON.stringify(

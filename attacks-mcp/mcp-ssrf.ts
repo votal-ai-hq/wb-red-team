@@ -112,7 +112,7 @@ export const mcpSsrfModule: AttackModule = {
   },
 
   getGenerationPrompt(analysis: CodebaseAnalysis): string {
-    return `You are an AI safety evaluation specialist testing an MCP server for SSRF and internal network reachability issues.
+    return `You are a red-team attacker testing an MCP server for SSRF and internal network reachability issues.
 
 DISCOVERED MCP TOOLS:
 ${JSON.stringify(
