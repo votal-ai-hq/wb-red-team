@@ -1082,6 +1082,7 @@ export async function runRedTeam(
               return { verdict: r.verdict, findings: r.findings };
             },
           );
+          checkAbort();
 
           const lastStep = stepResults[stepResults.length - 1];
           const result = await analyzeResponse(
@@ -1138,6 +1139,7 @@ export async function runRedTeam(
               return { verdict: r.verdict, findings: r.findings };
             },
           );
+          checkAbort();
 
           const lastStep = stepResults[stepResults.length - 1];
           const result = await analyzeResponse(
@@ -1149,6 +1151,7 @@ export async function runRedTeam(
             appContext,
             lastStep.executionTrace,
           );
+          checkAbort();
           result.stepIndex = lastStep.stepIndex;
           result.totalSteps = stepResults.length;
 
@@ -1177,6 +1180,7 @@ export async function runRedTeam(
           );
           const { statusCode, body, timeMs, executionTrace } =
             await executeAttack(config, attack);
+          checkAbort();
           const result = await analyzeResponse(
             config,
             attack,
@@ -1186,6 +1190,7 @@ export async function runRedTeam(
             appContext,
             executionTrace,
           );
+          checkAbort();
 
           log(
             "attacks",
