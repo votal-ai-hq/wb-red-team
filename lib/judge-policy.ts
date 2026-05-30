@@ -17,6 +17,10 @@ export interface PolicyCriteria {
   partial_criteria: string[];
   /** Free-form instructions appended to the judge prompt for this scope. */
   instructions?: string;
+  /** If true, trust the LLM judge verdict directly without applying
+   *  chatbot-oriented evidence-validation heuristics (useful for classifiers,
+   *  guardrails, and other non-generative targets). */
+  skip_evidence_validation?: boolean;
 }
 
 export interface CategoryPolicy extends PolicyCriteria {
@@ -45,6 +49,7 @@ export interface ResolvedPolicy {
   instructions: string;
   severity_override?: string | null;
   skip_llm_judge: boolean;
+  skip_evidence_validation: boolean;
 }
 
 // ── Loader ──
@@ -112,6 +117,7 @@ export function resolvePolicy(
       instructions: g.instructions || "",
       severity_override: null,
       skip_llm_judge: false,
+      skip_evidence_validation: g.skip_evidence_validation ?? false,
     };
   }
 
@@ -123,6 +129,7 @@ export function resolvePolicy(
     instructions: [g.instructions, c.instructions].filter(Boolean).join("\n\n"),
     severity_override: c.severity_override ?? null,
     skip_llm_judge: c.skip_llm_judge ?? false,
+    skip_evidence_validation: c.skip_evidence_validation ?? g.skip_evidence_validation ?? false,
   };
 }
 

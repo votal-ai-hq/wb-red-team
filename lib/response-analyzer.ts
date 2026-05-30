@@ -404,6 +404,7 @@ export async function analyzeResponse(
         deterministicFindings,
         executionTrace,
         findings,
+        skipEvidenceValidation: resolved.skip_evidence_validation,
       });
       llmVerdict = validatedLlmVerdict;
 
@@ -849,6 +850,7 @@ function validateLlmJudgeEvidence(args: {
   deterministicFindings: string[];
   executionTrace?: McpExecutionTrace;
   findings: string[];
+  skipEvidenceValidation?: boolean;
 }): Verdict {
   const {
     attack,
@@ -859,11 +861,19 @@ function validateLlmJudgeEvidence(args: {
     deterministicFindings,
     executionTrace,
     findings,
+    skipEvidenceValidation,
   } = args;
 
   if (llmVerdict !== "PASS") {
     return llmVerdict;
   }
+
+  // When the policy opts out of evidence validation (e.g. classifiers,
+  // guardrails), trust the LLM judge verdict directly.
+  if (skipEvidenceValidation) {
+    return llmVerdict;
+  }
+
 
   if (hasStrongDeterministicPassEvidence(deterministicFindings)) {
     return "PASS";
