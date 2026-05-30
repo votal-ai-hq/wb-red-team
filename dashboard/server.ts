@@ -317,7 +317,7 @@ function readBody(req: IncomingMessage): Promise<string> {
 // ── Job runner ──
 interface Job {
   id: string;
-  status: "queued" | "running" | "done" | "error" | "cancelled";
+  status: "queued" | "running" | "done" | "error" | "cancelled" | "cancelling";
   config: Config;
   progress: RunProgress[];
   report?: Report;
@@ -454,15 +454,19 @@ async function startJob(job: Job): Promise<void> {
     const result = await runRedTeam(
       job.config,
       (p) => {
-        // Don't push progress if already cancelled
-        if (job.status !== "cancelled") job.progress.push(p);
+        // Don't push progress if already cancelled/cancelling
+        if (job.status !== "cancelled" && job.status !== "cancelling") job.progress.push(p);
       },
       undefined,
       ac.signal,
     );
-    // Don't overwrite if already cancelled by user
-    if (job.status === "cancelled") {
-      // Run completed despite cancel — still save partial results
+    // Don't overwrite if already cancelled/cancelling by user
+    if (job.status === "cancelled" || job.status === "cancelling") {
+      job.status = "cancelled";
+      job.error = "Cancelled by user";
+      if (!job.finishedAt) job.finishedAt = new Date().toISOString();
+      activeRuns = Math.max(0, activeRuns - 1);
+      drainQueue();
       console.log("  Run completed after cancel was requested");
     } else {
       job.report = result.report;
@@ -511,8 +515,8 @@ async function startJob(job: Job): Promise<void> {
     const msg = err instanceof Error ? err.message : String(err);
     if (!job.finishedAt) job.finishedAt = new Date().toISOString();
 
-    // Don't overwrite if already cancelled by user
-    if (job.status !== "cancelled") {
+    // Don't overwrite if already cancelled/cancelling by user
+    if (job.status !== "cancelled" && job.status !== "cancelling") {
       if (msg === "Run cancelled") {
         job.status = "cancelled";
         job.error = "Cancelled by user";
@@ -609,7 +613,13 @@ async function startJob(job: Job): Promise<void> {
           job.error = msg;
         }
       }
+    } else {
+      // Was cancelled/cancelling — finalize as cancelled
+      job.status = "cancelled";
+      job.error = "Cancelled by user";
     }
+    activeRuns = Math.max(0, activeRuns - 1);
+    drainQueue();
     if (isDbConfigured() && job.tenantId) {
       query("UPDATE runs SET status=$1, finished_at=$2, error=$3 WHERE id=$4", [
         job.status,
@@ -949,14 +959,14 @@ const server = createServer(
 
       if (job.status === "running" && job.abortController) {
         job.abortController.abort();
-        job.status = "cancelled";
-        job.error = "Cancelled by user";
-        job.finishedAt = new Date().toISOString();
-        // Free up the concurrency slot so queued jobs can start
-        activeRuns = Math.max(0, activeRuns - 1);
-        drainQueue();
+        job.status = "cancelling";
+        job.error = "Cancelling...";
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ runId: id, status: "cancelled" }));
+        res.end(JSON.stringify({ runId: id, status: "cancelling" }));
+      } else if (job.status === "cancelling") {
+        // Already cancelling — return success (idempotent)
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ runId: id, status: "cancelling" }));
       } else if (job.status === "queued") {
         // Remove from queue
         const idx = jobQueue.indexOf(id);
@@ -967,8 +977,9 @@ const server = createServer(
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ runId: id, status: "cancelled" }));
       } else {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: `Run is already ${job.status}` }));
+        // Run already done/error — still return 200 so UI doesn't show error
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ runId: id, status: job.status }));
       }
       return;
     }
