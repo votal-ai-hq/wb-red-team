@@ -1081,6 +1081,7 @@ export async function runRedTeam(
               const r = await analyzeResponse(cfg, atk, sc, b, t, appContext);
               return { verdict: r.verdict, findings: r.findings };
             },
+            signal,
           );
           checkAbort();
 
@@ -1138,6 +1139,7 @@ export async function runRedTeam(
               const r = await analyzeResponse(cfg, atk, sc, b, t, appContext);
               return { verdict: r.verdict, findings: r.findings };
             },
+            signal,
           );
           checkAbort();
 
@@ -1312,6 +1314,7 @@ export async function runRedTeam(
                     );
                     return { verdict: r.verdict, findings: r.findings };
                   },
+                  signal,
                 );
 
               const lastStep = stepResults[stepResults.length - 1];
@@ -1367,6 +1370,7 @@ export async function runRedTeam(
                   );
                   return { verdict: r.verdict, findings: r.findings };
                 },
+                signal,
               );
 
               const lastStep = stepResults[stepResults.length - 1];

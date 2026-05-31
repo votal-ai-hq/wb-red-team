@@ -810,6 +810,7 @@ export async function executeMultiTurn(
     body: unknown,
     timeMs: number,
   ) => Promise<{ verdict: string; findings: string[] }>,
+  signal?: AbortSignal,
 ): Promise<{
   results: {
     statusCode: number;
@@ -852,6 +853,7 @@ export async function executeMultiTurn(
 
   // Follow-up steps
   for (let i = 0; i < steps.length && results.length < maxSteps; i++) {
+    if (signal?.aborted) throw new Error("Run cancelled");
     if (config.attackConfig.delayBetweenRequestsMs > 0) {
       await sleep(config.attackConfig.delayBetweenRequestsMs);
     }
@@ -912,6 +914,7 @@ export async function executeAdaptiveMultiTurn(
     body: unknown,
     timeMs: number,
   ) => Promise<{ verdict: string; findings: string[] }>,
+  signal?: AbortSignal,
 ): Promise<{
   results: {
     statusCode: number;
@@ -986,6 +989,7 @@ export async function executeAdaptiveMultiTurn(
 
   // Adaptive follow-up turns
   for (let step = 1; step < maxTurns && results.length < maxTurns; step++) {
+    if (signal?.aborted) throw new Error("Run cancelled");
     if (config.attackConfig.delayBetweenRequestsMs > 0) {
       await sleep(config.attackConfig.delayBetweenRequestsMs);
     }
