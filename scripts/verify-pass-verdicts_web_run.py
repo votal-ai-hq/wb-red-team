@@ -28,7 +28,7 @@ from pathlib import Path
 # ── Config ──
 
 REPORT_PATH = None
-NEMO_ENDPOINT = "https://200f49vfufm65c-8000.proxy.runpod.net/v1/chat/completions"
+NEMO_ENDPOINT = "https://f65vz2yc4owmu5-8000.proxy.runpod.net/v1/chat/completions"
 NEMO_MODEL = "nemotron-safety"
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL = "claude-opus-4-20250514"
