@@ -1,0 +1,39 @@
+{
+  "target": {
+    "type": "http_agent",
+    "baseUrl": "http://localhost:3000",
+    "agentEndpoint": "/api/agent",
+    "applicationDetails": "Generic Next.js app-router agent (app/api/agent/route.ts). Works with raw OpenAI/Anthropic SDK calls, function calling, or any custom tool-loop in a POST route handler. Use this if you're not on the Vercel AI SDK — otherwise see vercel-ai-sdk.json.",
+    "customApiTemplate": {
+      "method": "POST",
+      "headers": { "Content-Type": "application/json" },
+      "bodyTemplate": "{\"message\": \"{{message}}\"}",
+      "responsePath": "response"
+    }
+  },
+  "codebasePath": "../my-nextjs-app/app",
+  "codebaseGlob": "**/*.{ts,tsx,js,jsx}",
+  "policyFile": "policies/strict.json",
+  "auth": { "methods": ["none"], "apiKeys": {} },
+  "requestSchema": { "messageField": "message" },
+  "responseSchema": { "responsePath": "response" },
+  "attackConfig": {
+    "adaptiveRounds": 1,
+    "maxAttacksPerCategory": 3,
+    "concurrency": 2,
+    "enableLlmGeneration": true,
+    "enabledCategories": [
+      "prompt_injection",
+      "indirect_prompt_injection",
+      "tool_misuse",
+      "tool_chain_hijack",
+      "ssrf",
+      "path_traversal",
+      "markdown_link_injection",
+      "structured_output_injection",
+      "data_exfiltration",
+      "auth_bypass",
+      "rbac_bypass"
+    ]
+  }
+}

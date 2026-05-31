@@ -36,7 +36,7 @@ describe("simple auth", () => {
     process.env.SIMPLE_AUTH_PASSWORD = "secret";
     process.env.SIMPLE_AUTH_ROLE = "admin";
     process.env.SIMPLE_AUTH_NAME = "Admin User";
-    process.env.SIMPLE_AUTH_SESSION_SECRET = "test-secret";
+    process.env.SIMPLE_AUTH_SESSION_SECRET = "test-secret-that-is-long-enough-for-32-chars";
 
     const login = await loginSimpleUser("admin", "secret");
     const cookieHeader = buildSimpleSessionCookie(login.token);
@@ -52,7 +52,7 @@ describe("simple auth", () => {
   it("supports multiple env-defined users", async () => {
     process.env.__DB_DISABLED = "1";
     delete process.env.DATABASE_URL;
-    process.env.SIMPLE_AUTH_SESSION_SECRET = "test-secret";
+    process.env.SIMPLE_AUTH_SESSION_SECRET = "test-secret-that-is-long-enough-for-32-chars";
     process.env.SIMPLE_AUTH_USERS = JSON.stringify([
       {
         username: "viewer1",

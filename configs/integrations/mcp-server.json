@@ -1,0 +1,37 @@
+{
+  "target": {
+    "type": "mcp",
+    "applicationDetails": "MCP (Model Context Protocol) server exposing tools to LLM clients. Replace the transport block below with either a stdio command (for local servers) or a network URL (for sse / streamable_http servers).",
+    "mcp": {
+      "transport": "stdio",
+      "command": "node",
+      "args": ["./my-mcp-server/dist/index.js"],
+      "env": {},
+      "startupTimeoutMs": 10000,
+      "sessionTimeoutMs": 30000
+    }
+  },
+  "codebasePath": "../my-mcp-server",
+  "codebaseGlob": "**/*.{ts,js,py}",
+  "policyFile": "policies/mcp-strict.json",
+  "auth": { "methods": ["none"], "apiKeys": {} },
+  "attackConfig": {
+    "adaptiveRounds": 1,
+    "maxAttacksPerCategory": 3,
+    "concurrency": 2,
+    "enableLlmGeneration": true,
+    "enabledCategories": [
+      "tool_misuse",
+      "indirect_prompt_injection",
+      "data_exfiltration",
+      "ssrf",
+      "path_traversal",
+      "debug_access",
+      "cross_tenant_access",
+      "mcp_server_compromise",
+      "mcp_tool_namespace_collision",
+      "plugin_manifest_spoofing",
+      "tool_permission_escalation"
+    ]
+  }
+}

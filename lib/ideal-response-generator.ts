@@ -84,10 +84,12 @@ ${result.llmReasoning ? `\nJUDGE REASONING:\n${result.llmReasoning}` : ""}`;
 
     const judgeModel =
       config.attackConfig.judgeModel ?? config.attackConfig.llmModel;
-    const judgeProviderName =
-      config.attackConfig.judgeProvider ?? config.attackConfig.llmProvider;
+    const judgeProviderName = config.attackConfig.judgeProvider ?? config.attackConfig.llmProvider;
     const useJsonMode =
-      judgeProviderName !== "custom" && judgeProviderName !== "together";
+      judgeProviderName !== "custom" &&
+      judgeProviderName !== "together" &&
+      judgeProviderName !== "nim" &&
+      judgeProviderName !== "huggingface";
     const llm = getJudgeProvider(config);
     const text = await llm.chat({
       model: judgeModel,

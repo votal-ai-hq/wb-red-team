@@ -1,0 +1,36 @@
+{
+  "target": {
+    "type": "http_agent",
+    "baseUrl": "http://localhost:3000",
+    "agentEndpoint": "/api/chat",
+    "applicationDetails": "Next.js + Vercel AI SDK route handler (app/api/chat/route.ts) using streamText or generateText. If your endpoint streams (text/event-stream), expose a non-streaming sibling route for red-teaming, or aggregate the stream into a JSON response.",
+    "customApiTemplate": {
+      "method": "POST",
+      "headers": { "Content-Type": "application/json" },
+      "bodyTemplate": "{\"messages\": [{\"role\": \"user\", \"content\": \"{{message}}\"}]}",
+      "responsePath": "text"
+    }
+  },
+  "codebasePath": "../my-nextjs-app/app",
+  "codebaseGlob": "**/*.{ts,tsx,js,jsx}",
+  "policyFile": "policies/strict.json",
+  "auth": { "methods": ["none"], "apiKeys": {} },
+  "requestSchema": { "messageField": "messages[0].content" },
+  "responseSchema": { "responsePath": "text" },
+  "attackConfig": {
+    "adaptiveRounds": 1,
+    "maxAttacksPerCategory": 3,
+    "concurrency": 2,
+    "enableLlmGeneration": true,
+    "enabledCategories": [
+      "prompt_injection",
+      "indirect_prompt_injection",
+      "tool_misuse",
+      "tool_chain_hijack",
+      "generated_code_rce",
+      "markdown_link_injection",
+      "structured_output_injection",
+      "data_exfiltration"
+    ]
+  }
+}

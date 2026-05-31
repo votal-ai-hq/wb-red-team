@@ -540,24 +540,12 @@ export interface Config {
     /** Number of attack categories to run in parallel (default 1 = sequential). */
     categoryParallelism?: number;
     delayBetweenRequestsMs: number;
-    llmProvider:
-      | "openai"
-      | "anthropic"
-      | "openrouter"
-      | "together"
-      | "azure"
-      | "custom";
+    llmProvider: "openai" | "anthropic" | "openrouter" | "together" | "azure" | "custom" | "nim" | "huggingface";
     llmModel: string;
     /** Optional request-level guardrails array for attack generation LLM calls. */
     llmGuardrails?: string[];
     /** LLM provider for the judge (defaults to llmProvider if not set). */
-    judgeProvider?:
-      | "openai"
-      | "anthropic"
-      | "openrouter"
-      | "together"
-      | "azure"
-      | "custom";
+    judgeProvider?: "openai" | "anthropic" | "openrouter" | "together" | "azure" | "custom" | "nim" | "huggingface";
     judgeModel?: string;
     /** Optional request-level guardrails array for judge LLM calls. */
     judgeGuardrails?: string[];

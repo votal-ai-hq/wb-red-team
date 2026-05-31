@@ -1,4 +1,18 @@
 /**
+ * If a message is an HTML error page (e.g. nginx 502/503/504), reduce it to
+ * the title or h1 text so logs don't get flooded with markup.
+ */
+function sanitizeHtmlMessage(msg: string): string {
+  // Only triggers when message has both an opening and closing tag.
+  if (!/<[a-z][^>]*>/i.test(msg) || !/<\/[a-z]+>/i.test(msg)) return msg;
+  const title = msg.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (title?.[1]) return title[1].trim();
+  const h1 = msg.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+  if (h1?.[1]) return h1[1].trim();
+  return msg.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
+}
+
+/**
  * Walk the full error cause chain and extract every detail available.
  * Produces a self-contained error message — no server logs needed.
  */
@@ -31,7 +45,7 @@ export function formatErrorDetails(err: unknown): string {
     const prefix = depth === 0 ? "" : `  [cause ${depth}] `;
     const meta: string[] = [];
 
-    if (e.message) meta.push(e.message);
+    if (e.message) meta.push(sanitizeHtmlMessage(e.message));
     if (e.code) meta.push(`code=${e.code}`);
     if (e.status) meta.push(`status=${e.status}`);
     if (e.type && e.type !== "system") meta.push(`type=${e.type}`);

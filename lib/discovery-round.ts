@@ -472,7 +472,10 @@ Be aggressive — extract EVERY piece of useful information, even if implied or 
   try {
     const providerName = config.attackConfig.llmProvider;
     const useJsonMode =
-      providerName !== "custom" && providerName !== "together";
+      providerName !== "custom" &&
+      providerName !== "together" &&
+      providerName !== "nim" &&
+      providerName !== "huggingface";
     const text = await llm.chat({
       model,
       messages: [

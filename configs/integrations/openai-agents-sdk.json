@@ -1,0 +1,37 @@
+{
+  "target": {
+    "type": "http_agent",
+    "baseUrl": "http://localhost:8000",
+    "agentEndpoint": "/agent",
+    "applicationDetails": "OpenAI Agents SDK (Python) — typical setup wraps `Runner.run(agent, input)` in a FastAPI POST endpoint. Multi-tool, multi-agent topologies should set codebasePath so the planner can see handoffs and target tool_chain_hijack + agentic_workflow_bypass.",
+    "customApiTemplate": {
+      "method": "POST",
+      "headers": { "Content-Type": "application/json" },
+      "bodyTemplate": "{\"input\": \"{{message}}\"}",
+      "responsePath": "final_output"
+    }
+  },
+  "codebasePath": "../my-agents-app",
+  "codebaseGlob": "**/*.py",
+  "policyFile": "policies/strict.json",
+  "auth": { "methods": ["none"], "apiKeys": {} },
+  "requestSchema": { "messageField": "input" },
+  "responseSchema": { "responsePath": "final_output" },
+  "attackConfig": {
+    "adaptiveRounds": 1,
+    "maxAttacksPerCategory": 3,
+    "concurrency": 2,
+    "enableLlmGeneration": true,
+    "enabledCategories": [
+      "prompt_injection",
+      "indirect_prompt_injection",
+      "tool_misuse",
+      "tool_chain_hijack",
+      "agentic_workflow_bypass",
+      "multi_agent_delegation",
+      "tool_permission_escalation",
+      "goal_hijack",
+      "data_exfiltration"
+    ]
+  }
+}

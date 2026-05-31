@@ -93,6 +93,129 @@
         --shadow-glow-red: 0 0 20px rgba(255, 107, 107, 0.12);
         --shadow-glow-green: 0 0 20px rgba(74, 222, 128, 0.12);
       }
+
+      /* ═══ LIGHT THEME — clean, professional product palette (warm orange accent) ═══ */
+      html[data-theme="light"] {
+        --bg: #f5f4f2;
+        --surface: #ffffff;
+        --surface2: #f7f6f3;
+        --surface3: #edebe7;
+        --border: rgba(23, 23, 30, 0.08);
+        --border-hover: rgba(23, 23, 30, 0.16);
+        --text: #1b1e23;
+        --text2: #6b7280;
+        --accent: #e2552a;
+        --red: #ef4444;
+        --orange: #f97316;
+        --green: #16a34a;
+        --purple: #9333ea;
+        --yellow: #d97706;
+        --critical: #ef4444;
+        --high: #f97316;
+        --medium: #eab308;
+        --low: #9ca3af;
+
+        --red-bg: rgba(239, 68, 68, 0.09);
+        --red-bg-subtle: rgba(239, 68, 68, 0.045);
+        --red-border: rgba(239, 68, 68, 0.22);
+        --green-bg: rgba(22, 163, 74, 0.09);
+        --green-bg-subtle: rgba(22, 163, 74, 0.045);
+        --green-border: rgba(22, 163, 74, 0.22);
+        --orange-bg: rgba(249, 115, 22, 0.1);
+        --orange-bg-subtle: rgba(249, 115, 22, 0.05);
+        --orange-border: rgba(249, 115, 22, 0.22);
+        --accent-bg: rgba(226, 85, 42, 0.1);
+        --accent-bg-subtle: rgba(226, 85, 42, 0.05);
+        --accent-border: rgba(226, 85, 42, 0.22);
+        --purple-bg: rgba(147, 51, 234, 0.09);
+        --purple-bg-subtle: rgba(147, 51, 234, 0.045);
+        --purple-border: rgba(147, 51, 234, 0.22);
+        --text2-bg: rgba(107, 114, 128, 0.1);
+        --text2-border: rgba(107, 114, 128, 0.2);
+
+        --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04),
+          0 1px 3px rgba(16, 24, 40, 0.06);
+        --shadow-md: 0 2px 4px rgba(16, 24, 40, 0.04),
+          0 4px 12px rgba(16, 24, 40, 0.07);
+        --shadow-lg: 0 4px 8px rgba(16, 24, 40, 0.05),
+          0 12px 24px rgba(16, 24, 40, 0.08);
+        --shadow-xl: 0 8px 16px rgba(16, 24, 40, 0.06),
+          0 24px 48px rgba(16, 24, 40, 0.1);
+        --shadow-glow-accent: 0 0 20px rgba(226, 85, 42, 0.14);
+        --shadow-glow-red: 0 0 20px rgba(239, 68, 68, 0.12);
+        --shadow-glow-green: 0 0 20px rgba(22, 163, 74, 0.12);
+
+        color-scheme: light;
+      }
+
+      /* Light theme — structural overrides for hardcoded dark-mode values */
+      html[data-theme="light"] body {
+        background: var(--bg);
+        background-image:
+          radial-gradient(
+            ellipse 80% 60% at 50% -10%,
+            rgba(226, 85, 42, 0.05),
+            transparent
+          ),
+          radial-gradient(
+            ellipse 60% 50% at 100% 100%,
+            rgba(226, 85, 42, 0.03),
+            transparent
+          );
+      }
+      html[data-theme="light"] a:hover {
+        color: #c2461f;
+      }
+      html[data-theme="light"] ::-webkit-scrollbar-thumb {
+        background: rgba(23, 23, 30, 0.18);
+      }
+      html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+        background: rgba(23, 23, 30, 0.28);
+      }
+      html[data-theme="light"] ::selection {
+        background: rgba(226, 85, 42, 0.18);
+        color: var(--text);
+      }
+      html[data-theme="light"] input:focus-visible,
+      html[data-theme="light"] select:focus-visible,
+      html[data-theme="light"] textarea:focus-visible,
+      html[data-theme="light"] button:focus-visible {
+        box-shadow: 0 0 0 4px rgba(226, 85, 42, 0.12);
+      }
+      html[data-theme="light"] .top-nav,
+      html[data-theme="light"] .main-header {
+        background: rgba(255, 255, 255, 0.82);
+      }
+      html[data-theme="light"] .top-nav-tab:hover {
+        background: rgba(23, 23, 30, 0.05);
+      }
+      html[data-theme="light"] .top-nav-tab.active {
+        background: var(--accent-bg);
+      }
+      html[data-theme="light"] .top-nav-tab.active::after,
+      html[data-theme="light"] .top-nav-tab .tab-badge {
+        background: linear-gradient(90deg, var(--accent), #f97316);
+      }
+      html[data-theme="light"] .top-nav-brand-icon {
+        background: linear-gradient(135deg, #f97316 0%, #e2552a 55%, #d9531f 100%);
+        box-shadow: 0 2px 8px rgba(226, 85, 42, 0.3);
+      }
+      html[data-theme="light"] .top-nav-avatar:hover {
+        box-shadow: 0 0 12px rgba(226, 85, 42, 0.2);
+      }
+      html[data-theme="light"] .run-item:hover,
+      html[data-theme="light"] .report-item:hover {
+        background: rgba(23, 23, 30, 0.035);
+      }
+      html[data-theme="light"] .cat-row:hover {
+        background: rgba(226, 85, 42, 0.05);
+      }
+      /* Soft "real product" elevation on cards in light mode */
+      html[data-theme="light"] .stat,
+      html[data-theme="light"] .section {
+        box-shadow: var(--shadow-sm);
+      }
+
       * {
         box-sizing: border-box;
         margin: 0;
@@ -1106,6 +1229,37 @@
         color: var(--text);
         background: var(--surface2);
         border-color: var(--border-hover);
+      }
+      .theme-toggle {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        border: 1px solid var(--border);
+        background: none;
+        color: var(--text2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        flex-shrink: 0;
+        transition:
+          color 0.2s,
+          background 0.2s,
+          border-color 0.2s,
+          transform 0.15s;
+      }
+      .theme-toggle:hover {
+        color: var(--text);
+        background: var(--surface2);
+        border-color: var(--border-hover);
+      }
+      .theme-toggle:active {
+        transform: scale(0.94);
+      }
+      .theme-toggle svg {
+        width: 17px;
+        height: 17px;
       }
 
       /* App shell */
@@ -3218,6 +3372,47 @@
         box-shadow: 0 0 6px currentColor;
       }
     </style>
+    <script>
+      // Apply saved theme before paint to avoid flash of incorrect theme.
+      (function () {
+        try {
+          if (localStorage.getItem("dashboard-theme") === "light") {
+            document.documentElement.setAttribute("data-theme", "light");
+          }
+        } catch (e) {}
+      })();
+      function updateThemeToggleIcon() {
+        var btn = document.getElementById("themeToggle");
+        if (!btn) return;
+        var isLight =
+          document.documentElement.getAttribute("data-theme") === "light";
+        var sun = btn.querySelector(".theme-icon-sun");
+        var moon = btn.querySelector(".theme-icon-moon");
+        if (sun) sun.style.display = isLight ? "none" : "block";
+        if (moon) moon.style.display = isLight ? "block" : "none";
+        btn.setAttribute(
+          "aria-label",
+          isLight ? "Switch to dark theme" : "Switch to light theme",
+        );
+      }
+      function toggleTheme() {
+        var el = document.documentElement;
+        var isLight = el.getAttribute("data-theme") === "light";
+        if (isLight) {
+          el.removeAttribute("data-theme");
+          try {
+            localStorage.setItem("dashboard-theme", "dark");
+          } catch (e) {}
+        } else {
+          el.setAttribute("data-theme", "light");
+          try {
+            localStorage.setItem("dashboard-theme", "light");
+          } catch (e) {}
+        }
+        updateThemeToggleIcon();
+      }
+      window.addEventListener("DOMContentLoaded", updateThemeToggleIcon);
+    </script>
   </head>
   <body>
     <!-- Auth overlay (hidden by default, shown when OIDC auth is required) -->
@@ -3389,6 +3584,40 @@
         </div>
         <div class="top-nav-spacer"></div>
         <div class="top-nav-right">
+          <button
+            class="theme-toggle"
+            id="themeToggle"
+            type="button"
+            onclick="toggleTheme()"
+            aria-label="Switch to light theme"
+            title="Toggle light / dark theme"
+          >
+            <svg
+              class="theme-icon-sun"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+              />
+            </svg>
+            <svg
+              class="theme-icon-moon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="display: none"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          </button>
           <div class="top-nav-user" id="userMenu" style="display: none">
             <div class="top-nav-avatar" id="userMenuAvatar"></div>
             <span id="userMenuName"></span>

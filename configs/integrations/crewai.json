@@ -1,0 +1,39 @@
+{
+  "target": {
+    "type": "http_agent",
+    "baseUrl": "http://localhost:8000",
+    "agentEndpoint": "/kickoff",
+    "applicationDetails": "CrewAI multi-agent crew exposed via a FastAPI POST endpoint. CrewAI's defining feature is multi-agent collaboration with role-based agents and task delegation — the attack surface is dominated by tool_chain_hijack and multi_agent_delegation across the crew graph.",
+    "customApiTemplate": {
+      "method": "POST",
+      "headers": { "Content-Type": "application/json" },
+      "bodyTemplate": "{\"inputs\": {\"topic\": \"{{message}}\"}}",
+      "responsePath": "result"
+    }
+  },
+  "codebasePath": "../my-crewai-app",
+  "codebaseGlob": "**/*.py",
+  "policyFile": "policies/strict.json",
+  "auth": { "methods": ["none"], "apiKeys": {} },
+  "requestSchema": { "messageField": "inputs.topic" },
+  "responseSchema": { "responsePath": "result" },
+  "attackConfig": {
+    "adaptiveRounds": 1,
+    "maxAttacksPerCategory": 3,
+    "concurrency": 2,
+    "enableLlmGeneration": true,
+    "enabledCategories": [
+      "prompt_injection",
+      "indirect_prompt_injection",
+      "tool_misuse",
+      "tool_chain_hijack",
+      "agentic_workflow_bypass",
+      "multi_agent_delegation",
+      "rogue_agent",
+      "goal_hijack",
+      "tool_permission_escalation",
+      "agentic_scope_creep",
+      "data_exfiltration"
+    ]
+  }
+}

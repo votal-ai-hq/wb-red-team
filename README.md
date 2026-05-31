@@ -6,6 +6,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18-green)](package.json)
 [![Status](https://img.shields.io/badge/status-beta-orange)](#project-status)
 [![LFX Health Score](https://insights.linuxfoundation.org/api/badge/health-score?project=wb-red-team)](https://insights.linuxfoundation.org/project/wb-red-team)
+[![LF Insights](https://img.shields.io/badge/Linux%20Foundation-Insights-blue?logo=linuxfoundation&logoColor=white)](https://insights.linuxfoundation.org/project/wb-red-team?timeRange=past365days&start=2025-05-28&end=2026-05-28)
 
 Most LLM red-teaming tools are black-box: they treat your agent as an opaque endpoint and fire generic adversarial prompts at it. That finds the obvious stuff. It does not find the bug where your JWT secret is hardcoded in `lib/auth.ts:47`, or the path through tools `read_file → send_email` that no single-call check would catch.
 
@@ -15,7 +16,100 @@ Red-Team AI is built for that gap. It reads your application's source code first
 
 ---
 
+## Why star this?
+
+Red-Team AI finds security bugs in AI agents by reading the source code first, then generating attacks specific to your tools, auth, guardrails, routes, and policies.
+
+Use it if you are building:
+- AI agents with tools or MCP servers
+- RAG apps with private data
+- customer-support, finance, healthcare, insurance, or internal copilots
+- multi-agent workflows where tool chaining can leak data
+
+⭐ Star this repo if you want practical agent security tests that go beyond prompt-injection lists.
+
+<!-- TODO: add 10-second demo GIF here -->
+
+### Dashboard preview
+
+| Reports — per-run security score and category breakdown |
+|---|
+| ![Reports dashboard showing 74/100 score, 544 attacks, 119 vulnerabilities, and category breakdown](assets/reports-dashboard.png) |
+
+| Guardrails — measure block rate of bad prompts and preservation of good ones |
+|---|
+| ![Guardrails report for moonshotai/kimi-k2.5: 9/10 bad prompts blocked, 1/1 good prompts preserved](assets/guardrails-report.png) |
+
+| Compliance — OWASP LLM Top 10 (2025) and other framework mappings |
+|---|
+| ![Compliance view mapping findings to OWASP LLM Top 10 2025 controls](assets/compliance-owasp.png) |
+
+---
+
+## Integrations
+
+Copy-paste configs for the agent frameworks people actually use:
+
+- [LangChain / LangServe](docs/integrations/langchain.md)
+- [LlamaIndex (RAG)](docs/integrations/llamaindex.md)
+- [Vercel AI SDK (Next.js)](docs/integrations/vercel-ai-sdk.md)
+- [OpenAI Agents SDK](docs/integrations/openai-agents-sdk.md)
+- [CrewAI](docs/integrations/crewai.md)
+- [MCP servers](docs/integrations/mcp-server.md)
+- [Next.js app router (generic)](docs/integrations/nextjs-app-router.md)
+- [RAG apps (framework-agnostic)](docs/integrations/rag-app.md)
+- [Slack / Discord / email agents](docs/integrations/slack-discord-email.md)
+
+See the full [integrations index](docs/integrations/index.md) for the shared pattern (only three config fields define an integration).
+
+---
+
+## Try it in 2 minutes
+
+```bash
+git clone https://github.com/sundi133/wb-red-team.git
+cd wb-red-team
+npm install
+cp .env.example .env   # add at least one LLM key (ANTHROPIC_API_KEY, OPENAI_API_KEY, ...)
+npm run gen:interactive
+```
+
+Then run against the demo app:
+
+```bash
+git clone https://github.com/sundi133/demo-agentic-app.git ../demo-agentic-app
+cd ../demo-agentic-app && npm install && npm start &
+cd -
+npm run demo
+```
+
+`npm run demo` runs the bundled `config-quick-test.json` against the demo app. Reports land in `report/` as JSON and Markdown.
+
+---
+
+## Red-Team AI vs black-box scanners
+
+| Capability | Black-box scanner | Red-Team AI |
+|---|:---:|:---:|
+| Generic prompt-injection tests | ✅ | ✅ |
+| Reads source code | ❌ | ✅ |
+| Detects hardcoded secrets used in auth paths | ❌ | ✅ |
+| Builds attacks from the actual tool graph | ❌ | ✅ |
+| Generates compliance-aware reports | sometimes | ✅ |
+| Dashboard with live progress + risk scoring | varies | ✅ |
+
+---
+
 ## What it finds that black-box tools don't
+
+Quick summary of the three findings detailed below, against [`demo-agentic-app`](https://github.com/sundi133/demo-agentic-app):
+
+| Finding | Severity | Why black-box tools miss it |
+|---|---|---|
+| Forged JWT from source-discovered secret | CRITICAL | Requires reading `src/lib/auth.ts` |
+| Tool-chain exfiltration (`read_file → send_email`) | CRITICAL | Requires knowing the tool graph |
+| Regex-specific guardrail bypass | HIGH | Requires reading exact allowlist regex |
+
 
 Three real findings from running against [`demo-agentic-app`](https://github.com/sundi133/demo-agentic-app). Each one requires source-code awareness to generate:
 
