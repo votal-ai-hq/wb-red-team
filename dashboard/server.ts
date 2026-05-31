@@ -988,10 +988,17 @@ const server = createServer(
       job.status = "cancelled";
       job.error = "Cancelled by user";
       if (!job.finishedAt) job.finishedAt = new Date().toISOString();
+      console.log(`  [CANCEL] _cancelled=${job._cancelled}, cancelledRunIds.has=${cancelledRunIds.has(id)}, isDb=${isDbConfigured()}, tenantId=${job.tenantId}`);
       if (isDbConfigured() && job.tenantId) {
         query("UPDATE runs SET status=$1, finished_at=$2, error=$3 WHERE id=$4", [
           "cancelled", job.finishedAt, job.error, job.id,
-        ]).catch(() => {});
+        ]).then(() => {
+          console.log(`  [CANCEL] DB updated successfully for ${id}`);
+        }).catch((err: unknown) => {
+          console.error(`  [CANCEL] DB update FAILED for ${id}:`, err);
+        });
+      } else {
+        console.log(`  [CANCEL] SKIPPED DB update — isDb=${isDbConfigured()}, tenantId=${job.tenantId}`);
       }
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ runId: id, status: "cancelled" }));
