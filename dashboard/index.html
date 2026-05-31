@@ -5482,8 +5482,12 @@
           selectedRunId = null;
         } else {
           selectedRunId = runId;
-          // Start polling if not already
-          pollRun(runId);
+          // Only poll active runs
+          const cached = runDataCache.get(runId);
+          const st = cached?.status;
+          if (st === "running" || st === "queued") {
+            pollRun(runId);
+          }
         }
         renderRunsTab();
       }
