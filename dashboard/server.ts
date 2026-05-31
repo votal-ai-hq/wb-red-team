@@ -333,8 +333,15 @@ interface Job {
   _cancelled?: boolean;
 }
 
-/** Get the effective status of a job (cancelled flag overrides everything). */
+/**
+ * Global set of cancelled run IDs — lives OUTSIDE the job object so
+ * no code path in startJob can accidentally clear it.
+ */
+const cancelledRunIds = new Set<string>();
+
+/** Get the effective status of a job. */
 function getJobStatus(job: Job): Job["status"] {
+  if (cancelledRunIds.has(job.id)) return "cancelled";
   return job._cancelled ? "cancelled" : job.status;
 }
 
@@ -967,8 +974,9 @@ const server = createServer(
         return;
       }
 
-      // Unconditionally cancel — abort if controller exists, always set _cancelled
+      // Unconditionally cancel — add to global Set so no code path can undo it
       console.log(`  [CANCEL] Cancelling job ${id}, current status: ${job.status}`);
+      cancelledRunIds.add(id);
       if (job.abortController) {
         job.abortController.abort();
       }
