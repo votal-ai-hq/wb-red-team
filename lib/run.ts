@@ -976,6 +976,7 @@ export async function runRedTeam(
     } finally {
       console.log = origLog;
     }
+    checkAbort();
     const attacks = mergeCustomAttacksForRound(
       config,
       round,

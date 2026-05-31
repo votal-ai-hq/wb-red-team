@@ -461,6 +461,7 @@ async function startJob(job: Job): Promise<void> {
       ac.signal,
     );
     // Don't overwrite if already cancelled by user
+    console.log(`  [CANCEL-CHECK] runRedTeam returned successfully, job.status=${job.status}`);
     if (job.status === "cancelled") {
       if (!job.finishedAt) job.finishedAt = new Date().toISOString();
       activeRuns = Math.max(0, activeRuns - 1);
@@ -514,6 +515,7 @@ async function startJob(job: Job): Promise<void> {
     if (!job.finishedAt) job.finishedAt = new Date().toISOString();
 
     // Don't overwrite if already cancelled by user
+    console.log(`  [CANCEL-CHECK] runRedTeam threw "${msg}", job.status=${job.status}`);
     if (job.status !== "cancelled") {
       if (msg === "Run cancelled") {
         job.status = "cancelled";
@@ -954,10 +956,12 @@ const server = createServer(
       }
 
       if (job.status === "running" && job.abortController) {
+        console.log(`  [CANCEL] Aborting job ${id}, current status: ${job.status}`);
         job.abortController.abort();
         job.status = "cancelled";
         job.error = "Cancelled by user";
         job.finishedAt = new Date().toISOString();
+        console.log(`  [CANCEL] Job ${id} status set to: ${job.status}`);
         if (isDbConfigured() && job.tenantId) {
           query("UPDATE runs SET status=$1, finished_at=$2, error=$3 WHERE id=$4", [
             job.status, job.finishedAt, job.error, job.id,

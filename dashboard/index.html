@@ -12325,7 +12325,7 @@
               } else renderRunMainPanel(runId, merged);
             }
 
-            if (data.status === "done" || data.status === "error") {
+            if (data.status === "done" || data.status === "error" || data.status === "cancelled") {
               clearInterval(interval);
               pollingRuns.delete(runId);
               if (data.status === "done") {
