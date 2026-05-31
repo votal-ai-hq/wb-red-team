@@ -12724,11 +12724,11 @@
       async function cancelRun(runId) {
         if (!confirm("Are you sure you want to cancel this run? This cannot be undone.")) return;
 
-        // Immediately show "cancelling" state so user gets instant feedback
+        // Immediately show "cancelled" state so user gets instant feedback
         const cached = runDataCache.get(runId);
         if (cached) {
-          cached.status = "cancelling";
-          cached.error = "Cancelling...";
+          cached.status = "cancelled";
+          cached.error = "Cancelled by user";
         }
         renderSidebarRuns();
         if (currentTab === "runs") renderRunsTab();
@@ -12737,7 +12737,7 @@
           const resp = await fetch(`/api/run/${runId}`, { method: "DELETE" });
           const data = await resp.json();
           if (resp.ok && cached) {
-            cached.status = data.status === "cancelling" ? "cancelled" : (data.status || "cancelled");
+            cached.status = data.status || "cancelled";
             cached.error = "Cancelled by user";
           } else if (cached) {
             // Request failed — revert to previous state
