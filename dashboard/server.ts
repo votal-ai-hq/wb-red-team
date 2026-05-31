@@ -462,7 +462,7 @@ async function startJob(job: Job): Promise<void> {
       job.config,
       (p) => {
         // Don't push progress if already cancelled
-        if (job.status !== "cancelled") job.progress.push(p);
+        if (!job._cancelled) job.progress.push(p);
       },
       undefined,
       ac.signal,

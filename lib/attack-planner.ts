@@ -31,12 +31,14 @@ import { formatErrorDetails } from "./error-utils.js";
 async function runPlanWithConcurrency<T>(
   tasks: (() => Promise<T>)[],
   maxConcurrency: number,
+  signal?: AbortSignal,
 ): Promise<T[]> {
   const results: T[] = new Array(tasks.length);
   let nextIndex = 0;
 
   async function worker(): Promise<void> {
     while (nextIndex < tasks.length) {
+      if (signal?.aborted) throw new Error("Run cancelled");
       const i = nextIndex++;
       results[i] = await tasks[i]();
     }
@@ -142,6 +144,7 @@ export async function planAttacks(
   previousResults: AttackResult[],
   round: number,
   defenseProfiles?: Map<AttackCategory, CategoryDefenseProfile>,
+  signal?: AbortSignal,
 ): Promise<Attack[]> {
   const allAttacks: Attack[] = [];
   const totalModules = modules.length;
@@ -159,6 +162,7 @@ export async function planAttacks(
 
   const planTasks = modules.map((mod) => {
     return async (): Promise<Attack[]> => {
+      if (signal?.aborted) throw new Error("Run cancelled");
       sharedPlanIndex.value++;
       const progress = `[${sharedPlanIndex.value}/${totalModules}]`;
       const catPrefix = categoryParallelism > 1 ? `[${mod.category}] ` : "";
@@ -216,6 +220,7 @@ export async function planAttacks(
   const planResults = await runPlanWithConcurrency(
     planTasks,
     categoryParallelism,
+    signal,
   );
   for (const categoryAttacks of planResults) {
     allAttacks.push(...categoryAttacks);

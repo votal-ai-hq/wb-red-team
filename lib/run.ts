@@ -972,6 +972,7 @@ export async function runRedTeam(
             allPreviousResults,
             round,
             defenseProfiles,
+            signal,
           );
     } finally {
       console.log = origLog;
