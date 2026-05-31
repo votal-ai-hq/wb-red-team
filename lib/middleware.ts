@@ -45,7 +45,7 @@ async function handleRequest(
 ): Promise<void> {
   try {
     // Block dangerous HTTP methods (TRACE, PUT, DELETE, PATCH, CONNECT)
-    const allowedMethods = new Set(["GET", "POST", "OPTIONS", "HEAD"]);
+    const allowedMethods = new Set(["GET", "POST", "OPTIONS", "HEAD", "DELETE"]);
     if (!allowedMethods.has(req.method || "")) {
       res.writeHead(405, {
         "Content-Type": "text/plain",
@@ -98,7 +98,7 @@ async function handleRequest(
     res.removeHeader("X-Powered-By");
 
     if (req.method === "OPTIONS") {
-      res.setHeader("Access-Control-Allow-Methods", "GET, POST, HEAD");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, HEAD, DELETE");
       res.setHeader(
         "Access-Control-Allow-Headers",
         "Content-Type, Authorization",
