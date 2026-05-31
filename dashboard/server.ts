@@ -329,6 +329,13 @@ interface Job {
   tenantId?: string;
   userId?: string;
   estimatedTotal?: number;
+  /** Once set, the job is permanently cancelled — status reads always return "cancelled". */
+  _cancelled?: boolean;
+}
+
+/** Get the effective status of a job (cancelled flag overrides everything). */
+function getJobStatus(job: Job): Job["status"] {
+  return job._cancelled ? "cancelled" : job.status;
 }
 
 const jobs = new Map<string, Job>();
@@ -904,15 +911,16 @@ const server = createServer(
       const includeConfig = url.searchParams.get("includeConfig") === "1";
 
       if (job) {
+        const effectiveStatus = getJobStatus(job);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
             runId: job.id,
-            status: job.status,
+            status: effectiveStatus,
             startedAt: job.startedAt,
             finishedAt: job.finishedAt,
             targetUrl: job.config.target.baseUrl,
-            error: job.error,
+            error: job._cancelled ? "Cancelled by user" : job.error,
             progressTotal: job.progress.length,
             progress: job.progress.slice(since),
             reportFile: job.reportFile,
@@ -955,13 +963,14 @@ const server = createServer(
         return;
       }
 
-      if (job.status === "running" && job.abortController) {
+      if ((job.status === "running" || !job._cancelled) && job.abortController) {
         console.log(`  [CANCEL] Aborting job ${id}, current status: ${job.status}`);
         job.abortController.abort();
+        job._cancelled = true;
         job.status = "cancelled";
         job.error = "Cancelled by user";
         job.finishedAt = new Date().toISOString();
-        console.log(`  [CANCEL] Job ${id} status set to: ${job.status}`);
+        console.log(`  [CANCEL] Job ${id} status set to: ${job.status}, _cancelled=true`);
         if (isDbConfigured() && job.tenantId) {
           query("UPDATE runs SET status=$1, finished_at=$2, error=$3 WHERE id=$4", [
             job.status, job.finishedAt, job.error, job.id,
@@ -977,6 +986,7 @@ const server = createServer(
         // Remove from queue
         const idx = jobQueue.indexOf(id);
         if (idx !== -1) jobQueue.splice(idx, 1);
+        job._cancelled = true;
         job.status = "cancelled";
         job.error = "Cancelled by user";
         job.finishedAt = new Date().toISOString();
@@ -1007,11 +1017,11 @@ const server = createServer(
           inMemoryIds.add(j.id);
           return {
             runId: j.id,
-            status: j.status,
+            status: getJobStatus(j),
             startedAt: j.startedAt,
             finishedAt: j.finishedAt,
             targetUrl: j.config.target.baseUrl,
-            error: j.error,
+            error: j._cancelled ? "Cancelled by user" : j.error,
             progressCount: j.progress.length,
             reportFile: j.reportFile,
             summary: j.report?.summary,
