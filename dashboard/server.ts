@@ -508,8 +508,8 @@ async function startJob(job: Job): Promise<void> {
           job.reportFile = paths.jsonPath;
         } catch {}
       }
-      job.status = "done";
-      if (isDbConfigured() && job.tenantId) {
+      if (!job._cancelled) job.status = "done";
+      if (isDbConfigured() && job.tenantId && !job._cancelled) {
         query("UPDATE runs SET status=$1, finished_at=$2 WHERE id=$3", [
           "done",
           job.finishedAt,
@@ -522,8 +522,8 @@ async function startJob(job: Job): Promise<void> {
     if (!job.finishedAt) job.finishedAt = new Date().toISOString();
 
     // Don't overwrite if already cancelled by user
-    console.log(`  [CANCEL-CHECK] runRedTeam threw "${msg}", job.status=${job.status}`);
-    if (job.status !== "cancelled") {
+    console.log(`  [CANCEL-CHECK] runRedTeam threw "${msg}", job.status=${job.status}, _cancelled=${job._cancelled}`);
+    if (!job._cancelled && job.status !== "cancelled") {
       if (msg === "Run cancelled") {
         job.status = "cancelled";
         job.error = "Cancelled by user";
@@ -963,45 +963,26 @@ const server = createServer(
         return;
       }
 
-      if ((job.status === "running" || !job._cancelled) && job.abortController) {
-        console.log(`  [CANCEL] Aborting job ${id}, current status: ${job.status}`);
+      // Unconditionally cancel — abort if controller exists, always set _cancelled
+      console.log(`  [CANCEL] Cancelling job ${id}, current status: ${job.status}`);
+      if (job.abortController) {
         job.abortController.abort();
-        job._cancelled = true;
-        job.status = "cancelled";
-        job.error = "Cancelled by user";
-        job.finishedAt = new Date().toISOString();
-        console.log(`  [CANCEL] Job ${id} status set to: ${job.status}, _cancelled=true`);
-        if (isDbConfigured() && job.tenantId) {
-          query("UPDATE runs SET status=$1, finished_at=$2, error=$3 WHERE id=$4", [
-            job.status, job.finishedAt, job.error, job.id,
-          ]).catch(() => {});
-        }
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ runId: id, status: "cancelled" }));
-      } else if (job.status === "cancelled") {
-        // Already cancelled — return success (idempotent)
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ runId: id, status: "cancelled" }));
-      } else if (job.status === "queued") {
-        // Remove from queue
+      }
+      if (job.status === "queued") {
         const idx = jobQueue.indexOf(id);
         if (idx !== -1) jobQueue.splice(idx, 1);
-        job._cancelled = true;
-        job.status = "cancelled";
-        job.error = "Cancelled by user";
-        job.finishedAt = new Date().toISOString();
-        if (isDbConfigured() && job.tenantId) {
-          query("UPDATE runs SET status=$1, finished_at=$2, error=$3 WHERE id=$4", [
-            job.status, job.finishedAt, job.error, job.id,
-          ]).catch(() => {});
-        }
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ runId: id, status: "cancelled" }));
-      } else {
-        // Run already done/error — still return 200 so UI doesn't show error
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ runId: id, status: job.status }));
       }
+      job._cancelled = true;
+      job.status = "cancelled";
+      job.error = "Cancelled by user";
+      if (!job.finishedAt) job.finishedAt = new Date().toISOString();
+      if (isDbConfigured() && job.tenantId) {
+        query("UPDATE runs SET status=$1, finished_at=$2, error=$3 WHERE id=$4", [
+          "cancelled", job.finishedAt, job.error, job.id,
+        ]).catch(() => {});
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ runId: id, status: "cancelled" }));
       return;
     }
 

@@ -5213,19 +5213,6 @@
       async function renderRunsTab() {
         const panel = document.getElementById("runsPanel");
 
-        // Merge in-memory runs with server-side runs list
-        try {
-          const resp = await fetch("/api/runs");
-          if (resp.ok) {
-            const serverRuns = await resp.json();
-            for (const run of serverRuns) {
-              if (!runDataCache.has(run.runId)) {
-                runDataCache.set(run.runId, run);
-              }
-            }
-          }
-        } catch {}
-
         // Filter out runs with invalid/missing dates, then sort newest first
         const allRuns = [...runDataCache.entries()]
           .filter(function(entry) {
@@ -12052,6 +12039,11 @@
 
       function pollRun(runId) {
         if (pollingRuns.has(runId)) return;
+        // Don't poll terminal runs
+        var existing = runDataCache.get(runId);
+        if (existing && (existing.status === "done" || existing.status === "error" || existing.status === "cancelled")) {
+          return;
+        }
         pollingRuns.add(runId);
 
         let progressOffset = 0;
@@ -12069,8 +12061,10 @@
               cached.progress = [...(cached.progress || []), ...data.progress];
             }
             const merged = cached || data;
-            // Always update non-progress fields
-            merged.status = data.status;
+            // Don't let server "running" overwrite local "cancelled" (race window)
+            if (merged.status !== "cancelled" || data.status === "cancelled") {
+              merged.status = data.status;
+            }
             merged.error = data.error;
             merged.finishedAt = data.finishedAt;
             merged.summary = data.summary;
@@ -12451,12 +12445,8 @@
           const resp = await fetch("/api/runs");
           const runs = await resp.json();
           for (const run of runs) {
-            if (
-              run.status === "queued" ||
-              run.status === "running" ||
-              run.status === "error"
-            ) {
-              // Fetch full progress for active/recent runs
+            if (run.status === "queued" || run.status === "running") {
+              // Only fetch full progress for actively running jobs
               try {
                 const fullResp = await fetch(`/api/run/${run.runId}?since=0`);
                 const fullData = await fullResp.json();
@@ -12464,9 +12454,10 @@
               } catch {
                 runDataCache.set(run.runId, { ...run, progress: [] });
               }
-              if (run.status === "queued" || run.status === "running") {
-                pollRun(run.runId);
-              }
+              pollRun(run.runId);
+            } else if (!runDataCache.has(run.runId)) {
+              // For done/error/cancelled, use list data directly (no extra fetch)
+              runDataCache.set(run.runId, { ...run, progress: [] });
             }
           }
           renderSidebarRuns();
