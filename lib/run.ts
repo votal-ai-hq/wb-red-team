@@ -38,6 +38,7 @@ import {
   mergeCustomAttacksForRound,
 } from "./custom-attacks-loader.js";
 import { generateAppTailoredCustomAttacks } from "./app-tailored-custom-prompts.js";
+import { selectPrAwareCategories } from "./pr-aware.js";
 import { runDiscoveryRound, applyDiscoveryIntel } from "./discovery-round.js";
 import { isAttackCategory } from "./types.js";
 import type {
@@ -825,6 +826,36 @@ export async function runRedTeam(
     }
   }
 
+  const prAwareSelection = selectPrAwareCategories(config);
+  if (prAwareSelection.enabled) {
+    log("analyze", "PR-aware focused scan enabled");
+    log(
+      "analyze",
+      `Changed files: ${prAwareSelection.changedFiles.length}${prAwareSelection.baseRef ? ` (base: ${prAwareSelection.baseRef})` : ""}`,
+    );
+
+    if (prAwareSelection.skipped) {
+      relevantModules = [];
+      log("analyze", `Focused scan skipped: ${prAwareSelection.skipReason}`);
+    } else {
+      const selectedSet = new Set(prAwareSelection.selectedCategories);
+      const before = relevantModules.length;
+      relevantModules = relevantModules.filter((m) =>
+        selectedSet.has(m.category),
+      );
+      log(
+        "analyze",
+        `Selected ${prAwareSelection.selectedCategories.length} categories: ${prAwareSelection.selectedCategories.join(", ")}`,
+      );
+      if (before - relevantModules.length > 0) {
+        log(
+          "analyze",
+          `PR-aware gating: skipped ${before - relevantModules.length} categories outside the changed-file scope`,
+        );
+      }
+    }
+  }
+
   const appContext: AppContext = {
     tools: analysis.tools,
     roles: analysis.roles,
@@ -978,12 +1009,18 @@ export async function runRedTeam(
       console.log = origLog;
     }
     checkAbort();
-    const attacks = mergeCustomAttacksForRound(
+    let attacks = mergeCustomAttacksForRound(
       config,
       round,
       planned,
       customAttacks,
     );
+    if (prAwareSelection.enabled) {
+      const selectedSet = new Set(prAwareSelection.selectedCategories);
+      attacks = prAwareSelection.skipped
+        ? []
+        : attacks.filter((attack) => selectedSet.has(attack.category));
+    }
     log("attacks", `Round ${round}: planned ${attacks.length} attacks`, {
       round,
       totalRounds: config.attackConfig.adaptiveRounds,
@@ -1558,6 +1595,9 @@ export async function runRedTeam(
         config.target.infra?.aiModel?.provider ??
         config.attackConfig.llmProvider,
     },
+    prAwareSelection.enabled
+      ? { mode: "pr_aware", prAware: prAwareSelection }
+      : { mode: "full" },
   );
   // Skip file write when DB is configured (server stores to DB instead)
   let jsonPath = "";

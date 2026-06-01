@@ -736,6 +736,38 @@ When configured, outbound OpenAI-style requests are sent in this shape:
 }
 ```
 
+### PR-Aware Focused Scans
+
+Enable PR-aware mode when you want CI to run only attack categories that map to the files changed in a pull request:
+
+```json
+{
+  "codebasePath": ".",
+  "attackConfig": {
+    "prAware": {
+      "enabled": true,
+      "baseRef": "origin/main"
+    }
+  }
+}
+```
+
+For CI systems that already compute changed files, pass them directly:
+
+```json
+{
+  "codebasePath": ".",
+  "attackConfig": {
+    "prAware": {
+      "enabled": true,
+      "changedFiles": ["src/auth/jwt.ts", "docs/support-policy.md"]
+    }
+  }
+}
+```
+
+If no changed files map to attack categories, the focused scan records the reason and skips attack execution instead of falling back to a broad baseline. Run a separate full/nightly scan for whole-application coverage.
+
 **API keys for programmatic access:**
 
 ```bash

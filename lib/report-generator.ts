@@ -179,6 +179,7 @@ export function generateReport(
   affectedFiles?: Partial<Record<AttackCategory, AffectedFile[]>>,
   discoveryIntel?: Report["discovery"],
   target?: ReportTargetDescriptor,
+  runContext?: Report["runContext"],
 ): Report {
   const allResults = rounds.flatMap((r) => r.results);
 
@@ -234,6 +235,7 @@ export function generateReport(
     timestamp: new Date().toISOString(),
     targetUrl,
     target,
+    runContext,
     rounds,
     summary: {
       totalAttacks: allResults.length,
@@ -369,6 +371,40 @@ function buildMarkdown(
   lines.push(`**Date:** ${report.timestamp}`);
   lines.push(`**Security Score:** ${report.summary.score}/100`);
   lines.push("");
+
+  if (report.runContext?.mode === "pr_aware" && report.runContext.prAware) {
+    const prAware = report.runContext.prAware;
+    lines.push("## Run Context");
+    lines.push("**Mode:** PR-aware focused scan");
+    if (prAware.baseRef) lines.push(`**Base Ref:** ${prAware.baseRef}`);
+    lines.push(`**Changed Files:** ${prAware.changedFiles.length}`);
+    if (prAware.skipped) {
+      lines.push(`**Focused Scan Skipped:** ${prAware.skipReason ?? "Unknown"}`);
+    } else {
+      lines.push(
+        `**Selected Categories:** ${prAware.selectedCategories.join(", ")}`,
+      );
+    }
+    lines.push("");
+
+    if (prAware.changedFiles.length > 0) {
+      lines.push("### Changed Files");
+      for (const file of prAware.changedFiles) lines.push(`- \`${file}\``);
+      lines.push("");
+    }
+
+    if (prAware.reasons.length > 0) {
+      lines.push("### Selection Reasons");
+      lines.push("| Category | File | Line | Reason |");
+      lines.push("|----------|------|------|--------|");
+      for (const reason of prAware.reasons) {
+        lines.push(
+          `| ${reason.category} | \`${reason.file}\` | ${reason.line ?? "-"} | ${reason.reason} |`,
+        );
+      }
+      lines.push("");
+    }
+  }
 
   // Static analysis section
   if (report.staticAnalysis && report.staticAnalysis.findings.length > 0) {

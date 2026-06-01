@@ -793,6 +793,13 @@ const CATEGORY_FILE_PATTERNS: Partial<Record<AttackCategory, FilePattern[]>> = {
   ],
   indirect_prompt_injection: [
     {
+      pathPattern: /(?:^|\/)(?:docs?|knowledge|policies|content|kb|readme)|\.mdx?$/i,
+      contentPatterns: [
+        /ignore previous|system prompt|instruction|developer message|tool|secret|token|password|env/i,
+      ],
+      reason: "Documentation or knowledge content that may carry indirect instructions",
+    },
+    {
       pathPattern: /route|handler|agent/i,
       contentPatterns: [
         /browse_url|fetch|read_file|read_inbox|read_slack|tool/i,
@@ -1039,6 +1046,15 @@ const CATEGORY_FILE_PATTERNS: Partial<Record<AttackCategory, FilePattern[]>> = {
       reason: "Data/knowledge store",
     },
   ],
+  repo_prompt_injection: [
+    {
+      pathPattern: /(?:^|\/)(?:readme|docs?|policies|prompts?|\.github|issues?|tickets?)|\.mdx?$/i,
+      contentPatterns: [
+        /ignore previous|system prompt|developer instruction|hidden instruction|prompt injection|secret|token|password|env/i,
+      ],
+      reason: "Repository/documentation content that could be ingested as prompt context",
+    },
+  ],
   rag_corpus_poisoning: [
     {
       pathPattern: /memory|knowledge|vector|retriev|search|store|cache/i,
@@ -1049,6 +1065,31 @@ const CATEGORY_FILE_PATTERNS: Partial<Record<AttackCategory, FilePattern[]>> = {
       pathPattern: /route|handler|agent/i,
       contentPatterns: [/knowledge|memory|document|faq|policy|store/i],
       reason: "User-facing corpus update path",
+    },
+    {
+      pathPattern: /(?:^|\/)(?:docs?|knowledge|policies|content|kb|faq)|\.mdx?$/i,
+      contentPatterns: [
+        /policy|faq|knowledge|document|instruction|ignore previous|system prompt|secret|token/i,
+      ],
+      reason: "Knowledge-base document that may be indexed into RAG",
+    },
+  ],
+  rag_poisoning: [
+    {
+      pathPattern: /(?:^|\/)(?:docs?|knowledge|policies|content|kb|faq)|\.mdx?$/i,
+      contentPatterns: [
+        /policy|faq|knowledge|document|instruction|ignore previous|system prompt|secret|token/i,
+      ],
+      reason: "Retrieved document content that may poison RAG answers",
+    },
+  ],
+  tool_result_injection: [
+    {
+      pathPattern: /(?:^|\/)(?:docs?|knowledge|policies|content|kb|readme)|\.mdx?$/i,
+      contentPatterns: [
+        /tool result|tool output|ignore previous|system prompt|instruction|secret|token|password/i,
+      ],
+      reason: "Documented/tool-returned content that may be treated as trusted tool output",
     },
   ],
   retrieval_ranking_attack: [
@@ -1488,7 +1529,7 @@ const CATEGORY_FILE_PATTERNS: Partial<Record<AttackCategory, FilePattern[]>> = {
   ],
 };
 
-function mapCategoriesToFiles(
+export function mapCategoriesToFiles(
   basePath: string,
   files: string[],
 ): Partial<Record<AttackCategory, AffectedFile[]>> {

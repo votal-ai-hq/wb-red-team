@@ -148,6 +148,7 @@ import {
   mergeCustomAttacksForRound,
 } from "./lib/custom-attacks-loader.js";
 import { generateAppTailoredCustomAttacks } from "./lib/app-tailored-custom-prompts.js";
+import { selectPrAwareCategories } from "./lib/pr-aware.js";
 import {
   runDiscoveryRound,
   applyDiscoveryIntel,
@@ -470,6 +471,33 @@ async function main() {
     }
   }
 
+  const prAwareSelection = selectPrAwareCategories(config);
+  if (prAwareSelection.enabled) {
+    console.log("\n  PR-aware focused scan: enabled");
+    console.log(
+      `  Changed files: ${prAwareSelection.changedFiles.length}${prAwareSelection.baseRef ? ` (base: ${prAwareSelection.baseRef})` : ""}`,
+    );
+
+    if (prAwareSelection.skipped) {
+      relevantModules = [];
+      console.log(`  Focused scan skipped: ${prAwareSelection.skipReason}`);
+    } else {
+      const selectedSet = new Set(prAwareSelection.selectedCategories);
+      const before = relevantModules.length;
+      relevantModules = relevantModules.filter((m) =>
+        selectedSet.has(m.category),
+      );
+      console.log(
+        `  Selected ${prAwareSelection.selectedCategories.length} categories: ${prAwareSelection.selectedCategories.join(", ")}`,
+      );
+      if (before - relevantModules.length > 0) {
+        console.log(
+          `  PR-aware gating: skipped ${before - relevantModules.length} categories outside the changed-file scope`,
+        );
+      }
+    }
+  }
+
   // Build app context for the LLM judge (reduces false positives)
   const appContext: AppContext = {
     tools: analysis.tools,
@@ -713,12 +741,18 @@ async function main() {
           round,
           defenseProfiles,
         );
-    const attacks = mergeCustomAttacksForRound(
+    let attacks = mergeCustomAttacksForRound(
       config,
       round,
       planned,
       customAttacks,
     );
+    if (prAwareSelection.enabled) {
+      const selectedSet = new Set(prAwareSelection.selectedCategories);
+      attacks = prAwareSelection.skipped
+        ? []
+        : attacks.filter((attack) => selectedSet.has(attack.category));
+    }
     knownTotalAttacks += attacks.length;
     console.log(`  Planned ${attacks.length} attacks`);
     {
@@ -727,6 +761,11 @@ async function main() {
       for (const line of formatEstimate(est, concurrency)) {
         console.log(`    ${line}`);
       }
+    }
+    if (attacks.length === 0) {
+      console.log("  No attacks selected for this round.");
+      rounds.push({ round, results: [] });
+      continue;
     }
     printPlannedAttackReview(round, attacks, analysis, "initial");
     const approved = await confirmAttackExecution(
@@ -1352,6 +1391,10 @@ async function main() {
     staticResult,
     analysis.affectedFiles,
     discoveryIntel,
+    undefined,
+    prAwareSelection.enabled
+      ? { mode: "pr_aware", prAware: prAwareSelection }
+      : { mode: "full" },
   );
   const { jsonPath, mdPath } = writeReport(report);
   console.log(`  JSON: ${jsonPath}`);

@@ -555,6 +555,20 @@ export interface Config {
     maxMultiTurnSteps: number;
     /** Optional allowlist of attack categories to run. Omit or set to empty array to run all. */
     enabledCategories?: AttackCategory[];
+    /**
+     * Focus PR scans to categories related to changed files. Phase 1 is
+     * config-driven; CLI overrides can be layered on later.
+     */
+    prAware?: {
+      /** Enable changed-file focused category selection. Default: false. */
+      enabled?: boolean;
+      /** Git base ref to diff against when changedFiles is not supplied. */
+      baseRef?: string;
+      /** Optional explicit changed-file list, relative to codebasePath. */
+      changedFiles?: string[];
+      /** Include deleted files from git diff. Default: false. */
+      includeDeletedFiles?: boolean;
+    };
     /** Optional allowlist of strategy slugs to use for LLM generation. Omit or set to empty array to use all. */
     enabledStrategies?: string[];
     /**
@@ -786,6 +800,21 @@ export interface StaticAnalysisResult {
   checkedFiles: number;
 }
 
+export interface PrAwareSelection {
+  enabled: boolean;
+  baseRef?: string;
+  changedFiles: string[];
+  selectedCategories: AttackCategory[];
+  reasons: {
+    category: AttackCategory;
+    file: string;
+    line?: number;
+    reason: string;
+  }[];
+  skipped: boolean;
+  skipReason?: string;
+}
+
 export interface RoundResult {
   round: number;
   results: AttackResult[];
@@ -817,6 +846,10 @@ export interface Report {
   targetUrl: string;
   /** Snapshot of target config for UI rendering (Attack Path graph, etc.). */
   target?: ReportTargetDescriptor;
+  runContext?: {
+    mode?: "full" | "pr_aware";
+    prAware?: PrAwareSelection;
+  };
   rounds: RoundResult[];
   summary: {
     totalAttacks: number;
