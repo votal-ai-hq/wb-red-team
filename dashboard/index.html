@@ -5996,7 +5996,7 @@
         riskLlmResults = null;
         renderRiskTab();
         try {
-          var res = await fetch("/api/report/" + filename);
+          var res = await fetch("/api/report/" + filename + "?slim=1");
           riskReportData = await res.json();
           renderRiskTab();
         } catch (e) {
@@ -7570,7 +7570,7 @@
 
         app.innerHTML = '<div class="loading">Loading report...</div>';
         try {
-          const res = await fetch(`/api/report/${filename}`);
+          const res = await fetch(`/api/report/${filename}?slim=1`);
           report = await res.json();
           activeRound = 0;
           currentRowIndex = 0;
@@ -12514,7 +12514,7 @@
           $("#downloadJsonBtn").style.display = "inline-block";
           $("#downloadJsonBtn").onclick = () => {
             const a = document.createElement("a");
-            a.href = `/api/report/${reportFilename}`;
+            a.href = `/api/report/${reportFilename}?download=1`;
             a.download = reportFilename;
             a.click();
           };

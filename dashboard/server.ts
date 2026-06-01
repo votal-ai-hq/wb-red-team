@@ -1378,6 +1378,9 @@ const server = createServer(
         return;
       }
 
+      const slim = url.searchParams.get("slim") === "1";
+      const download = url.searchParams.get("download") === "1";
+
       try {
         const loaded = await loadReportRecord(filename, ctx?.tenantId);
         if (!loaded) {
@@ -1391,11 +1394,40 @@ const server = createServer(
             source: loaded.source,
           });
         }
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(normalizeReportSteps(loaded.report)));
-      } catch {
-        res.writeHead(404);
-        res.end("Not found");
+        const report = normalizeReportSteps(loaded.report);
+
+        // Slim mode: strip large fields (responseBody, conversation payloads)
+        // to keep the payload manageable for browser rendering
+        if (slim) {
+          const rounds = Array.isArray((report as any).rounds) ? (report as any).rounds : [];
+          for (const round of rounds) {
+            const results = Array.isArray(round.results) ? round.results : [];
+            for (const r of results) {
+              if (typeof r.responseBody === "string" && r.responseBody.length > 500) {
+                r.responseBody = r.responseBody.slice(0, 500) + "...[truncated]";
+              }
+              // Trim conversation response bodies too
+              if (Array.isArray(r.conversation)) {
+                for (const step of r.conversation) {
+                  if (typeof step.responseBody === "string" && step.responseBody.length > 500) {
+                    step.responseBody = step.responseBody.slice(0, 500) + "...[truncated]";
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (download) {
+          headers["Content-Disposition"] = `attachment; filename="${filename}"`;
+        }
+        res.writeHead(200, headers);
+        res.end(JSON.stringify(report));
+      } catch (err) {
+        console.error(`  Failed to load report ${filename}:`, err);
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Failed to load report", detail: err instanceof Error ? err.message : String(err) }));
       }
       return;
     }
