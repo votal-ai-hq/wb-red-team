@@ -1,5 +1,10 @@
 import { describe, expect, it, afterEach, beforeEach } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { loadConfigFromObject } from "../lib/config-loader.js";
@@ -157,5 +162,57 @@ describe("selectPrAwareCategories", () => {
     expect(selection.skipped).toBe(true);
     expect(selection.selectedCategories).toEqual([]);
     expect(selection.skipReason).toContain("did not map");
+    expect(selection.fatal).toBeUndefined();
+  });
+
+  it("marks git diff failures as fatal instead of a successful no-op", () => {
+    const config = makeConfig(tmpDir, {
+      enabled: true,
+      baseRef: "origin/main",
+    });
+
+    const selection = selectPrAwareCategories(config);
+
+    expect(selection.skipped).toBe(true);
+    expect(selection.fatal).toBe(true);
+    expect(selection.skipKind).toBe("git_error");
+    expect(selection.skipReason).toContain("Unable to resolve changed files");
+  });
+
+  it("rejects changed files outside codebasePath", () => {
+    const config = makeConfig(tmpDir, {
+      enabled: true,
+      changedFiles: ["../outside.ts"],
+    });
+
+    const selection = selectPrAwareCategories(config);
+
+    expect(selection.skipped).toBe(true);
+    expect(selection.fatal).toBe(true);
+    expect(selection.skipKind).toBe("invalid_changed_files");
+    expect(selection.skipReason).toContain("../outside.ts");
+  });
+
+  it("uses path-only mapping for deleted files when includeDeletedFiles is enabled", () => {
+    const config = makeConfig(tmpDir, {
+      enabled: true,
+      includeDeletedFiles: true,
+      changedFiles: ["src/auth/deleted-jwt.ts"],
+    });
+
+    const selection = selectPrAwareCategories(config);
+
+    expect(selection.skipped).toBe(false);
+    expect(selection.changedFiles).toEqual(["src/auth/deleted-jwt.ts"]);
+    expect(selection.selectedCategories).toContain("auth_bypass");
+    expect(selection.reasons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: "auth_bypass",
+          file: "src/auth/deleted-jwt.ts",
+          reason: expect.stringContaining("path-only match"),
+        }),
+      ]),
+    );
   });
 });

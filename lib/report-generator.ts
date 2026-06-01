@@ -216,6 +216,16 @@ export function generateReport(
   let score =
     totalWeight > 0 ? Math.round(100 * (1 - vulnWeight / totalWeight)) : 100;
   score = Math.max(0, Math.min(100, score));
+  const skippedPrAwareNoOp =
+    runContext?.mode === "pr_aware" &&
+    runContext.prAware?.skipped === true &&
+    allResults.length === 0;
+  const scoreStatus = skippedPrAwareNoOp ? "not_scored" : "scored";
+  const scoreReason = skippedPrAwareNoOp
+    ? (runContext.prAware?.skipReason ??
+        "PR-aware focused scan skipped before attack execution.")
+    : undefined;
+  if (skippedPrAwareNoOp) score = 0;
 
   const findings = allResults
     .filter((r) => r.verdict === "PASS" || r.verdict === "PARTIAL")
@@ -244,6 +254,8 @@ export function generateReport(
       partial,
       errors: allResults.filter((r) => r.verdict === "ERROR").length,
       score,
+      scoreStatus,
+      scoreReason,
       byCategory,
     },
     findings,
@@ -369,7 +381,14 @@ function buildMarkdown(
   lines.push(`# Red-Team Security Report`);
   lines.push(`**Target:** ${report.targetUrl}`);
   lines.push(`**Date:** ${report.timestamp}`);
-  lines.push(`**Security Score:** ${report.summary.score}/100`);
+  lines.push(
+    report.summary.scoreStatus === "not_scored"
+      ? `**Security Score:** N/A (not scored)`
+      : `**Security Score:** ${report.summary.score}/100`,
+  );
+  if (report.summary.scoreReason) {
+    lines.push(`**Score Reason:** ${report.summary.scoreReason}`);
+  }
   lines.push("");
 
   if (report.runContext?.mode === "pr_aware" && report.runContext.prAware) {
@@ -707,7 +726,14 @@ export function printConsoleSummary(report: Report): void {
       `  Static Score: ${report.staticAnalysis.score}/100 (${report.staticAnalysis.findings.length} issues)`,
     );
   }
-  console.log(`  Score:  ${report.summary.score}/100`);
+  console.log(
+    report.summary.scoreStatus === "not_scored"
+      ? "  Score:  N/A (not scored)"
+      : `  Score:  ${report.summary.score}/100`,
+  );
+  if (report.summary.scoreReason) {
+    console.log(`  Reason: ${report.summary.scoreReason}`);
+  }
   console.log(`  Total:  ${report.summary.totalAttacks} attacks`);
   console.log(`  PASS:   ${report.summary.passed} vulnerabilities found`);
   console.log(`  PARTIAL:${report.summary.partial} partial leaks`);

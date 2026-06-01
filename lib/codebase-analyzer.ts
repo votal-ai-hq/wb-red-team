@@ -1532,17 +1532,20 @@ const CATEGORY_FILE_PATTERNS: Partial<Record<AttackCategory, FilePattern[]>> = {
 export function mapCategoriesToFiles(
   basePath: string,
   files: string[],
+  options: { includeUnreadablePathMatches?: boolean } = {},
 ): Partial<Record<AttackCategory, AffectedFile[]>> {
   const result: Partial<Record<AttackCategory, AffectedFile[]>> = {};
 
   // Read file contents and cache
-  const fileContents = new Map<string, string>();
+  const fileContents = new Map<string, string | undefined>();
   for (const file of files) {
     try {
       const content = readFileSync(resolve(basePath, file), "utf-8");
       fileContents.set(file, content);
     } catch {
-      // skip unreadable files
+      if (options.includeUnreadablePathMatches) {
+        fileContents.set(file, undefined);
+      }
     }
   }
 
@@ -1552,6 +1555,16 @@ export function mapCategoriesToFiles(
     for (const [file, content] of fileContents) {
       for (const fp of patterns!) {
         if (!fp.pathPattern.test(file)) continue;
+
+        if (content == null) {
+          if (!affected.some((a) => a.file === file && a.reason === fp.reason)) {
+            affected.push({
+              file,
+              reason: `${fp.reason} (path-only match; file was unreadable or deleted)`,
+            });
+          }
+          continue;
+        }
 
         // Check if any content pattern matches
         const matchedContent = fp.contentPatterns.some((cp) =>

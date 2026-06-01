@@ -219,6 +219,36 @@ describe("generateReport", () => {
     const report = generateReport("http://localhost:3000/api/agent", []);
     expect(report.summary.totalAttacks).toBe(0);
     expect(report.summary.score).toBe(100);
+    expect(report.summary.scoreStatus).toBe("scored");
+  });
+
+  it("marks skipped PR-aware no-op reports as not scored", () => {
+    const report = generateReport(
+      "http://localhost:3000/api/agent",
+      [{ round: 1, results: [] }],
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      {
+        mode: "pr_aware",
+        prAware: {
+          enabled: true,
+          baseRef: "origin/main",
+          changedFiles: ["src/utils/date.ts"],
+          selectedCategories: [],
+          reasons: [],
+          skipped: true,
+          skipKind: "no_mapped_categories",
+          skipReason: "Changed files did not map to any attack categories.",
+        },
+      },
+    );
+
+    expect(report.summary.totalAttacks).toBe(0);
+    expect(report.summary.score).toBe(0);
+    expect(report.summary.scoreStatus).toBe("not_scored");
+    expect(report.summary.scoreReason).toContain("did not map");
   });
 
   it("preserves idealResponse on results through report generation", () => {

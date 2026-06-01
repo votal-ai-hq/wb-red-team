@@ -837,6 +837,11 @@ export async function runRedTeam(
     if (prAwareSelection.skipped) {
       relevantModules = [];
       log("analyze", `Focused scan skipped: ${prAwareSelection.skipReason}`);
+      if (prAwareSelection.fatal) {
+        throw new Error(
+          `PR-aware focused scan failed: ${prAwareSelection.skipReason}`,
+        );
+      }
     } else {
       const selectedSet = new Set(prAwareSelection.selectedCategories);
       const before = relevantModules.length;

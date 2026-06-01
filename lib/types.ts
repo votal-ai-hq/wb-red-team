@@ -813,6 +813,13 @@ export interface PrAwareSelection {
   }[];
   skipped: boolean;
   skipReason?: string;
+  skipKind?:
+    | "missing_codebase_path"
+    | "git_error"
+    | "invalid_changed_files"
+    | "no_changed_files"
+    | "no_mapped_categories";
+  fatal?: boolean;
 }
 
 export interface RoundResult {
@@ -858,6 +865,8 @@ export interface Report {
     partial: number;
     errors: number;
     score: number;
+    scoreStatus?: "scored" | "not_scored";
+    scoreReason?: string;
     byCategory: Record<
       AttackCategory,
       { total: number; passed: number; findings: string[] }
