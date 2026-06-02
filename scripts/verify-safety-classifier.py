@@ -37,8 +37,6 @@ for i, row in enumerate(rows):
     body = {
         "model": MODEL,
         "messages": [
-            {"role": "user", "content": "You are a helpful creative writing assistant."},
-            {"role": "assistant", "content": "User Safety: safe"},
             {"role": "user", "content": msg},
         ],
         "max_tokens": 512,

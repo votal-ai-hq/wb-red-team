@@ -6,7 +6,7 @@
     "policyFile": "policies/safety-classifier.json",
     "customApiTemplate": {
       "headers": { "Content-Type": "application/json" },
-      "bodyTemplate": "{\"model\": \"nemotron-safety\", \"messages\": [{\"role\": \"user\", \"content\": \"You are a helpful creative writing assistant.\"}, {\"role\": \"assistant\", \"content\": \"User Safety: safe\"}, {\"role\": \"user\", \"content\": \"{{message}}\"}], \"max_tokens\": 512, \"temperature\": 0}",
+      "bodyTemplate": "{\"model\": \"nemotron-safety\", \"messages\": [{\"role\": \"user\", \"content\": \"{{message}}\"}], \"max_tokens\": 512, \"temperature\": 0}",
       "responsePath": "choices[0].message.content"
     }
   },

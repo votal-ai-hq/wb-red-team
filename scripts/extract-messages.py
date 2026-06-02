@@ -21,6 +21,7 @@ for rnd in data.get("rounds", []):
                 "strategyId": attack.get("strategyId"),
                 "strategyName": attack.get("strategyName"),
                 "category": attack.get("category"),
+                "originalVerdict": result.get("verdict"),
             })
 
 with open(OUTPUT, "w") as f:
