@@ -113,6 +113,36 @@ describe("executeAttack custom API template", () => {
       guardrails: ["votal-input-guard", "votal-output-guard"],
     });
   });
+
+  it("strips internal canary metadata from outbound request bodies", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      headers: { get: () => "application/json" },
+      json: async () => ({ response: "ok" }),
+      text: async () => "",
+    } as Response);
+
+    const config = makeConfig();
+    config.auth.methods = [];
+
+    await executeAttack(
+      config,
+      makeAttack({
+        payload: {
+          message: "check private marker",
+          _canaryToken: "CANARY_PRIVATE_DATA_9F4E2A",
+          _canaryTokens: ["CANARY_PRIVATE_DATA_9F4E2A"],
+        },
+      }),
+    );
+
+    const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(JSON.parse(String(requestInit.body))).toEqual({
+      message: "check private marker",
+    });
+  });
 });
 
 describe("prepareConversation", () => {

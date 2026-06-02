@@ -9,6 +9,7 @@ import type {
   ToolChain,
   AttackCategory,
   AffectedFile,
+  CanaryPlacement,
 } from "./types.js";
 
 // ── Feature 1: Framework Auto-Detection ──
@@ -487,6 +488,174 @@ function buildSourceBundle(files: ScoredFile[]): string[] {
   return files.map((f) => `// ── FILE: ${f.path} ──\n${f.content}`);
 }
 
+// ── Feature 4.5: Canary Placement Advisor ──
+
+interface CanarySourcePattern {
+  sourceType: CanaryPlacement["sourceType"];
+  pattern: RegExp;
+  symbolPattern?: RegExp;
+  reason: string;
+  placement: string;
+  tokenPrefix: string;
+}
+
+const CANARY_SOURCE_PATTERNS: CanarySourcePattern[] = [
+  {
+    sourceType: "database",
+    pattern:
+      /\b(db|database|prisma|supabase|sequelize|mongoose|knex|client)(?:\s*\.\s*[a-zA-Z_$][\w$]*){0,3}\s*\.\s*(query|select|find|findMany|findFirst|findUnique|from|collection|aggregate|execute)\b/i,
+    symbolPattern:
+      /\b(?:async\s+)?(?:function\s+)?([a-zA-Z_$][\w$]*(?:Profile|Customer|User|Account|Record|Query|Lookup|Data)[\w$]*)\b/,
+    reason: "Database or ORM read can return private customer/account data",
+    placement:
+      "Seed the token into a synthetic staging row returned by this database lookup, such as an internal_notes/debug_marker field.",
+    tokenPrefix: "CANARY_DB_ROW",
+  },
+  {
+    sourceType: "rag",
+    pattern:
+      /\b(vectorStore|retriever|similaritySearch|asRetriever|retrieve|rag|knowledgeBase|documents?)\b/i,
+    symbolPattern:
+      /\b(?:async\s+)?(?:function\s+)?([a-zA-Z_$][\w$]*(?:Retrieve|Search|Rag|Knowledge|Document|Context)[\w$]*)\b/,
+    reason: "RAG or document retrieval can return private knowledge-base text",
+    placement:
+      "Seed the token into a staging-only private document indexed by this retriever.",
+    tokenPrefix: "CANARY_RAG_DOC",
+  },
+  {
+    sourceType: "file",
+    pattern: /\b(fs\.)?(readFile|readFileSync|createReadStream)\s*\(/i,
+    symbolPattern:
+      /\b(?:async\s+)?(?:function\s+)?([a-zA-Z_$][\w$]*(?:Read|Load|File|Config|Document)[\w$]*)\b/,
+    reason: "File reads can expose internal documents, configs, logs, or exports",
+    placement:
+      "Seed the token into a staging-only file that this read path can access.",
+    tokenPrefix: "CANARY_FILE",
+  },
+  {
+    sourceType: "memory",
+    pattern:
+      /\b(memory|session|conversation|history|cache|store)\s*\.\s*(get|load|read|search|retrieve|find)\b/i,
+    symbolPattern:
+      /\b(?:async\s+)?(?:function\s+)?([a-zA-Z_$][\w$]*(?:Memory|Session|History|Cache|Store)[\w$]*)\b/,
+    reason: "Agent memory/session reads can return private conversation state",
+    placement:
+      "Seed the token into staging memory or a synthetic conversation/session record.",
+    tokenPrefix: "CANARY_MEMORY",
+  },
+  {
+    sourceType: "secret",
+    pattern: /\b(process\.env|secrets?|api[_-]?key|credential|token)\b/i,
+    symbolPattern:
+      /\b(?:async\s+)?(?:function\s+)?([a-zA-Z_$][\w$]*(?:Secret|Token|Credential|Config|Env)[\w$]*)\b/,
+    reason: "Secret/config access can reveal credentials or internal service tokens",
+    placement:
+      "Use a staging-only fake secret value and configure the scanner to watch for that token.",
+    tokenPrefix: "CANARY_SECRET",
+  },
+];
+
+function lineNumberForOffset(content: string, offset: number): number {
+  return content.slice(0, offset).split("\n").length;
+}
+
+function stableCanaryToken(prefix: string, seed: string): string {
+  let hash = 0;
+  for (const ch of seed) {
+    hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  }
+  return `${prefix}_${hash.toString(16).toUpperCase().padStart(8, "0")}`;
+}
+
+function extractNearbySymbol(
+  content: string,
+  matchIndex: number,
+  pattern?: RegExp,
+): string | undefined {
+  if (!pattern) return undefined;
+  const window = content.slice(Math.max(0, matchIndex - 500), matchIndex + 200);
+  const match = window.match(pattern);
+  return match?.[1];
+}
+
+function dedupeCanaryPlacements(
+  placements: CanaryPlacement[],
+): CanaryPlacement[] {
+  const seen = new Set<string>();
+  const deduped: CanaryPlacement[] = [];
+  for (const placement of placements) {
+    const key = `${placement.sourceType}:${placement.file}:${placement.line}:${placement.symbol ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(placement);
+  }
+  return deduped.slice(0, 25);
+}
+
+export function recommendCanaryPlacements(
+  files: ScoredFile[],
+  analysis: CodebaseAnalysis,
+): CanaryPlacement[] {
+  const placements: CanaryPlacement[] = [];
+
+  for (const file of files) {
+    for (const source of CANARY_SOURCE_PATTERNS) {
+      source.pattern.lastIndex = 0;
+      const match = source.pattern.exec(file.content);
+      if (!match) continue;
+
+      const line = lineNumberForOffset(file.content, match.index);
+      const symbol = extractNearbySymbol(
+        file.content,
+        match.index,
+        source.symbolPattern,
+      );
+      const seed = `${file.path}:${line}:${symbol ?? source.sourceType}`;
+      placements.push({
+        sourceType: source.sourceType,
+        file: file.path,
+        line,
+        symbol,
+        suggestedToken: stableCanaryToken(source.tokenPrefix, seed),
+        suggestedPlacement: source.placement,
+        reason: source.reason,
+      });
+    }
+  }
+
+  for (const item of analysis.sensitiveData) {
+    const seed = `${item.type}:${item.location}`;
+    placements.push({
+      sourceType: "unknown",
+      file: item.location,
+      suggestedToken: stableCanaryToken("CANARY_SENSITIVE_SOURCE", seed),
+      suggestedPlacement:
+        "Seed this fake token in the matching staging-only sensitive-data location and watch for it in public sink tool arguments.",
+      reason: `Sensitive data class found by analysis: ${item.type}`,
+    });
+  }
+
+  for (const tool of analysis.tools) {
+    const lower = `${tool.name} ${tool.description} ${tool.parameters}`.toLowerCase();
+    const looksPrivateSource = SOURCE_KEYWORDS.some((kw) =>
+      lower.includes(kw),
+    );
+    const looksPublicSink = SINK_KEYWORDS.some((kw) => lower.includes(kw));
+    if (!looksPrivateSource || looksPublicSink) continue;
+    const seed = `tool:${tool.name}`;
+    placements.push({
+      sourceType: "tool",
+      symbol: tool.name,
+      suggestedToken: stableCanaryToken("CANARY_TOOL_SOURCE", seed),
+      suggestedPlacement:
+        "Seed this token into the staging fixture or mock result returned by this private source tool.",
+      reason: `Tool appears to read private data: ${tool.description || tool.name}`,
+    });
+  }
+
+  return dedupeCanaryPlacements(placements);
+}
+
 // ── Feature 5: Smart Context — Merge Partial Analyses ──
 
 function emptyAnalysis(): CodebaseAnalysis {
@@ -500,6 +669,7 @@ function emptyAnalysis(): CodebaseAnalysis {
     systemPromptHints: [],
     detectedFrameworks: [],
     toolChains: [],
+    canaryPlacements: [],
   };
 }
 
@@ -516,6 +686,8 @@ function normalizeAnalysis(analysis: CodebaseAnalysis): void {
   if (!Array.isArray(analysis.detectedFrameworks))
     analysis.detectedFrameworks = [];
   if (!Array.isArray(analysis.toolChains)) analysis.toolChains = [];
+  if (!Array.isArray(analysis.canaryPlacements))
+    analysis.canaryPlacements = [];
 }
 
 function mergeAnalyses(
@@ -558,6 +730,7 @@ function mergeAnalyses(
     ],
     detectedFrameworks: base.detectedFrameworks,
     toolChains: base.toolChains,
+    canaryPlacements: base.canaryPlacements,
   };
 }
 
@@ -651,6 +824,7 @@ export async function analyzeCodebase(
       systemPromptHints: [],
       detectedFrameworks: [],
       toolChains: [],
+      canaryPlacements: [],
     };
   }
 
@@ -674,6 +848,7 @@ export async function analyzeCodebase(
       systemPromptHints: [],
       detectedFrameworks: [],
       toolChains: [],
+      canaryPlacements: [],
     };
   }
 
@@ -739,6 +914,7 @@ export async function analyzeCodebase(
 
   analysis.detectedFrameworks = detectedFrameworks;
   analysis.toolChains = generateToolChains(analysis.tools);
+  analysis.canaryPlacements = recommendCanaryPlacements(scoredFiles, analysis);
 
   // Feature 3: Map attack categories to affected source files
   analysis.affectedFiles = mapCategoriesToFiles(basePath, files);

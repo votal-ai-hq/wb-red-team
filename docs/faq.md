@@ -13,7 +13,7 @@ Three layers stacked together:
 
 1. **Static analysis reads your actual code** — the analyzer extracts tools, roles, guardrails, hardcoded secrets, RBAC logic, and the tool call graph. Every attack is generated _from that context_, not from a fixed library.
 2. **LLM attack planner** — for each category, a per-category generation prompt is handed to the LLM along with the discovered analysis. The LLM produces novel attacks tailored to your stack (e.g. a JWT forge using the actual secret it found, or a `read_file → send_email` chain using your real tool names).
-3. **155 strategies × 141 categories composed orthogonally** — roughly 21,000 base combinations before adaptive rounds. The runner mutates and re-targets across rounds based on what almost worked.
+3. **155 strategies × 142 categories composed orthogonally** — roughly 22,000 base combinations before adaptive rounds. The runner mutates and re-targets across rounds based on what almost worked.
 
 It is not a fixed payload list. The same scan run twice produces different attacks.
 
@@ -82,7 +82,7 @@ Or `npm run gen:interactive` for a guided config.
 
 ## What is the depth of testing it performs?
 
-- **141 attack categories** spanning prompt/input, auth, data, agentic, safety, RAG, model, infra, supply chain, compliance, multimodal
+- **142 attack categories** spanning prompt/input, auth, data, agentic, safety, RAG, model, infra, supply chain, compliance, multimodal
 - **155 delivery strategies** (encoding, persona, social engineering, multi-turn, token smuggling, and more) composable with every category
 - **Multi-round adaptive execution** — round N+1 re-targets near-misses from round N
 - **Multi-turn conversations** up to 15 turns, with crescendo escalation and adaptive follow-ups
@@ -95,7 +95,7 @@ A typical scan executes hundreds to thousands of attacks per run depending on in
 
 **Alongside humans, complementary to other CART tools.**
 
-- **Replaces** the rote, repetitive parts of red-teaming (encoding variants, multi-turn escalation patterns, regression sweeps across 141 categories). A human should not be hand-typing 21,000 attack combinations.
+- **Replaces** the rote, repetitive parts of red-teaming (encoding variants, multi-turn escalation patterns, regression sweeps across 142 categories). A human should not be hand-typing 22,000 attack combinations.
 - **Augments** human creativity through the custom attack and custom strategy extension points — a security engineer's one insight becomes hundreds of attacks via strategy composition.
 - **Complements other tools** rather than competing: Promptfoo for black-box DAST and dataset benchmarks, Garak for pure model scanning, PyRIT for research. Red-Team AI is SAST+DAST for AI apps where you own the source. Customers often run two stacks.
 - Does **not** replace a senior offensive engineer's judgment on what matters, novel attack-chain reasoning, or social-context-specific scenarios.

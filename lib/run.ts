@@ -216,6 +216,7 @@ import { auditLogEvasionModule } from "../attacks/audit-log-evasion.js";
 import { provenanceForgeryModule } from "../attacks/provenance-forgery.js";
 import { multiTurnPrivilegeEscalationModule } from "../attacks/multi-turn-privilege-escalation.js";
 import { stagedExfiltrationModule } from "../attacks/staged-exfiltration.js";
+import { canaryFlowExfiltrationModule } from "../attacks/canary-flow-exfiltration.js";
 
 export const ALL_MODULES: AttackModule[] = [
   authBypassModule,
@@ -374,6 +375,7 @@ export const ALL_MODULES: AttackModule[] = [
   provenanceForgeryModule,
   multiTurnPrivilegeEscalationModule,
   stagedExfiltrationModule,
+  canaryFlowExfiltrationModule,
 ];
 
 export const MCP_MODULES: AttackModule[] = [
@@ -1558,6 +1560,7 @@ export async function runRedTeam(
         config.target.infra?.aiModel?.provider ??
         config.attackConfig.llmProvider,
     },
+    analysis.canaryPlacements,
   );
   // Skip file write when DB is configured (server stores to DB instead)
   let jsonPath = "";

@@ -24,7 +24,7 @@ The framework exposes 12 MCP tools via `hermes-redteam/mcp-server.ts` for use wi
 | `check_run_status`               | Poll scan progress (attacks completed, phase)                     |
 | `get_run_results`                | Get full results with verdicts and findings                       |
 | `cancel_run`                     | Cancel a running scan                                             |
-| `list_categories_and_strategies` | List all 141 categories + 155 strategies with compliance mappings |
+| `list_categories_and_strategies` | List all 142 categories + 155 strategies with compliance mappings |
 | `suggest_guardrails`             | Map vulnerabilities to Votal Shield guardrail configs             |
 
 **Register with Hermes:**

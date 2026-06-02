@@ -155,7 +155,8 @@ export type AttackCategory =
   | "audit_log_evasion"
   | "provenance_forgery"
   | "multi_turn_privilege_escalation"
-  | "staged_exfiltration";
+  | "staged_exfiltration"
+  | "canary_flow_exfiltration";
 
 /** Runtime list of all attack categories (kept in sync with {@link AttackCategory}). */
 export const ALL_ATTACK_CATEGORIES: readonly AttackCategory[] = [
@@ -314,6 +315,7 @@ export const ALL_ATTACK_CATEGORIES: readonly AttackCategory[] = [
   "provenance_forgery",
   "multi_turn_privilege_escalation",
   "staged_exfiltration",
+  "canary_flow_exfiltration",
 ];
 
 const ATTACK_CATEGORY_SET = new Set<string>(ALL_ATTACK_CATEGORIES);
@@ -555,6 +557,16 @@ export interface Config {
     maxMultiTurnSteps: number;
     /** Optional allowlist of attack categories to run. Omit or set to empty array to run all. */
     enabledCategories?: AttackCategory[];
+    /**
+     * Deterministic information-flow canary checks. Canary attacks plant fake
+     * private markers and fail if those markers appear in public sink tool args.
+     */
+    canaryFlow?: {
+      /** Private markers already seeded in target fixtures, RAG docs, memory, or tool results. */
+      privateCanaryTokens?: string[];
+      /** Override public/outbound sink tool name patterns. Regex strings. */
+      publicSinkToolPatterns?: string[];
+    };
     /** Optional allowlist of strategy slugs to use for LLM generation. Omit or set to empty array to use all. */
     enabledStrategies?: string[];
     /**
@@ -651,6 +663,16 @@ export interface AffectedFile {
   reason: string;
 }
 
+export interface CanaryPlacement {
+  sourceType: "database" | "rag" | "file" | "memory" | "tool" | "secret" | "unknown";
+  file?: string;
+  line?: number;
+  symbol?: string;
+  suggestedToken: string;
+  suggestedPlacement: string;
+  reason: string;
+}
+
 export interface CodebaseAnalysis {
   tools: { name: string; description: string; parameters: string }[];
   roles: { name: string; permissions: string[] }[];
@@ -661,6 +683,8 @@ export interface CodebaseAnalysis {
   systemPromptHints: string[];
   detectedFrameworks: FrameworkDetection[];
   toolChains: ToolChain[];
+  /** Suggested private sources where testers can seed fake canary markers in staging. */
+  canaryPlacements?: CanaryPlacement[];
   mcpSurface?: {
     serverName?: string;
     protocolVersion?: string;
@@ -841,6 +865,8 @@ export interface Report {
   }[];
   staticAnalysis?: StaticAnalysisResult;
   compliance?: ComplianceResult[];
+  /** Suggested private sources where testers can seed fake canary markers in staging. */
+  canaryPlacements?: CanaryPlacement[];
   /** Maps attack categories to the target source files they affect. */
   affectedFiles?: Partial<Record<AttackCategory, AffectedFile[]>>;
   /** Intelligence gathered from the automated discovery round (if enabled). */

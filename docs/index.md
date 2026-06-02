@@ -52,7 +52,7 @@ Three real findings from running against [`demo-agentic-app`](https://github.com
 └─────────────────┘     └─────────────────┘     └─────────────────┘
        │                       │                        │
    discovers:              produces:               executes:
-   • tools                 • attacks tailored      • 141 categories × 155 strategies
+   • tools                 • attacks tailored      • 142 categories × 155 strategies
    • roles                   to discovered code    • adaptive re-targeting
    • guardrails            • policy-aware            on partial successes
    • secrets                 verdicts              • multi-turn escalation
@@ -73,7 +73,7 @@ Three real findings from running against [`demo-agentic-app`](https://github.com
 ```
 
 1. **Static analysis** — scans your codebase for tools, roles, guardrails, auth methods, sensitive literals. ~10 seconds for a typical Next.js app.
-2. **Attack planning** — combines 141 attack categories with 155 strategies (encoding, persona, multi-turn, crescendo, authority impersonation, etc.). Prioritizes attacks the codebase suggests will work.
+2. **Attack planning** — combines 142 attack categories with 155 strategies (encoding, persona, multi-turn, crescendo, authority impersonation, etc.). Prioritizes attacks the codebase suggests will work.
 3. **Adaptive execution** — runs over multiple rounds. Round N+1 doubles down on near-misses from round N. Multi-turn attacks use crescendo escalation with up to 15 conversation turns.
 4. **Policy-driven judging** — every response evaluated by an LLM judge against configurable policy. Categories with high false-positive rates have per-category overrides.
 

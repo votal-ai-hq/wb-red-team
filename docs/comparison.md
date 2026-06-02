@@ -24,7 +24,7 @@ nav_order: 17
 | Social engineering strategies   | 20+                                                                 | ~3                   |
 | RAG attacks                     | 9 categories                                                        | ~3                   |
 | Adaptive rounds                 | Multi-round — defense profiling → strategy rotation → re-targeting  | Single pass          |
-| Strategy × category composition | 155 × 141 orthogonal                                                | Per-plugin           |
+| Strategy × category composition | 155 × 142 orthogonal                                                | Per-plugin           |
 | Self-hosted enterprise          | Built-in Postgres, AES-256, SSO/OIDC, RBAC, audit log, multi-tenant | Enterprise SaaS plan |
 | Risk quantification             | LLM-powered business impact, financial exposure, incident mapping   | Not built-in         |
 | Guardrail recommendations       | Maps findings to Votal Shield configs                               | Not built-in         |
@@ -53,7 +53,7 @@ nav_order: 17
 **Beta.** Honest assessment:
 
 - ✅ **Stable** — codebase analyzer, attack runner, judge, reports, dashboard, Docker, enterprise backend
-- ✅ **Working well** — 141 categories × 155 strategies, multi-round adaptation, multi-turn crescendo, 11 compliance frameworks, risk quantification, Postgres + encryption
+- ✅ **Working well** — 142 categories × 155 strategies, multi-round adaptation, multi-turn crescendo, 11 compliance frameworks, risk quantification, Postgres + encryption
 - 🚧 **In progress** — Hermes agent integration, cross-run memory, attack path visualization
 - 🔜 **Roadmap** — GitHub Action, PDF reports, webhook notifications, llm-shield guardrail auto-deploy
 

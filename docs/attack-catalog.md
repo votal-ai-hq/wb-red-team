@@ -5,13 +5,13 @@ nav_order: 6
 
 # Attack Catalog
 
-## 141 categories by domain
+## 142 categories by domain
 
 | Domain               | Key categories                                                                                                                               | Count |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
 | **Prompt & Input**   | `prompt_injection`, `indirect_prompt_injection`, `content_filter_bypass`, `instruction_hierarchy_violation`, `universal_adversarial_trigger` | 11    |
 | **Auth & Access**    | `auth_bypass`, `rbac_bypass`, `session_hijacking`, `cross_tenant_access`, `tool_permission_escalation`                                       | 10    |
-| **Data & Privacy**   | `data_exfiltration`, `sensitive_data`, `pii_disclosure`, `steganographic_exfiltration`, `slow_burn_exfiltration`                             | 14    |
+| **Data & Privacy**   | `data_exfiltration`, `sensitive_data`, `pii_disclosure`, `canary_flow_exfiltration`, `slow_burn_exfiltration`                                 | 15    |
 | **Agent & Tool**     | `tool_misuse`, `tool_chain_hijack`, `agentic_workflow_bypass`, `rogue_agent`, `goal_hijack`, `agentic_scope_creep`                           | 13    |
 | **Safety & Content** | `toxic_content`, `harmful_advice`, `misinformation`, `hallucination`, `emotional_manipulation`                                               | 15    |
 | **RAG & Retrieval**  | `rag_poisoning`, `rag_corpus_poisoning`, `vector_store_manipulation`, `retrieval_tenant_bleed`                                               | 9     |
@@ -64,8 +64,12 @@ llm_judge_manipulation, retrieval_tenant_bleed, insecure_output_handling,
 sandbox_escape, tool_permission_escalation, alignment_faking, capability_elicitation,
 instruction_hierarchy_violation, agentic_scope_creep, state_persistence_attack,
 encoding_serialization_attack, multi_hop_reasoning_exploit, emotional_manipulation,
-reward_hacking, universal_adversarial_trigger
+reward_hacking, universal_adversarial_trigger, canary_flow_exfiltration
 ```
+
+`canary_flow_exfiltration` tracks fake private markers and deterministically fails when a marker appears in outbound/public tool arguments such as email, Slack, webhook, upload, or public comment.
+
+When codebase analysis is enabled, reports include a Canary Placement Advisor that suggests staging-only source locations where fake canary markers can be seeded, including database lookups, RAG retrievers, file reads, memory/session reads, secret access, and private source tools.
 
 ## 155 strategies by level
 

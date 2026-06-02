@@ -545,6 +545,8 @@ export async function executeAttack(
   // Build request body — remove internal fields
   let body: unknown = { ...attack.payload };
   delete (body as Record<string, unknown>)._jwtClaims;
+  delete (body as Record<string, unknown>)._canaryToken;
+  delete (body as Record<string, unknown>)._canaryTokens;
 
   // Use custom body template if provided
   if (apiTemplate?.bodyTemplate) {

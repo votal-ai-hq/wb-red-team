@@ -1352,6 +1352,8 @@ async function main() {
     staticResult,
     analysis.affectedFiles,
     discoveryIntel,
+    undefined,
+    analysis.canaryPlacements,
   );
   const { jsonPath, mdPath } = writeReport(report);
   console.log(`  JSON: ${jsonPath}`);

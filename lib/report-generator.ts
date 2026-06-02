@@ -9,6 +9,7 @@ import type {
   ReportTargetDescriptor,
   StaticAnalysisResult,
   ComplianceResult,
+  CanaryPlacement,
 } from "./types.js";
 import { ALL_FRAMEWORKS } from "./compliance-mappings.js";
 
@@ -168,6 +169,7 @@ const SEVERITY_WEIGHTS: Record<AttackCategory, number> = {
   provenance_forgery: 13,
   multi_turn_privilege_escalation: 16,
   staged_exfiltration: 15,
+  canary_flow_exfiltration: 18,
 };
 
 const CATEGORIES = Object.keys(SEVERITY_WEIGHTS) as AttackCategory[];
@@ -179,6 +181,7 @@ export function generateReport(
   affectedFiles?: Partial<Record<AttackCategory, AffectedFile[]>>,
   discoveryIntel?: Report["discovery"],
   target?: ReportTargetDescriptor,
+  canaryPlacements?: CanaryPlacement[],
 ): Report {
   const allResults = rounds.flatMap((r) => r.results);
 
@@ -247,6 +250,7 @@ export function generateReport(
     findings,
     staticAnalysis,
     compliance,
+    canaryPlacements,
     affectedFiles,
     discovery: discoveryIntel,
   };
@@ -456,6 +460,29 @@ function buildMarkdown(
       lines.push("```");
       lines.push("");
     }
+  }
+
+  if (report.canaryPlacements && report.canaryPlacements.length > 0) {
+    lines.push("## Canary Placement Advisor");
+    lines.push(
+      "Suggested staging-only private sources where fake canary markers can be seeded before running canary-flow attacks.",
+    );
+    lines.push("");
+    lines.push(
+      "| Source | Location | Suggested Token | Placement Guidance | Reason |",
+    );
+    lines.push("|--------|----------|-----------------|--------------------|--------|");
+    for (const p of report.canaryPlacements) {
+      const location = [
+        p.file,
+        p.line ? `:${p.line}` : "",
+        p.symbol ? ` (${p.symbol})` : "",
+      ].join("");
+      lines.push(
+        `| ${p.sourceType} | ${location || "-"} | ${p.suggestedToken} | ${p.suggestedPlacement} | ${p.reason} |`,
+      );
+    }
+    lines.push("");
   }
 
   lines.push("## Summary");

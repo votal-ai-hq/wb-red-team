@@ -221,7 +221,7 @@ curl -X POST http://localhost:4200/api/run \
 └─────────────────┘     └─────────────────┘     └─────────────────┘
        │                       │                        │
    discovers:              produces:               executes:
-   • tools                 • attacks tailored      • 141 categories × 155 strategies
+   • tools                 • attacks tailored      • 142 categories × 155 strategies
    • roles                   to discovered code    • adaptive re-targeting
    • guardrails            • policy-aware            on partial successes
    • secrets                 verdicts              • multi-turn escalation
@@ -242,7 +242,7 @@ curl -X POST http://localhost:4200/api/run \
 ```
 
 1. **Static analysis** — scans your codebase for tools, roles, guardrails, auth methods, sensitive literals. ~10 seconds for a typical Next.js app.
-2. **Attack planning** — combines 141 attack categories with 155 strategies (encoding, persona, multi-turn, crescendo, authority impersonation, etc.). Prioritizes attacks the codebase suggests will work.
+2. **Attack planning** — combines 142 attack categories with 155 strategies (encoding, persona, multi-turn, crescendo, authority impersonation, etc.). Prioritizes attacks the codebase suggests will work.
 3. **Adaptive execution** — runs over multiple rounds. Round N+1 doubles down on near-misses from round N. Multi-turn attacks use crescendo escalation with up to 15 conversation turns.
 4. **Policy-driven judging** — every response evaluated by an LLM judge against configurable policy. Categories with high false-positive rates have per-category overrides.
 
@@ -250,13 +250,13 @@ curl -X POST http://localhost:4200/api/run \
 
 ## What it tests
 
-**141 attack categories**, organized by what they exploit:
+**142 attack categories**, organized by what they exploit:
 
 | Domain               | Key categories                                                                                                                               | Count |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
 | **Prompt & Input**   | `prompt_injection`, `indirect_prompt_injection`, `content_filter_bypass`, `instruction_hierarchy_violation`, `universal_adversarial_trigger` | 11    |
 | **Auth & Access**    | `auth_bypass`, `rbac_bypass`, `session_hijacking`, `cross_tenant_access`, `tool_permission_escalation`                                       | 10    |
-| **Data & Privacy**   | `data_exfiltration`, `sensitive_data`, `pii_disclosure`, `steganographic_exfiltration`, `slow_burn_exfiltration`                             | 14    |
+| **Data & Privacy**   | `data_exfiltration`, `sensitive_data`, `pii_disclosure`, `canary_flow_exfiltration`, `slow_burn_exfiltration`                                 | 15    |
 | **Agent & Tool**     | `tool_misuse`, `tool_chain_hijack`, `agentic_workflow_bypass`, `rogue_agent`, `goal_hijack`, `agentic_scope_creep`                           | 13    |
 | **Safety & Content** | `toxic_content`, `harmful_advice`, `misinformation`, `hallucination`, `emotional_manipulation`                                               | 15    |
 | **RAG & Retrieval**  | `rag_poisoning`, `rag_corpus_poisoning`, `vector_store_manipulation`, `retrieval_tenant_bleed`                                               | 9     |
@@ -267,7 +267,7 @@ curl -X POST http://localhost:4200/api/run \
 | **Multimodal**       | `multimodal_ghost_injection`, `streaming_voice_injection`, `cross_modal_conflict`, `computer_use_injection`                                  | 8+    |
 
 <details>
-<summary><strong>Full category reference (141 slugs for config)</strong></summary>
+<summary><strong>Full category reference (142 slugs for config)</strong></summary>
 
 ```
 auth_bypass, rbac_bypass, prompt_injection, output_evasion, data_exfiltration,
@@ -308,10 +308,14 @@ llm_judge_manipulation, retrieval_tenant_bleed, insecure_output_handling,
 sandbox_escape, tool_permission_escalation, alignment_faking, capability_elicitation,
 instruction_hierarchy_violation, agentic_scope_creep, state_persistence_attack,
 encoding_serialization_attack, multi_hop_reasoning_exploit, emotional_manipulation,
-reward_hacking, universal_adversarial_trigger
+reward_hacking, universal_adversarial_trigger, canary_flow_exfiltration
 ```
 
 </details>
+
+`canary_flow_exfiltration` tracks fake private markers such as `CANARY_PRIVATE_DATA_...` and fails deterministically if a marker appears in an outbound/public tool argument like email, Slack, webhook, upload, or public comment. This catches private-to-public leaks that may never appear in the chatbot's final text response.
+
+When codebase analysis is enabled, the scanner also emits a Canary Placement Advisor section in reports. It suggests staging-only source locations such as database lookups, RAG retrievers, file reads, memory/session reads, secret access, and private source tools where teams can seed fake canary markers before running canary-flow attacks.
 
 **155 delivery strategies** across 36 levels, composed orthogonally with categories:
 
@@ -785,7 +789,7 @@ Both are MIT-licensed, TypeScript-based. Promptfoo has 20k+ stars, OpenAI backin
 | Social engineering strategies   | 20+ (authority, victim, emergency, flattery, guilt, grief, therapeutic, whistleblower)                                                | ~3 (citation, authoritative markup)                      |
 | RAG attacks                     | 9 categories (corpus poisoning, ranking manipulation, vector store, chunk boundary, tenant bleed)                                     | ~3 (RAG poisoning, indirect injection)                   |
 | Adaptive rounds                 | Multi-round — defense profiling → strategy rotation → re-targeting on partial successes                                               | Single pass (Meta Agent has cross-plugin memory)         |
-| Strategy × category composition | 155 strategies × 141 categories orthogonally composable                                                                               | Strategies applied per-plugin                            |
+| Strategy × category composition | 155 strategies × 142 categories orthogonally composable                                                                               | Strategies applied per-plugin                            |
 | Self-hosted enterprise          | Built-in Postgres, AES-256 encryption, SSO/OIDC, RBAC, audit log, tenant isolation                                                    | Enterprise SaaS plan                                     |
 | Risk quantification             | LLM-powered business impact, financial exposure, real-world incident mapping                                                          | Not built-in                                             |
 | Guardrail recommendations       | Maps findings to Votal Shield configs                                                                                                 | Not built-in                                             |
@@ -957,7 +961,7 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full guide.
 **Beta.** Honest assessment:
 
 - ✅ Stable: codebase analyzer, attack runner, judge, reports, dashboard, Docker, enterprise backend
-- ✅ Working well: 141 categories × 155 strategies, multi-round adaptation, multi-turn crescendo, 11 compliance frameworks, risk quantification, Postgres + encryption
+- ✅ Working well: 142 categories × 155 strategies, multi-round adaptation, multi-turn crescendo, 11 compliance frameworks, risk quantification, Postgres + encryption
 - 🚧 In progress: Hermes agent integration, cross-run memory, attack path visualization
 - 🔜 Roadmap: GitHub Action, PDF reports, webhook notifications, llm-shield guardrail auto-deploy
 
