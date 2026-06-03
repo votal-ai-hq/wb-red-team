@@ -57,7 +57,6 @@
       "structured_output_injection",
       "content_filter_bypass",
       "output_evasion",
-      "multi_turn_escalation",
       "social_engineering",
       "harmful_advice",
       "cyber_crime",
