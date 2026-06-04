@@ -5534,6 +5534,132 @@
           transform: none;
         }
       }
+
+      /* ═══ MODERN HOVER EFFECTS ═══ */
+
+      /* Holographic animated gradient border on cards */
+      @supports (background: conic-gradient(red, blue)) {
+        @property --angle {
+          syntax: '<angle>';
+          initial-value: 0deg;
+          inherits: false;
+        }
+
+        .c-card::before {
+          content: "";
+          position: absolute;
+          inset: -1px;
+          border-radius: var(--r-2xl);
+          background: conic-gradient(
+            from var(--angle, 0deg),
+            #00f5ff,
+            #8b5cf6,
+            #ff2e77,
+            #00f5ff
+          );
+          opacity: 0;
+          transition: opacity 0.4s ease;
+          z-index: -1;
+          pointer-events: none;
+        }
+
+        @media (prefers-reduced-motion: no-preference) and (hover: hover) {
+          .c-card:hover::before {
+            opacity: 0.55;
+            animation: holoBorderSpin 3s linear infinite;
+          }
+
+          @keyframes holoBorderSpin {
+            to {
+              --angle: 360deg;
+            }
+          }
+        }
+      }
+
+      /* Shimmering sweep effect on card hover */
+      .c-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: var(--r-2xl);
+        background: linear-gradient(
+          115deg,
+          transparent 30%,
+          rgba(255, 255, 255, 0.08) 50%,
+          transparent 70%
+        );
+        transform: translateX(-100%);
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      @media (prefers-reduced-motion: no-preference) and (hover: hover) {
+        .c-card:hover::after {
+          animation: cardSheen 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes cardSheen {
+          to {
+            transform: translateX(100%);
+          }
+        }
+      }
+
+      /* 3D press-down effect on button click */
+      @media (hover: hover) {
+        .c-btn:active {
+          transform: translateY(1px) scale(0.98);
+          box-shadow: none !important;
+        }
+      }
+
+      /* Enhanced button shadows on success and danger states */
+      @media (hover: hover) {
+        .c-btn-success:hover {
+          box-shadow: 0 6px 24px rgba(0, 230, 168, 0.45);
+        }
+
+        .c-btn-danger:hover {
+          box-shadow: 0 6px 24px rgba(255, 46, 119, 0.45);
+        }
+      }
+
+      /* Nav item icon scale effect */
+      @media (hover: hover) {
+        .nav-item:hover svg {
+          transform: scale(1.12);
+          transition: transform 0.2s ease, color 0.2s ease;
+        }
+      }
+
+      /* Table row left accent reveal */
+      .c-tr-click {
+        border-left: 2px solid transparent;
+        transition: border-color 0.2s ease, background 0.2s ease;
+      }
+
+      @media (hover: hover) {
+        .c-tr-click:hover {
+          border-left-color: var(--accent);
+        }
+      }
+
+      /* Reduce motion: disable animation-based hover effects */
+      @media (prefers-reduced-motion: reduce) {
+        .c-card::before,
+        .c-card::after {
+          display: none;
+        }
+
+        .c-btn:active {
+          transform: none;
+        }
+
+        .nav-item:hover svg {
+          transform: none;
+        }
+      }
     </style>
     <script>
       // Apply saved theme before paint to avoid flash of incorrect theme.
