@@ -2862,12 +2862,13 @@
 
       /* Detail boxes for findings, files, threat assessment, strategy, policy */
       .detail-box {
-        margin: 14px 0;
-        padding: 14px;
+        margin: 20px 0;
+        padding: 18px;
         border: 1px solid rgba(0, 245, 255, 0.15);
         border-radius: 6px;
         background: rgba(11, 17, 34, 0.5);
         transition: border-color 0.2s ease, background 0.2s ease;
+        overflow: hidden;
       }
       .detail-box:hover {
         border-color: rgba(0, 245, 255, 0.35);
@@ -2888,8 +2889,9 @@
         color: #d4dce9;
         font-size: 13px;
         line-height: 1.6;
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
         word-break: break-word;
+        min-width: 0;
       }
       .findings-box,
       .files-box {
@@ -2897,20 +2899,21 @@
       }
       .findings-list,
       .files-list {
-        margin: 8px 0 0 0;
-        padding-left: 20px;
+        margin: 12px 0 0 0;
+        padding-left: 24px;
         list-style: none;
       }
       .findings-list li,
       .files-list li {
         color: var(--text2);
         font-size: 12px;
-        margin: 6px 0;
-        line-height: 1.5;
-        overflow-wrap: anywhere;
+        margin: 14px 0;
+        line-height: 1.7;
+        overflow-wrap: break-word;
         word-break: break-word;
         position: relative;
-        padding-left: 8px;
+        padding-left: 12px;
+        min-width: 0;
       }
       .findings-list li::before {
         content: "◆";
@@ -2953,11 +2956,12 @@
         color: var(--text);
         font-size: 13px;
         line-height: 1.6;
-        padding: 10px;
+        padding: 12px;
         background: rgba(255, 51, 102, 0.05);
         border-radius: 6px;
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
         word-break: break-word;
+        min-width: 0;
       }
       .strategy-box {
         border-left: 3px solid #8b7aff;
@@ -3384,7 +3388,7 @@
       .detail-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 16px;
+        gap: 24px;
       }
       @media (max-width: 900px) {
         .detail-grid {
@@ -12893,31 +12897,31 @@
     </div>` : ""}
 
     <!-- Bottom row: Findings + Files + Threat + Strategy + Policy -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;">
 
       ${findingsListHtml ? `
-      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(0,245,255,0.15);border-radius:8px;padding:14px;">
-        <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">🔍 Findings</div>
-        <ul style="margin:0;padding-left:16px;font-size:12px;color:#d4dce9;line-height:1.8;">${findingsListHtml}</ul>
+      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(0,245,255,0.15);border-radius:8px;padding:22px;overflow:hidden;">
+        <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">🔍 Findings</div>
+        <ul style="margin:0;padding-left:20px;font-size:12px;color:#d4dce9;line-height:2.0;">${findingsListHtml}</ul>
       </div>` : ""}
 
       ${affectedFilesHtml ? `
-      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(255,157,46,0.2);border-radius:8px;padding:14px;">
-        <div style="font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">📄 Affected Files</div>
-        <ul style="margin:0;padding-left:16px;font-size:11px;color:#d4dce9;line-height:1.8;font-family:'JetBrains Mono',monospace;">${affectedFilesHtml}</ul>
+      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(255,157,46,0.2);border-radius:8px;padding:22px;overflow:hidden;">
+        <div style="font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">📄 Affected Files</div>
+        <ul style="margin:0;padding-left:20px;font-size:11px;color:#d4dce9;line-height:2.0;font-family:'JetBrains Mono',monospace;">${affectedFilesHtml}</ul>
       </div>` : ""}
 
       ${(result?.llmReasoning && result.llmReasoning !== "no response") || typeof result?.judgeConfidence === "number" ? `
-      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(255,46,119,0.2);border-radius:8px;padding:14px;">
-        <div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">🎯 Threat Assessment</div>
-        ${typeof result?.judgeConfidence === "number" ? `<div style="margin-bottom:8px;font-size:12px;color:var(--text2);">Confidence: <strong style="color:var(--red)">${result.judgeConfidence}%</strong></div>` : ""}
-        ${result?.llmReasoning && result.llmReasoning !== "no response" ? `<div style="font-size:12px;color:#d4dce9;line-height:1.6;">${esc(result.llmReasoning)}</div>` : ""}
+      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(255,46,119,0.2);border-radius:8px;padding:22px;overflow:hidden;">
+        <div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">🎯 Threat Assessment</div>
+        ${typeof result?.judgeConfidence === "number" ? `<div style="margin-bottom:12px;font-size:12px;color:var(--text2);line-height:1.6;">Confidence: <strong style="color:var(--red)">${result.judgeConfidence}%</strong></div>` : ""}
+        ${result?.llmReasoning && result.llmReasoning !== "no response" ? `<div style="font-size:12px;color:#d4dce9;line-height:1.7;overflow-wrap:break-word;word-break:break-word;">${esc(result.llmReasoning)}</div>` : ""}
       </div>` : ""}
 
       ${result?.attack?.strategyName ? `
-      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:14px;">
-        <div style="font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">⚔️ Strategy</div>
-        <div style="font-size:13px;color:#d4dce9;font-weight:500;">${esc(result.attack.strategyName)}</div>
+      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:22px;overflow:hidden;">
+        <div style="font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">⚔️ Strategy</div>
+        <div style="font-size:13px;color:#d4dce9;font-weight:500;line-height:1.7;overflow-wrap:break-word;word-break:break-word;">${esc(result.attack.strategyName)}</div>
       </div>` : ""}
 
     </div>
@@ -13507,31 +13511,31 @@
     ${r.conversation ? renderConversation(r) : renderSingleTurn(r)}
 
     <!-- Bottom cards grid -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
 
       ${findingsListHtml ? `
-      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(0,245,255,0.15);border-radius:8px;padding:14px;">
-        <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">🔍 Findings</div>
-        <ul style="margin:0;padding-left:16px;font-size:12px;color:#d4dce9;line-height:1.8;">${findingsListHtml}</ul>
+      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(0,245,255,0.15);border-radius:8px;padding:22px;overflow:hidden;">
+        <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">🔍 Findings</div>
+        <ul style="margin:0;padding-left:20px;font-size:12px;color:#d4dce9;line-height:2.0;">${findingsListHtml}</ul>
       </div>` : ""}
 
       ${roundAffectedFilesHtml ? `
-      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(255,157,46,0.2);border-radius:8px;padding:14px;">
-        <div style="font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">📄 Affected Files</div>
-        <ul style="margin:0;padding-left:16px;font-size:11px;color:#d4dce9;line-height:1.8;font-family:'JetBrains Mono',monospace;">${roundAffectedFilesHtml}</ul>
+      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(255,157,46,0.2);border-radius:8px;padding:18px;overflow:hidden;">
+        <div style="font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">📄 Affected Files</div>
+        <ul style="margin:0;padding-left:20px;font-size:11px;color:#d4dce9;line-height:1.8;font-family:'JetBrains Mono',monospace;">${roundAffectedFilesHtml}</ul>
       </div>` : ""}
 
       ${(r.llmReasoning && r.llmReasoning !== "no response") || typeof r.judgeConfidence === "number" ? `
-      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(255,46,119,0.2);border-radius:8px;padding:14px;">
-        <div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">🎯 Threat Assessment</div>
+      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(255,46,119,0.2);border-radius:8px;padding:18px;overflow:hidden;">
+        <div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">🎯 Threat Assessment</div>
         ${typeof r.judgeConfidence === "number" ? `<div style="margin-bottom:8px;font-size:12px;color:var(--text2);">Confidence: <strong style="color:var(--red)">${r.judgeConfidence}%</strong></div>` : ""}
-        ${r.llmReasoning && r.llmReasoning !== "no response" ? `<div style="font-size:12px;color:#d4dce9;line-height:1.6;">${esc(r.llmReasoning)}</div>` : ""}
+        ${r.llmReasoning && r.llmReasoning !== "no response" ? `<div style="font-size:12px;color:#d4dce9;line-height:1.6;overflow-wrap:break-word;word-break:break-word;">${esc(r.llmReasoning)}</div>` : ""}
       </div>` : ""}
 
       ${r.attack?.strategyName ? `
-      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:14px;">
-        <div style="font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">⚔️ Strategy</div>
-        <div style="font-size:13px;color:#d4dce9;font-weight:500;">${esc(r.attack.strategyName)}</div>
+      <div style="background:rgba(11,17,34,0.6);border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:18px;overflow:hidden;">
+        <div style="font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">⚔️ Strategy</div>
+        <div style="font-size:13px;color:#d4dce9;font-weight:500;overflow-wrap:break-word;word-break:break-word;">${esc(r.attack.strategyName)}</div>
       </div>` : ""}
 
     </div>
