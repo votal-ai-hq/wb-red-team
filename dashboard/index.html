@@ -6612,6 +6612,11 @@
           .querySelector(".app-shell")
           ?.classList.remove("nav-mobile-open");
 
+        // Clear guardrails selection when switching away from guardrails tab
+        if (tab !== "guardrails") {
+          grSelectedFile = null;
+        }
+
         if (tab === "dashboard") renderDashboardTab();
         if (tab === "runs") renderRunsTab();
         if (tab === "newscan") openNewScanTab();
@@ -15612,6 +15617,46 @@
         renderGrSidebar();
         if (grReportsMeta.length > 0 && !grSelectedFile) {
           loadGuardrailReport(grReportsMeta[0].filename);
+        } else if (!grSelectedFile) {
+          // Reset main area to empty state if no report is selected
+          const app = document.getElementById("grApp");
+          if (app) {
+            app.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px;text-align:center;">
+              <div style="font-size:48px;margin-bottom:16px;opacity:0.5;">📊</div>
+              <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text);">No Report Selected</div>
+              <div style="font-size:13px;color:var(--text2);margin-bottom:24px;max-width:300px;line-height:1.6;">
+                Select a guardrail report from the sidebar to view detailed analysis and blocking statistics.
+              </div>
+              <button
+                onclick="document.getElementById('grUploadInput').click()"
+                style="
+                  background: linear-gradient(135deg, var(--critical) 0%, var(--high) 100%);
+                  color: #ffffff;
+                  border: none;
+                  border-radius: 6px;
+                  padding: 10px 20px;
+                  font-size: 12px;
+                  font-weight: 600;
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                  box-shadow: 0 4px 12px rgba(255, 51, 102, 0.3);
+                "
+                onmouseover="this.style.boxShadow='0 6px 20px rgba(255, 51, 102, 0.5)'; this.style.transform='translateY(-2px)';"
+                onmouseout="this.style.boxShadow='0 4px 12px rgba(255, 51, 102, 0.3)'; this.style.transform='translateY(0)';"
+              >
+                + Upload Your First Report
+              </button>
+            </div>`;
+          }
+          // Reset meta info
+          const metaTitle = document.getElementById("grMetaTitle");
+          const metaDate = document.getElementById("grMetaDate");
+          const metaModel = document.getElementById("grMetaModel");
+          const metaGr = document.getElementById("grMetaGuardrails");
+          if (metaTitle) metaTitle.textContent = "Select a report";
+          if (metaDate) metaDate.textContent = "";
+          if (metaModel) metaModel.textContent = "";
+          if (metaGr) metaGr.textContent = "";
         }
       }
 
