@@ -6143,19 +6143,25 @@
               </div>
               <div style="padding: 8px 12px">
                 <button
+                  id="grUploadBtn"
                   onclick="document.getElementById('grUploadInput').click()"
                   style="
                     width: 100%;
-                    background: var(--surface2);
-                    color: var(--text);
-                    border: 1px solid var(--border);
+                    background: linear-gradient(135deg, var(--critical) 0%, var(--high) 100%);
+                    color: #ffffff;
+                    border: none;
                     border-radius: 6px;
-                    padding: 6px 12px;
-                    font-size: 11px;
+                    padding: 8px 12px;
+                    font-size: 12px;
+                    font-weight: 600;
                     cursor: pointer;
+                    transition: all 0.2s ease;
+                    box-shadow: 0 2px 8px rgba(255, 51, 102, 0.3);
                   "
+                  onmouseover="this.style.boxShadow='0 4px 16px rgba(255, 51, 102, 0.5); transform: translateY(-1px);'"
+                  onmouseout="this.style.boxShadow='0 2px 8px rgba(255, 51, 102, 0.3); transform: translateY(0);'"
                 >
-                  Upload Report JSON
+                  ↑ Upload Report JSON
                 </button>
                 <input
                   type="file"
@@ -6182,8 +6188,31 @@
                 </div>
               </div>
               <div class="container" id="grApp">
-                <div class="loading">
-                  Select a guardrail report from the sidebar
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px;text-align:center;">
+                  <div style="font-size:48px;margin-bottom:16px;opacity:0.5;">📊</div>
+                  <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text);">No Report Selected</div>
+                  <div style="font-size:13px;color:var(--text2);margin-bottom:24px;max-width:300px;line-height:1.6;">
+                    Select a guardrail report from the sidebar to view detailed analysis and blocking statistics.
+                  </div>
+                  <button
+                    onclick="document.getElementById('grUploadInput').click()"
+                    style="
+                      background: linear-gradient(135deg, var(--critical) 0%, var(--high) 100%);
+                      color: #ffffff;
+                      border: none;
+                      border-radius: 6px;
+                      padding: 10px 20px;
+                      font-size: 12px;
+                      font-weight: 600;
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+                      box-shadow: 0 4px 12px rgba(255, 51, 102, 0.3);
+                    "
+                    onmouseover="this.style.boxShadow='0 6px 20px rgba(255, 51, 102, 0.5)'; this.style.transform='translateY(-2px)';"
+                    onmouseout="this.style.boxShadow='0 4px 12px rgba(255, 51, 102, 0.3)'; this.style.transform='translateY(0)';"
+                  >
+                    + Upload Your First Report
+                  </button>
                 </div>
               </div>
             </div>
@@ -15589,8 +15618,20 @@
       function renderGrSidebar() {
         const list = document.getElementById("grReportList");
         if (!grReportsMeta.length) {
-          list.innerHTML =
-            '<div style="padding:20px;color:var(--text2);font-size:12px;">No guardrail reports found.<br><br>Run:<br><code style="font-size:11px;">python3 scripts/litellm_guardrails_report.py</code></div>';
+          list.innerHTML = `<div style="padding:16px;text-align:center;">
+            <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:12px;">
+              <div style="font-weight:600;margin-bottom:8px;color:var(--text);">No Reports Yet</div>
+              <div>Upload a JSON report or run the guardrails script to generate one.</div>
+            </div>
+            <div style="margin-top:12px;padding:12px;background:rgba(255,51,102,0.08);border:1px dashed rgba(255,51,102,0.3);border-radius:6px;font-size:10px;color:var(--text2);">
+              <div style="margin-bottom:8px;">📋 <strong>Option 1: Upload JSON</strong></div>
+              <div style="margin-bottom:8px;">Click the button above to upload a guardrail report JSON file.</div>
+              <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-top:8px;">
+                <div style="margin-bottom:4px;">📁 <strong>Option 2: Run Script</strong></div>
+                <code style="font-size:9px;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:3px;display:inline-block;margin-top:4px;">python3 scripts/litellm_guardrails_report.py</code>
+              </div>
+            </div>
+          </div>`;
           return;
         }
         list.innerHTML = grReportsMeta
