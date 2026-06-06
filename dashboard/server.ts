@@ -207,7 +207,7 @@ function getReportMeta(filename: string): ReportMeta {
 function listFileReportMetas(): ReportMeta[] {
   try {
     return readdirSync(REPORT_DIR)
-      .filter((f) => f.endsWith(".json"))
+      .filter((f) => f.startsWith("report-") && f.endsWith(".json"))
       .sort()
       .reverse()
       .map((f) => getReportMeta(f));
@@ -369,6 +369,19 @@ function saveRunConfig(runId: string, config: Config): void {
     writeFileSync(RUN_CONFIGS_PATH, JSON.stringify(store, null, 2));
   } catch (err) {
     console.error("Failed to save run config to file:", err);
+  }
+}
+
+function deleteRunConfig(runId: string): void {
+  try {
+    if (!existsSync(RUN_CONFIGS_PATH)) return;
+    const store = JSON.parse(readFileSync(RUN_CONFIGS_PATH, "utf-8"));
+    if (store && Object.prototype.hasOwnProperty.call(store, runId)) {
+      delete store[runId];
+      writeFileSync(RUN_CONFIGS_PATH, JSON.stringify(store, null, 2));
+    }
+  } catch (err) {
+    console.error("Failed to delete run config from file:", err);
   }
 }
 
@@ -964,10 +977,40 @@ const server = createServer(
       return;
     }
 
-    // DELETE /api/run/:id — cancel a running job
+    // DELETE /api/run/:id — cancel a running job (or ?purge=1 to remove it)
     if (url.pathname.startsWith("/api/run/") && req.method === "DELETE") {
       const id = url.pathname.slice("/api/run/".length);
+      const purge = url.searchParams.get("purge") === "1";
       const job = jobs.get(id);
+
+      // Purge: fully remove the run (abort if active, drop from memory + config)
+      if (purge) {
+        if (job) {
+          try {
+            if (job.abortController) job.abortController.abort();
+          } catch {}
+          const qIdx = jobQueue.indexOf(id);
+          if (qIdx !== -1) jobQueue.splice(qIdx, 1);
+          jobs.delete(id);
+        }
+        cancelledRunIds.delete(id);
+        deleteRunConfig(id);
+        if (isDbConfigured() && ctx?.tenantId) {
+          query("DELETE FROM runs WHERE id=$1 AND tenant_id=$2", [
+            id,
+            ctx.tenantId,
+          ]).catch((err: unknown) =>
+            console.error(`  [DELETE] DB delete failed for ${id}:`, err),
+          );
+        }
+        if (ctx) {
+          await logAudit(ctx, "run.delete", "run", id, {});
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ runId: id, deleted: true }));
+        return;
+      }
+
       if (!job) {
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Run not found" }));
@@ -1370,6 +1413,46 @@ const server = createServer(
     }
 
     // API: get a specific report
+    // DELETE /api/report/:filename — delete a stored scan report (file-based)
+    if (url.pathname.startsWith("/api/report/") && req.method === "DELETE") {
+      const filename = decodeURIComponent(
+        url.pathname.slice("/api/report/".length),
+      );
+      // Only allow deleting actual report files (protects run-configs.json etc.)
+      if (
+        filename.includes("..") ||
+        filename.includes("/") ||
+        !/^report-.+\.json$/.test(filename)
+      ) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid report filename" }));
+        return;
+      }
+      try {
+        const filePath = join(REPORT_DIR, filename);
+        const existed = existsSync(filePath);
+        if (existed) rmSync(filePath, { force: true });
+        // Remove the companion markdown report if present
+        const mdPath = join(REPORT_DIR, filename.replace(/\.json$/, ".md"));
+        if (existsSync(mdPath)) rmSync(mdPath, { force: true });
+        if (ctx) {
+          await logAudit(ctx, "report.delete", "report", filename, { filename });
+        }
+        res.writeHead(existed ? 200 : 404, {
+          "Content-Type": "application/json",
+        });
+        res.end(JSON.stringify({ ok: existed }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            error: err instanceof Error ? err.message : String(err),
+          }),
+        );
+      }
+      return;
+    }
+
     if (url.pathname.startsWith("/api/report/") && req.method === "GET") {
       const filename = url.pathname.slice("/api/report/".length);
       if (filename.includes("..") || filename.includes("/")) {
@@ -1759,7 +1842,7 @@ const server = createServer(
         // Non-enterprise: return reports from filesystem with no compliance status
         try {
           const files = readdirSync(REPORT_DIR)
-            .filter((f) => f.endsWith(".json"))
+            .filter((f) => f.startsWith("report-") && f.endsWith(".json"))
             .sort()
             .reverse()
             .slice(0, 50);
