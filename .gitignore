@@ -16,6 +16,7 @@ config.json
 config.local.json
 config.*.json
 !config.example.json
+!config.fixed-attacks.example.json
 
 # Environment
 .env
