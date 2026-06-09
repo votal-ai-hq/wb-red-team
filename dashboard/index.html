@@ -7183,15 +7183,17 @@
           { label: "Medium", count: medium, color: "var(--accent)" },
           { label: "Secure", count: secure, color: "var(--green)" },
         ];
-        var html = '<div class="c-progress u-mb-4" style="height:8px;">';
+        var html = '<div class="c-progress u-mb-4" style="height:8px;display:flex;">';
         items.forEach(function (it) {
-          if (it.count > 0)
+          var pct = total > 0 ? Math.round((it.count / total) * 100) : 0;
+          if (pct > 0) {
             html +=
               '<div style="flex:' +
-              it.count +
-              ";background:" +
+              pct +
+              ';background:' +
               it.color +
-              ';"></div>';
+              ';min-width:2px;"></div>';
+          }
         });
         html += "</div>";
         items.forEach(function (it) {
@@ -14504,6 +14506,17 @@
             }
             closeNewRunPanel();
             switchTab("runs");
+            // Immediately populate cache so run appears in UI without waiting for first poll
+            runDataCache.set(data.runId, {
+              runId: data.runId,
+              status: data.status || "queued",
+              startedAt: new Date().toISOString(),
+              targetUrl: configObj.target?.baseUrl || "",
+              progress: [],
+              progressTotal: 0,
+              estimatedTotal: data.estimatedTotal || 0,
+            });
+            renderSidebarRuns();
             pollRun(data.runId);
             refreshActiveRuns();
           } catch (e) {
@@ -14545,10 +14558,17 @@
 
             // Merge new progress into cached entry instead of replacing
             const cached = runDataCache.get(runId);
-            if (cached && data.progress?.length > 0) {
-              cached.progress = [...(cached.progress || []), ...data.progress];
+            if (cached) {
+              // Always preserve and append progress
+              if (data.progress?.length > 0) {
+                cached.progress = [...(cached.progress || []), ...data.progress];
+              }
             }
-            const merged = cached || data;
+            const merged = cached || {
+              runId: data.runId,
+              progress: data.progress || [],
+              ...data,
+            };
             // Don't let server "running" overwrite local "cancelled" (race window)
             if (merged.status !== "cancelled" || data.status === "cancelled") {
               merged.status = data.status;
@@ -14558,8 +14578,8 @@
             merged.summary = data.summary;
             merged.reportFile = data.reportFile;
             merged.progressTotal = data.progressTotal;
+            merged.estimatedTotal = data.estimatedTotal || merged.estimatedTotal;
             merged.targetUrl = data.targetUrl || merged.targetUrl;
-            if (!cached) merged.progress = data.progress || [];
             runDataCache.set(runId, merged);
 
             renderSidebarRuns();
@@ -14596,7 +14616,7 @@
           } catch {
             // ignore transient errors
           }
-        }, 2000);
+        }, 1000);
         pollingIntervals.set(runId, interval);
       }
 
