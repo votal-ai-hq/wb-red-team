@@ -7701,14 +7701,38 @@
           .filter((p) => p.phase !== "result")
           .slice(-30);
         if (progressLines.length > 0) {
+          const phaseIcons = {
+            config: "⚙️",
+            analyze: "🔍",
+            auth: "🔐",
+            clone: "📦",
+            discovery: "🎯",
+            planning: "📋",
+            attacks: "⚔️",
+            refine: "✨",
+            report: "📊",
+            static: "📝",
+          };
+          const phaseBgColor = {
+            config: "rgba(0, 245, 255, 0.08)",
+            analyze: "rgba(0, 245, 255, 0.08)",
+            auth: "rgba(0, 245, 255, 0.08)",
+            clone: "rgba(255, 51, 102, 0.08)",
+            discovery: "rgba(255, 140, 66, 0.08)",
+            planning: "rgba(255, 51, 102, 0.08)",
+            attacks: "rgba(255, 51, 102, 0.08)",
+            refine: "rgba(255, 140, 66, 0.08)",
+            report: "rgba(0, 230, 168, 0.08)",
+            static: "rgba(255, 215, 0, 0.08)",
+          };
           html +=
             "<details data-progress-log" +
             (progressLogOpen ? " open" : "") +
             ' style="margin-top:12px;" ontoggle="progressLogOpen=this.open">' +
-            '<summary style="font-size:12px;font-weight:600;cursor:pointer;color:var(--text2);">Progress Log (' +
+            '<summary style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent);display:flex;align-items:center;gap:8px;padding:8px;background:rgba(0,245,255,0.06);border-radius:6px;border:1px solid rgba(0,245,255,0.2);">📡 Progress Log <span style="font-size:11px;background:rgba(0,245,255,0.15);padding:2px 8px;border-radius:4px;color:var(--text2);">(' +
             (data.progressTotal || data.progress?.length || 0) +
-            " events)</summary>" +
-            '<div style="max-height:260px;overflow-y:auto;background:var(--surface);border-radius:6px;padding:10px;margin-top:8px;">';
+            ' events)</span></summary>' +
+            '<div style="max-height:340px;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:8px;font-family:\'Courier New\',monospace;">';
           for (const p of progressLines) {
             const phaseColor =
               {
@@ -7723,14 +7747,28 @@
                 report: "#00e6a8",
                 static: "#ffd700",
               }[p.phase] || "#7d8590";
+            const bgColor = phaseBgColor[p.phase] || "transparent";
+            const icon = phaseIcons[p.phase] || "•";
             html +=
-              '<div style="font-size:11px;font-family:monospace;padding:1px 0;"><span style="color:' +
+              '<div style="font-size:12px;padding:8px 10px;margin-bottom:4px;background:' +
+              bgColor +
+              ';border-left:3px solid ' +
               phaseColor +
-              ';">[' +
+              ';border-radius:4px;display:flex;gap:8px;align-items:flex-start;">' +
+              '<span style="color:' +
+              phaseColor +
+              ';font-weight:600;min-width:20px;">' +
+              icon +
+              '</span>' +
+              '<div style="flex:1;">' +
+              '<span style="color:' +
+              phaseColor +
+              ';font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:0.5px;">[' +
               esc(p.phase) +
-              "]</span> " +
-              esc(p.message).slice(0, 120) +
-              "</div>";
+              "]</span>" +
+              '<div style="color:var(--text);margin-top:2px;line-height:1.4;word-break:break-word;">' +
+              esc(p.message) +
+              '</div></div></div>';
           }
           html += "</div></details>";
         }
