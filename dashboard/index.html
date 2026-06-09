@@ -7549,11 +7549,29 @@
           selectedRunId = null;
         } else {
           selectedRunId = runId;
-          // Only poll active runs
           const cached = runDataCache.get(runId);
           const st = cached?.status;
+
+          // Poll active runs
           if (st === "running" || st === "queued") {
             pollRun(runId);
+          }
+          // For completed runs with minimal data, fetch full details
+          else if (st && (st === "done" || st === "error" || st === "cancelled")) {
+            if (!cached.progress || cached.progress.length === 0) {
+              // Load full data for completed run
+              fetch(`/api/run/${runId}?since=0`)
+                .then(r => r.json())
+                .then(data => {
+                  runDataCache.set(runId, data);
+                  renderRunsTab();
+                })
+                .catch(() => {
+                  // Render with minimal data if fetch fails
+                  renderRunsTab();
+                });
+              return; // Don't re-render yet
+            }
           }
         }
         renderRunsTab();
@@ -14998,7 +15016,7 @@
           const runs = await resp.json();
           for (const run of runs) {
             if (run.status === "queued" || run.status === "running") {
-              // Only fetch full progress for actively running jobs
+              // Fetch full progress for actively running jobs
               try {
                 const fullResp = await fetch(`/api/run/${run.runId}?since=0`);
                 const fullData = await fullResp.json();
@@ -15008,8 +15026,15 @@
               }
               pollRun(run.runId);
             } else if (!runDataCache.has(run.runId)) {
-              // For done/error/cancelled, use list data directly (no extra fetch)
-              runDataCache.set(run.runId, { ...run, progress: [] });
+              // For done/error/cancelled, fetch full data too (so detail view works)
+              try {
+                const fullResp = await fetch(`/api/run/${run.runId}?since=0`);
+                const fullData = await fullResp.json();
+                runDataCache.set(run.runId, fullData);
+              } catch {
+                // Fallback to list data if fetch fails
+                runDataCache.set(run.runId, { ...run, progress: [] });
+              }
             }
           }
           renderSidebarRuns();
