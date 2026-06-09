@@ -14,7 +14,7 @@ interface RoutePermission {
 const PERMISSIONS: RoutePermission[] = [
   // Runs
   { method: "POST", pattern: /^\/api\/run$/, roles: ["admin"] },
-  { method: "DELETE", pattern: /^\/api\/run\//, roles: ["admin"] },
+  { method: "DELETE", pattern: /^\/api\/run\//, roles: ["admin", "viewer"] },
   { method: "GET", pattern: /^\/api\/run\//, roles: ["admin", "viewer"] },
   { method: "GET", pattern: /^\/api\/runs$/, roles: ["admin", "viewer"] },
 
