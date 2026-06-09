@@ -7547,6 +7547,7 @@
       function toggleRunDetail(runId) {
         if (selectedRunId === runId) {
           selectedRunId = null;
+          renderRunsTab();
         } else {
           selectedRunId = runId;
           const cached = runDataCache.get(runId);
@@ -7555,26 +7556,34 @@
           // Poll active runs
           if (st === "running" || st === "queued") {
             pollRun(runId);
+            renderRunsTab();
           }
-          // For completed runs with minimal data, fetch full details
+          // For completed runs, fetch full details if we don't have them
           else if (st && (st === "done" || st === "error" || st === "cancelled")) {
-            if (!cached.progress || cached.progress.length === 0) {
-              // Load full data for completed run
-              fetch(`/api/run/${runId}?since=0`)
-                .then(r => r.json())
-                .then(data => {
-                  runDataCache.set(runId, data);
+            // Show loading state first
+            renderRunsTab();
+
+            // Fetch full data in the background
+            fetch(`/api/run/${runId}?since=0`)
+              .then(r => {
+                if (!r.ok) throw new Error("Failed to load run details");
+                return r.json();
+              })
+              .then(data => {
+                // Merge with existing data
+                const merged = { ...cached, ...data };
+                runDataCache.set(runId, merged);
+                // Re-render if still selected
+                if (selectedRunId === runId) {
                   renderRunsTab();
-                })
-                .catch(() => {
-                  // Render with minimal data if fetch fails
-                  renderRunsTab();
-                });
-              return; // Don't re-render yet
-            }
+                }
+              })
+              .catch(err => {
+                console.error("Failed to load run details:", err);
+                // Keep whatever data we have
+              });
           }
         }
-        renderRunsTab();
       }
 
       function buildRunDetailContent(runId, data) {
@@ -7590,6 +7599,11 @@
           totalAttacks > 0
             ? Math.round(((failed + errors) / totalAttacks) * 100)
             : 0;
+
+        // Get progress log lines early (for fallback message)
+        const progressLines = (data.progress || [])
+          .filter((p) => p.phase !== "result")
+          .slice(-30);
 
         // Category breakdown
         const categories = {};
@@ -7618,7 +7632,19 @@
 
         let html = "";
 
-        // Stats row
+        // Show summary if available
+        if (data.summary) {
+          const s = data.summary;
+          html +=
+            '<div class="u-grid-4 u-gap-3 u-mb-4">' +
+            buildStatCard(s.score ?? 0, "Score", scoreColor(s.score ?? 0)) +
+            buildStatCard(s.totalAttacks ?? 0, "Attacks", "var(--text)") +
+            buildStatCard(s.passed ?? 0, "Vulns", "var(--red)") +
+            buildStatCard(s.failed ?? 0, "Blocked", "var(--green)") +
+            "</div>";
+        }
+
+        // Stats row (for live data)
         if (totalAttacks > 0) {
           html +=
             '<div class="u-grid-4 u-gap-3 u-mb-4">' +
@@ -7627,6 +7653,15 @@
             buildStatCard(passed, "Vulns", "var(--red)") +
             buildStatCard(failed, "Blocked", "var(--green)") +
             "</div>";
+        }
+
+        // Show loading indicator if no data yet
+        if (totalAttacks === 0 && !data.summary && progressLines.length === 0) {
+          html +=
+            '<div style="padding:20px;text-align:center;color:var(--text2);background:var(--surface);border-radius:8px;border:1px solid var(--border);">' +
+            '<div style="margin-bottom:8px;">📊 Loading run details...</div>' +
+            '<div style="font-size:12px;">Details will appear once data is fetched</div>' +
+            '</div>';
         }
 
         // Category bars
@@ -7715,9 +7750,6 @@
         }
 
         // Progress log — preserve open/closed state across re-renders
-        const progressLines = (data.progress || [])
-          .filter((p) => p.phase !== "result")
-          .slice(-30);
         if (progressLines.length > 0) {
           const phaseIcons = {
             config: "⚙️",
