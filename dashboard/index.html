@@ -32,10 +32,10 @@
         --black: #000000;
 
         /* Brand gradients — warm & cool blend */
-        --grad-primary: linear-gradient(135deg, #e11d48 0%, #ea580c 50%, #2563eb 100%);
-        --grad-brand: linear-gradient(135deg, #e11d48 0%, #ea580c 50%, #2563eb 100%);
-        --grad-danger: linear-gradient(135deg, #e11d48 0%, #ea580c 100%);
-        --grad-success: linear-gradient(135deg, #059669 0%, #2563eb 100%);
+        --grad-primary: #2563eb;
+        --grad-brand: #2563eb;
+        --grad-danger: #e11d48;
+        --grad-success: #059669;
 
         /* Semantic color backgrounds — traditional severity */
         --red-bg: rgba(225, 29, 72, 0.14);
@@ -120,8 +120,6 @@
       }
       body {
         background: var(--bg);
-        background-image: linear-gradient(180deg, #f7f9fc 0%, #f2f5fa 100%);
-        background-attachment: fixed;
         color: var(--text);
         font-family:
           "Inter",
@@ -615,7 +613,6 @@
         position: relative;
         z-index: 1;
         color: var(--mc, var(--text));
-        text-shadow: 0 0 24px color-mix(in srgb, var(--mc, var(--accent)) 16%, transparent);
         transform: translateZ(20px);
         transition: transform 0.08s;
       }
@@ -710,36 +707,18 @@
         overflow: hidden;
       }
       .c-btn-primary {
-        background: var(--grad-primary);
+        background: var(--accent);
         color: #fff;
-        box-shadow: 0 2px 14px rgba(124, 58, 237, 0.32);
+        box-shadow: 0 1px 2px rgba(20, 35, 60, 0.1);
       }
       .c-btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 26px rgba(124, 58, 237, 0.5);
+        background: #1d4ed8;
+        box-shadow: 0 2px 6px rgba(20, 35, 60, 0.12);
       }
       .c-btn-gradient {
-        background: linear-gradient(
-          135deg,
-          var(--purple) 0%,
-          #6d6cf6 50%,
-          var(--blue) 100%
-        );
-        background-size: 160% 160%;
+        background: var(--accent);
         color: #fff;
-        box-shadow: 0 2px 16px rgba(124, 58, 237, 0.38);
-      }
-      .c-btn-gradient::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-          135deg,
-          rgba(255, 255, 255, 0.18),
-          transparent 60%
-        );
-        opacity: 0;
-        transition: opacity 0.25s ease;
+        box-shadow: 0 1px 2px rgba(20, 35, 60, 0.1);
       }
       .c-btn-gradient:hover {
         transform: translateY(-2px);
@@ -1046,12 +1025,7 @@
         width: 32px;
         height: 32px;
         border-radius: 9px;
-        background: linear-gradient(
-          135deg,
-          #e11d48 0%,
-          #ea580c 50%,
-          #2563eb 100%
-        );
+        background: #e11d48;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1129,7 +1103,7 @@
         transform: translateX(-50%);
         width: 20px;
         height: 2px;
-        background: linear-gradient(90deg, var(--accent), var(--purple));
+        background: var(--accent);
         border-radius: 2px;
       }
       .top-nav-tab svg {
@@ -1142,7 +1116,7 @@
         color: var(--accent);
       }
       .top-nav-tab .tab-badge {
-        background: linear-gradient(135deg, var(--accent), var(--purple));
+        background: var(--accent);
         color: #fff;
         font-size: 10px;
         font-weight: 700;
@@ -1368,22 +1342,13 @@
         transform: scale(0.98);
       }
       .nav-item.active {
-        color: #6d28d9;
-        background:
-          linear-gradient(
-            135deg,
-            rgba(124, 58, 237, 0.22) 0%,
-            rgba(37, 99, 235, 0.18) 100%
-          );
-        border: 1px solid rgba(124, 58, 237, 0.4);
-        box-shadow:
-          0 1px 4px rgba(124, 58, 237, 0.15),
-          inset 0 1px 0 rgba(15, 30, 60, 0.1);
+        color: var(--accent);
+        background: rgba(37, 99, 235, 0.08);
+        border: 1px solid rgba(37, 99, 235, 0.22);
       }
       .nav-item.active svg {
         opacity: 1;
-        color: #8b5cf6;
-        filter: drop-shadow(0 0 6px rgba(124, 58, 237, 0.35));
+        color: var(--accent);
       }
       .nav-item.active::before {
         content: "";
@@ -1394,11 +1359,11 @@
         width: 3px;
         height: 22px;
         border-radius: 0 4px 4px 0;
-        background: linear-gradient(180deg, var(--purple), var(--blue));
+        background: var(--accent);
         box-shadow: 0 0 10px rgba(124, 58, 237, 0.8);
       }
       .nav-item .tab-badge {
-        background: linear-gradient(135deg, var(--accent), var(--purple));
+        background: var(--accent);
         color: #fff;
         font-size: 10px;
         font-weight: 700;
@@ -1471,23 +1436,14 @@
         gap: 11px;
         padding: 12px 13px;
         border-radius: var(--r-xl);
-        background:
-          linear-gradient(
-            135deg,
-            rgba(5, 150, 105, 0.12) 0%,
-            rgba(37, 99, 235, 0.08) 100%
-          );
-        border: 1px solid rgba(5, 150, 105, 0.28);
-        box-shadow:
-          0 0 22px rgba(5, 150, 105, 0.14),
-          inset 0 1px 0 rgba(15, 30, 60, 0.06);
+        background: rgba(5, 150, 105, 0.07);
+        border: 1px solid rgba(5, 150, 105, 0.25);
         overflow: hidden;
         white-space: nowrap;
         transition: box-shadow 0.3s ease, transform 0.2s ease;
       }
       .nav-rail-status-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0 30px rgba(5, 150, 105, 0.22);
+        border-color: rgba(5, 150, 105, 0.4);
       }
       .nav-rail-status-icon {
         width: 34px;
@@ -1605,12 +1561,7 @@
         gap: 14px;
       }
       .app-topbar {
-        background:
-          linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0.7) 0%,
-            rgba(250, 252, 254, 0.55) 100%
-          );
+        background: rgba(255, 255, 255, 0.85);
       }
       /* Topbar search */
       .topbar-search {
@@ -2123,17 +2074,6 @@
         background: var(--surface);
         backdrop-filter: blur(18px) saturate(1.4);
         -webkit-backdrop-filter: blur(18px) saturate(1.4);
-        background-image:
-          radial-gradient(
-            ellipse 45% 90% at 8% 50%,
-            rgba(124, 58, 237, 0.12),
-            transparent 70%
-          ),
-          radial-gradient(
-            ellipse 50% 80% at 100% 50%,
-            rgba(37, 99, 235, 0.09),
-            transparent 70%
-          );
         border: 1px solid var(--border);
         border-radius: var(--r-2xl);
         padding: 28px 36px;
@@ -2245,9 +2185,9 @@
       .stat:hover::before {
         opacity: 1;
       }
-      .stat.pass::before { background: linear-gradient(90deg, var(--red), var(--orange)); }
+      .stat.pass::before { background: var(--red); }
       .stat.fail::before { background: var(--grad-success); }
-      .stat.partial::before { background: linear-gradient(90deg, var(--orange), var(--yellow)); }
+      .stat.partial::before { background: var(--orange); }
       .stat.total::before { background: var(--grad-primary); }
       .stat.pass:hover { box-shadow: var(--shadow-lg), var(--shadow-glow-red); }
       .stat.fail:hover { box-shadow: var(--shadow-lg), var(--shadow-glow-green); }
@@ -2329,7 +2269,7 @@
         padding: 12px 16px;
         transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s cubic-bezier(0.4,0,0.2,1);
         border-radius: 12px;
-        background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+        background: var(--surface);
         border: 1px solid rgba(37, 99, 235, 0.1);
         box-shadow: 0 4px 16px rgba(20, 35, 60, 0.06);
       }
@@ -2357,19 +2297,19 @@
         display: flex;
       }
       .cat-bar-pass {
-        background: linear-gradient(90deg, #e11d48, #ea580c);
+        background: #e11d48;
         box-shadow: 0 0 12px rgba(225, 29, 72, 0.5);
         height: 100%;
         transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .cat-bar-partial {
-        background: linear-gradient(90deg, #ca8a04, #ea580c);
+        background: #ca8a04;
         box-shadow: 0 0 12px rgba(202, 138, 4, 0.45);
         height: 100%;
         transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .cat-bar-fail {
-        background: linear-gradient(90deg, #059669, #2563eb);
+        background: #059669;
         box-shadow: 0 0 12px rgba(5, 150, 105, 0.45);
         height: 100%;
         transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2556,7 +2496,7 @@
         padding: 20px;
         border: 1px solid rgba(37, 99, 235, 0.2);
         border-radius: 8px;
-        background: linear-gradient(135deg, rgba(248, 250, 253, 0.95) 0%, rgba(240, 244, 250, 0.85) 100%);
+        background: var(--surface2);
         font-size: 13px;
         overflow-wrap: anywhere;
         word-break: break-word;
@@ -2668,7 +2608,7 @@
         align-items: center;
         gap: 6px;
         padding: 6px 10px;
-        background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(139, 122, 255, 0.05));
+        background: rgba(37, 99, 235, 0.06);
         border: 1px solid rgba(37, 99, 235, 0.2);
         border-radius: 6px;
         font-size: 12px;
@@ -2676,7 +2616,7 @@
         box-shadow: 0 0 8px rgba(37, 99, 235, 0.1);
       }
       .meta-badge:hover {
-        background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(139, 122, 255, 0.1));
+        background: rgba(37, 99, 235, 0.1);
         border-color: rgba(37, 99, 235, 0.4);
         box-shadow: 0 0 12px rgba(37, 99, 235, 0.2);
       }
@@ -2710,7 +2650,7 @@
         flex-direction: column;
         border: 1px solid rgba(37, 99, 235, 0.2);
         border-radius: 10px;
-        background: linear-gradient(135deg, rgba(15, 30, 60, 0.04), rgba(37, 99, 235, 0.03));
+        background: var(--surface2);
         overflow: hidden;
         transition: all 0.3s ease;
         box-shadow: 0 0 15px rgba(37, 99, 235, 0.05), inset 0 0 15px rgba(37, 99, 235, 0.02);
@@ -2728,7 +2668,7 @@
       }
       .content-box-title {
         padding: 10px 14px;
-        background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(139, 122, 255, 0.05));
+        background: rgba(37, 99, 235, 0.08);
         border-bottom: 1px solid rgba(37, 99, 235, 0.15);
         font-weight: 700;
         font-size: 12px;
@@ -2852,7 +2792,7 @@
         color: var(--text2);
       }
       .threat-confidence {
-        background: linear-gradient(135deg, #e11d48, #ea580c);
+        background: #e11d48;
         color: white;
         padding: 2px 8px;
         border-radius: 4px;
@@ -2958,7 +2898,7 @@
         transform: translateY(-1px);
       }
       .round-tab.active {
-        background: linear-gradient(135deg, var(--accent), #6d28d9);
+        background: var(--accent);
         color: #fff;
         border-color: transparent;
         box-shadow: 0 3px 12px rgba(37, 99, 235, 0.3);
@@ -3428,7 +3368,7 @@
         margin-top: 16px;
       }
       .compliance-run-btn {
-        background: linear-gradient(135deg, var(--accent), #6d28d9);
+        background: var(--accent);
         color: #fff;
         border: none;
         border-radius: 10px;
@@ -3477,7 +3417,7 @@
       }
       .compliance-progress-fill {
         height: 100%;
-        background: linear-gradient(90deg, var(--accent), var(--purple));
+        background: var(--accent);
         border-radius: 2px;
         transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 0 8px rgba(37, 99, 235, 0.3);
@@ -3935,22 +3875,6 @@
         position: fixed;
         inset: 0;
         background: var(--bg);
-        background-image:
-          radial-gradient(
-            800px 500px at 30% 20%,
-            rgba(37, 99, 235, 0.08),
-            transparent 60%
-          ),
-          radial-gradient(
-            600px 500px at 70% 70%,
-            rgba(192, 132, 252, 0.06),
-            transparent 60%
-          ),
-          radial-gradient(
-            400px 300px at 50% 50%,
-            rgba(219, 39, 119, 0.04),
-            transparent 60%
-          );
         z-index: 9999;
         display: flex;
         align-items: center;
@@ -4024,12 +3948,7 @@
         background: var(--bg);
       }
       .auth-sign-in-btn {
-        background: linear-gradient(
-          135deg,
-          var(--accent) 0%,
-          #9b7aff 50%,
-          var(--purple) 100%
-        );
+        background: var(--accent);
         color: #fff;
         border: none;
         border-radius: 12px;
@@ -4092,23 +4011,7 @@
       .attack-path-graph {
         width: 100%;
         min-height: 180px;
-        background:
-          radial-gradient(
-            1000px 500px at 20% 15%,
-            rgba(37, 99, 235, 0.07),
-            transparent 55%
-          ),
-          radial-gradient(
-            700px 500px at 85% 85%,
-            rgba(192, 132, 252, 0.07),
-            transparent 60%
-          ),
-          radial-gradient(
-            500px 400px at 70% 20%,
-            rgba(219, 39, 119, 0.05),
-            transparent 60%
-          ),
-          var(--surface);
+        background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--r-xl);
         position: relative;
@@ -4724,12 +4627,7 @@
         --premium-glow-hover: 0 0 0 1px rgba(37, 99, 235, 0.12),
           0 2px 6px rgba(20, 35, 60, 0.08), 0 16px 40px -12px rgba(20, 35, 60, 0.16),
           0 28px 64px -20px rgba(37, 99, 235, 0.18);
-        --grad-brand: linear-gradient(
-          135deg,
-          var(--red) 0%,
-          var(--purple) 48%,
-          var(--accent) 100%
-        );
+        --grad-brand: #e11d48;
       }
 
       @media (prefers-reduced-motion: no-preference) {
@@ -4741,51 +4639,8 @@
             transform: translateX(220%) skewX(-18deg);
           }
         }
-        @keyframes premiumGradientDrift {
-          0%,
-          100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-        @keyframes premiumFloat {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-2px);
-          }
-        }
       }
 
-      /* ── Ambient backdrop: warmer, layered, "happy" depth ── */
-      body {
-        background-attachment: fixed;
-        background-image:
-          radial-gradient(
-            ellipse 90% 55% at 50% -12%,
-            rgba(37, 99, 235, 0.09),
-            transparent 70%
-          ),
-          radial-gradient(
-            ellipse 50% 45% at 100% 0%,
-            rgba(192, 132, 252, 0.07),
-            transparent 65%
-          ),
-          radial-gradient(
-            ellipse 60% 50% at 0% 100%,
-            rgba(74, 222, 128, 0.04),
-            transparent 60%
-          ),
-          radial-gradient(
-            ellipse 55% 45% at 100% 100%,
-            rgba(219, 39, 119, 0.04),
-            transparent 60%
-          );
-      }
 
       /* ── Typography: tighter, more confident headings ── */
       .section h2 {
@@ -4802,7 +4657,7 @@
         align-self: stretch;
         min-height: 18px;
         border-radius: var(--r-full);
-        background: linear-gradient(180deg, var(--accent), var(--purple));
+        background: var(--accent);
         box-shadow: 0 0 12px -2px var(--accent);
       }
       .section h2 .badge {
@@ -4830,13 +4685,7 @@
         inset: 0 0 auto 0;
         height: 2px;
         border-radius: var(--r-2xl) var(--r-2xl) 0 0;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(37, 99, 235, 0.45),
-          rgba(192, 132, 252, 0.45),
-          transparent
-        );
+        background: rgba(37, 99, 235, 0.35);
         opacity: 0;
         transition: opacity 0.32s ease;
         pointer-events: none;
@@ -4872,7 +4721,7 @@
         position: absolute;
         inset: 0 0 auto 0;
         height: 3px;
-        background: linear-gradient(90deg, var(--accent), var(--purple));
+        background: var(--accent);
         transform: scaleX(0);
         transform-origin: left center;
         transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
@@ -4892,35 +4741,35 @@
         background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        background-image: linear-gradient(135deg, var(--text), var(--text2));
+        background-image: var(--text);
       }
       .stat.total .num {
-        background-image: linear-gradient(135deg, var(--accent), var(--purple));
+        background-image: var(--accent);
       }
       .stat.pass .num {
-        background-image: linear-gradient(135deg, var(--red), var(--orange));
+        background-image: var(--red);
       }
       .stat.fail .num {
-        background-image: linear-gradient(135deg, var(--green), #10b981);
+        background-image: var(--green);
       }
       .stat.partial .num {
-        background-image: linear-gradient(135deg, var(--orange), var(--yellow));
+        background-image: var(--orange);
       }
       .stat .label {
         letter-spacing: 0.6px;
         font-weight: 600;
       }
       .stat.total::before {
-        background: linear-gradient(90deg, var(--accent), var(--purple));
+        background: var(--accent);
       }
       .stat.pass::before {
-        background: linear-gradient(90deg, var(--red), var(--orange));
+        background: var(--red);
       }
       .stat.fail::before {
-        background: linear-gradient(90deg, var(--green), #10b981);
+        background: var(--green);
       }
       .stat.partial::before {
-        background: linear-gradient(90deg, var(--orange), var(--yellow));
+        background: var(--orange);
       }
 
       /* ── Tables: airier rows, gradient header rule, accent hover ── */
@@ -4962,28 +4811,16 @@
         transform: translateY(-1px) scale(1.05);
       }
       .sev-critical {
-        background: linear-gradient(
-          135deg,
-          rgba(219, 39, 119, 0.2),
-          rgba(219, 39, 119, 0.08)
-        );
+        background: rgba(219, 39, 119, 0.12);
       }
       .sev-critical:hover {
         box-shadow: var(--shadow-glow-red);
       }
       .sev-high {
-        background: linear-gradient(
-          135deg,
-          rgba(249, 115, 22, 0.2),
-          rgba(249, 115, 22, 0.08)
-        );
+        background: rgba(249, 115, 22, 0.12);
       }
       .sev-medium {
-        background: linear-gradient(
-          135deg,
-          rgba(217, 119, 6, 0.2),
-          rgba(217, 119, 6, 0.08)
-        );
+        background: rgba(217, 119, 6, 0.12);
       }
 
       /* ── Primary action buttons: gradient + sweeping sheen ── */
@@ -5001,12 +4838,7 @@
         left: 0;
         width: 55%;
         height: 100%;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.28),
-          transparent
-        );
+        background: transparent;
         transform: translateX(-160%) skewX(-18deg);
         pointer-events: none;
       }
@@ -5018,7 +4850,7 @@
       }
       .compliance-run-btn:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 8px 26px -6px rgba(37, 99, 235, 0.5);
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
       }
 
       /* ── Secondary / utility buttons: crisper hover ── */
@@ -5035,11 +4867,7 @@
 
       /* ── Nav: richer active state with soft glow ── */
       .nav-item.active {
-        background: linear-gradient(
-          90deg,
-          var(--accent-bg),
-          transparent 85%
-        );
+        background: var(--accent-bg);
       }
       .nav-item.active::before {
         box-shadow: 0 0 10px -1px var(--accent);
@@ -5055,7 +4883,7 @@
       }
       .run-item.active,
       .report-item.active {
-        background: linear-gradient(90deg, var(--accent-bg), transparent 90%);
+        background: var(--accent-bg);
         border-left-color: var(--accent);
         box-shadow: inset 0 0 24px -16px var(--accent);
       }
@@ -5063,25 +4891,7 @@
       /* ── Brand mark: slow drifting gradient + gentle float ── */
       .nav-rail-brand-icon,
       .top-nav-brand-icon {
-        background: linear-gradient(
-          135deg,
-          #e11d48 0%,
-          #ea580c 50%,
-          #ca8a04 100%
-        );
-        background-size: 200% 200%;
-      }
-      @media (prefers-reduced-motion: no-preference) {
-        .nav-rail-brand-icon,
-        .top-nav-brand-icon {
-          animation: premiumGradientDrift 9s ease-in-out infinite;
-        }
-        .nav-rail-brand:hover .nav-rail-brand-icon,
-        .top-nav-brand:hover .top-nav-brand-icon {
-          animation:
-            premiumGradientDrift 9s ease-in-out infinite,
-            premiumFloat 2.4s ease-in-out infinite;
-        }
+        background: #e11d48;
       }
 
       /* ── Empty states: friendly, spacious, on-brand ── */
@@ -5126,34 +4936,6 @@
 
       /* ═══ MODERN HOVER EFFECTS ═══ */
 
-      /* Shimmering sweep effect on card hover */
-      .c-card::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: var(--r-2xl);
-        background: linear-gradient(
-          115deg,
-          transparent 30%,
-          rgba(15, 30, 60, 0.1) 50%,
-          transparent 70%
-        );
-        transform: translateX(-100%);
-        pointer-events: none;
-        z-index: 1;
-      }
-
-      @media (prefers-reduced-motion: no-preference) and (hover: hover) {
-        .c-card:hover::after {
-          animation: cardSheen 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-
-        @keyframes cardSheen {
-          to {
-            transform: translateX(100%);
-          }
-        }
-      }
 
       /* 3D press-down effect on button click */
       @media (hover: hover) {
@@ -5166,11 +4948,11 @@
       /* Enhanced button shadows on success and danger states */
       @media (hover: hover) {
         .c-btn-success:hover {
-          box-shadow: 0 6px 24px rgba(5, 150, 105, 0.45);
+          box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
         }
 
         .c-btn-danger:hover {
-          box-shadow: 0 6px 24px rgba(219, 39, 119, 0.45);
+          box-shadow: 0 2px 6px rgba(219, 39, 119, 0.25);
         }
       }
 
@@ -5680,7 +5462,7 @@
                   onclick="document.getElementById('grUploadInput').click()"
                   style="
                     width: 100%;
-                    background: linear-gradient(135deg, var(--critical) 0%, var(--high) 100%);
+                    background: var(--critical);
                     color: #ffffff;
                     border: none;
                     border-radius: 6px;
@@ -5730,7 +5512,7 @@
                   <button
                     onclick="document.getElementById('grUploadInput').click()"
                     style="
-                      background: linear-gradient(135deg, var(--critical) 0%, var(--high) 100%);
+                      background: var(--critical);
                       color: #ffffff;
                       border: none;
                       border-radius: 6px;
@@ -6455,7 +6237,7 @@
                     '<div class="c-progress" style="height:4px;">' +
                     '<div style="height:100%;width:' +
                     pct +
-                    '%;background:linear-gradient(90deg,var(--red),var(--orange));border-radius:2px;"></div>' +
+                    '%;background:var(--red);border-radius:2px;"></div>' +
                     "</div></div>"
                   );
                 })
@@ -6487,7 +6269,7 @@
                     '<div class="c-progress" style="height:4px;">' +
                     '<div style="height:100%;width:' +
                     pct +
-                    '%;background:linear-gradient(90deg,var(--red),var(--orange));border-radius:2px;"></div>' +
+                    '%;background:var(--red);border-radius:2px;"></div>' +
                     "</div></div>"
                   );
                 })
@@ -6877,8 +6659,8 @@
         const accentBg   = isVuln ? "rgba(225,29,72,0.1)" : "rgba(37,99,235,0.08)";
         const accentBorder = isVuln ? "rgba(225,29,72,0.3)" : "rgba(37,99,235,0.25)";
         const barGradient = isVuln
-          ? "linear-gradient(90deg,#e11d48,#ea580c)"
-          : "linear-gradient(90deg,#2563eb,#2563eb)";
+          ? "#e11d48"
+          : "#2563eb";
 
         // Headline card
         if (isVuln) {
@@ -7632,7 +7414,7 @@
         var html =
           '<div style="max-width:100%;">' +
           '<div style="margin-bottom:24px;display:flex;align-items:flex-start;gap:16px;">' +
-          '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(219,39,119,0.15),rgba(217,119,6,0.15));display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--red)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>' +
+          '<div style="width:44px;height:44px;border-radius:12px;background:rgba(225,29,72,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--red)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>' +
           "<div>" +
           '<h2 style="font-size:20px;font-weight:700;margin-bottom:4px;">Risk Quantification</h2>' +
           '<div style="font-size:13px;color:var(--text2);">Analyze business impact, exploitability, and remediation priorities for security findings.</div>' +
@@ -8180,7 +7962,7 @@
           '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
           '<div style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--purple)" stroke-width="2" style="flex-shrink:0;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Business Impact & Real-World Incidents</div>' +
-          '<button id="riskLlmBtn" onclick="runRiskLlmAnalysis()" style="background:linear-gradient(135deg,var(--accent) 0%,#6d28d9 100%);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s ease;box-shadow:0 2px 8px rgba(37,99,235,0.25);" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 4px 16px rgba(37,99,235,0.35)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'0 2px 8px rgba(37,99,235,0.25)\'">' +
+          '<button id="riskLlmBtn" onclick="runRiskLlmAnalysis()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s ease;box-shadow:0 2px 8px rgba(37,99,235,0.25);" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 4px 16px rgba(37,99,235,0.35)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'0 2px 8px rgba(37,99,235,0.25)\'">' +
           (riskLlmResults ? "Re-analyze Risk" : "Analyze Risk") +
           "</button>" +
           (riskLlmResults && riskLlmResults.length > 0
@@ -8528,7 +8310,7 @@
           // Header with context
           html +=
             '<div class="u-flex u-items-start u-gap-4 u-mb-6">' +
-            '<div class="c-section-icon" style="background:linear-gradient(135deg,var(--accent-bg),var(--green-bg));"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>' +
+            '<div class="c-section-icon" style="background:var(--accent-bg);"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>' +
             "<div>" +
             '<h2 class="u-text-3xl u-font-bold u-mb-1">Compliance Analysis</h2>' +
             '<div class="u-text-md u-text-muted">Map security scan results against industry compliance frameworks using AI-powered analysis.</div>' +
@@ -9437,7 +9219,6 @@
         app.innerHTML = `
     <!-- Score + Stats -->
     <div class="score-banner" style="border:1px solid var(--border);border-top:3px solid ${ringColor};position:relative;overflow:hidden;">
-      <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle at top right, ${ringColor.replace("var(", "rgba(").replace("--red", "248,81,73").replace("--green", "63,185,80").replace("--orange", "210,153,34").replace(")", ",0.06)")}, transparent 70%);pointer-events:none;"></div>
       <div>
         <div class="score-ring">
           <svg width="120" height="120" viewBox="0 0 120 120">
@@ -12026,13 +11807,13 @@
           g.setAttribute("r", "75%");
           const s1 = document.createElementNS(svgNS, "stop");
           s1.setAttribute("offset", "0%");
-          s1.setAttribute("stop-color", _mixColor(color, "#ffffff", 0.35));
+          s1.setAttribute("stop-color", color);
           const s2 = document.createElementNS(svgNS, "stop");
           s2.setAttribute("offset", "55%");
           s2.setAttribute("stop-color", color);
           const s3 = document.createElementNS(svgNS, "stop");
           s3.setAttribute("offset", "100%");
-          s3.setAttribute("stop-color", _mixColor(color, "#000000", 0.45));
+          s3.setAttribute("stop-color", color);
           g.appendChild(s1);
           g.appendChild(s2);
           g.appendChild(s3);
@@ -12735,7 +12516,7 @@
           const detailTr = document.createElement("tr");
           detailTr.classList.add("detail-row");
           detailTr.style.display = "none";
-          detailTr.innerHTML = `<td colspan="7"><div style="padding:24px 28px;background:linear-gradient(135deg,rgba(255,255,255,0.97) 0%,rgba(240,244,250,0.9) 100%);border-top:2px solid rgba(37,99,235,0.15);animation:fdIn 0.2s ease-out;">
+          detailTr.innerHTML = `<td colspan="7"><div style="padding:24px 28px;background:#ffffff;border-top:2px solid rgba(37,99,235,0.15);animation:fdIn 0.2s ease-out;">
 
     <!-- Title row -->
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
@@ -13362,7 +13143,7 @@
           const detailTr = document.createElement("tr");
           detailTr.classList.add("detail-row");
           detailTr.style.display = "none";
-          detailTr.innerHTML = `<td colspan="6"><div style="padding:24px 28px;background:linear-gradient(135deg,rgba(255,255,255,0.97) 0%,rgba(240,244,250,0.9) 100%);border-top:2px solid rgba(37,99,235,0.15);animation:fdIn 0.2s ease-out;">
+          detailTr.innerHTML = `<td colspan="6"><div style="padding:24px 28px;background:#ffffff;border-top:2px solid rgba(37,99,235,0.15);animation:fdIn 0.2s ease-out;">
 
     <!-- Title row -->
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
@@ -15154,7 +14935,7 @@
               <button
                 onclick="document.getElementById('grUploadInput').click()"
                 style="
-                  background: linear-gradient(135deg, var(--critical) 0%, var(--high) 100%);
+                  background: var(--critical);
                   color: #ffffff;
                   border: none;
                   border-radius: 6px;
