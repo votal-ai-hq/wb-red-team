@@ -956,20 +956,51 @@ const server = createServer(
         return;
       }
 
-      // Job not in memory — try to load config from DB or file (for rerun)
-      if (includeConfig) {
-        const savedConfig = await loadRunConfig(id, ctx?.tenantId);
-        if (savedConfig) {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(
-            JSON.stringify({
+      // Job not in memory — try to load from DB or file
+      try {
+        let runData = null;
+        if (isDbConfigured() && ctx?.tenantId) {
+          const result = await query(
+            `SELECT id, status, started_at, finished_at, target_url, error, config FROM runs WHERE id = $1 AND tenant_id = $2 LIMIT 1`,
+            [id, ctx.tenantId]
+          );
+          if (result.rows.length > 0) {
+            const row = result.rows[0];
+            runData = {
+              runId: row.id,
+              status: row.status,
+              startedAt: row.started_at,
+              finishedAt: row.finished_at,
+              targetUrl: row.target_url,
+              error: row.error,
+              progress: [],
+              progressTotal: 0,
+              ...(includeConfig ? { config: row.config } : {}),
+            };
+          }
+        }
+
+        // Fallback: try to load from saved config file
+        if (!runData) {
+          const savedConfig = await loadRunConfig(id, ctx?.tenantId);
+          if (savedConfig) {
+            runData = {
               runId: id,
               status: "done",
-              config: savedConfig,
-            }),
-          );
+              progress: [],
+              progressTotal: 0,
+              ...(includeConfig ? { config: savedConfig } : {}),
+            };
+          }
+        }
+
+        if (runData) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(runData));
           return;
         }
+      } catch (err) {
+        console.error(`Failed to load historical run ${id}:`, err);
       }
 
       res.writeHead(404, { "Content-Type": "application/json" });

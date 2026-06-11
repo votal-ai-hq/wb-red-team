@@ -6843,15 +6843,17 @@
           { label: "Medium", count: medium, color: "var(--accent)" },
           { label: "Secure", count: secure, color: "var(--green)" },
         ];
-        var html = '<div class="c-progress u-mb-4" style="height:8px;">';
+        var html = '<div class="c-progress u-mb-4" style="height:8px;display:flex;">';
         items.forEach(function (it) {
-          if (it.count > 0)
+          var pct = total > 0 ? Math.round((it.count / total) * 100) : 0;
+          if (pct > 0) {
             html +=
               '<div style="flex:' +
-              it.count +
-              ";background:" +
+              pct +
+              ';background:' +
               it.color +
-              ';"></div>';
+              ';min-width:2px;"></div>';
+          }
         });
         html += "</div>";
         items.forEach(function (it) {
@@ -7205,16 +7207,43 @@
       function toggleRunDetail(runId) {
         if (selectedRunId === runId) {
           selectedRunId = null;
+          renderRunsTab();
         } else {
           selectedRunId = runId;
-          // Only poll active runs
           const cached = runDataCache.get(runId);
           const st = cached?.status;
+
+          // Poll active runs
           if (st === "running" || st === "queued") {
             pollRun(runId);
+            renderRunsTab();
+          }
+          // For completed runs, fetch full details if we don't have them
+          else if (st && (st === "done" || st === "error" || st === "cancelled")) {
+            // Show loading state first
+            renderRunsTab();
+
+            // Fetch full data in the background
+            fetch(`/api/run/${runId}?since=0`)
+              .then(r => {
+                if (!r.ok) throw new Error("Failed to load run details");
+                return r.json();
+              })
+              .then(data => {
+                // Merge with existing data
+                const merged = { ...cached, ...data };
+                runDataCache.set(runId, merged);
+                // Re-render if still selected
+                if (selectedRunId === runId) {
+                  renderRunsTab();
+                }
+              })
+              .catch(err => {
+                console.error("Failed to load run details:", err);
+                // Keep whatever data we have
+              });
           }
         }
-        renderRunsTab();
       }
 
       function buildRunDetailContent(runId, data) {
@@ -7230,6 +7259,11 @@
           totalAttacks > 0
             ? Math.round(((failed + errors) / totalAttacks) * 100)
             : 0;
+
+        // Get progress log lines early (for fallback message)
+        const progressLines = (data.progress || [])
+          .filter((p) => p.phase !== "result")
+          .slice(-30);
 
         // Category breakdown
         const categories = {};
@@ -7258,7 +7292,19 @@
 
         let html = "";
 
-        // Stats row
+        // Show summary if available
+        if (data.summary) {
+          const s = data.summary;
+          html +=
+            '<div class="u-grid-4 u-gap-3 u-mb-4">' +
+            buildStatCard(s.score ?? 0, "Score", scoreColor(s.score ?? 0)) +
+            buildStatCard(s.totalAttacks ?? 0, "Attacks", "var(--text)") +
+            buildStatCard(s.passed ?? 0, "Vulns", "var(--red)") +
+            buildStatCard(s.failed ?? 0, "Blocked", "var(--green)") +
+            "</div>";
+        }
+
+        // Stats row (for live data)
         if (totalAttacks > 0) {
           html +=
             '<div class="u-grid-4 u-gap-3 u-mb-4">' +
@@ -7267,6 +7313,15 @@
             buildStatCard(passed, "Vulns", "var(--red)") +
             buildStatCard(failed, "Blocked", "var(--green)") +
             "</div>";
+        }
+
+        // Show loading indicator if no data yet
+        if (totalAttacks === 0 && !data.summary && progressLines.length === 0) {
+          html +=
+            '<div style="padding:20px;text-align:center;color:var(--text2);background:var(--surface);border-radius:8px;border:1px solid var(--border);">' +
+            '<div style="margin-bottom:8px;">📊 Loading run details...</div>' +
+            '<div style="font-size:12px;">Details will appear once data is fetched</div>' +
+            '</div>';
         }
 
         // Category bars
@@ -7355,21 +7410,55 @@
         }
 
         // Progress log — preserve open/closed state across re-renders
-        const progressLines = (data.progress || [])
-          .filter((p) => p.phase !== "result")
-          .slice(-30);
         if (progressLines.length > 0) {
+          const phaseIcons = {
+            config: "⚙️",
+            analyze: "🔍",
+            auth: "🔐",
+            clone: "📦",
+            discovery: "🎯",
+            planning: "📋",
+            attacks: "⚔️",
+            refine: "✨",
+            report: "📊",
+            static: "📝",
+          };
+          const phaseBgColor = {
+            config: "rgba(0, 245, 255, 0.08)",
+            analyze: "rgba(0, 245, 255, 0.08)",
+            auth: "rgba(0, 245, 255, 0.08)",
+            clone: "rgba(255, 51, 102, 0.08)",
+            discovery: "rgba(255, 140, 66, 0.08)",
+            planning: "rgba(255, 51, 102, 0.08)",
+            attacks: "rgba(255, 51, 102, 0.08)",
+            refine: "rgba(255, 140, 66, 0.08)",
+            report: "rgba(0, 230, 168, 0.08)",
+            static: "rgba(255, 215, 0, 0.08)",
+          };
           html +=
             "<details data-progress-log" +
             (progressLogOpen ? " open" : "") +
             ' style="margin-top:12px;" ontoggle="progressLogOpen=this.open">' +
-            '<summary style="font-size:12px;font-weight:600;cursor:pointer;color:var(--text2);">Progress Log (' +
+            '<summary style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent);display:flex;align-items:center;gap:8px;padding:8px;background:rgba(0,245,255,0.06);border-radius:6px;border:1px solid rgba(0,245,255,0.2);">📡 Progress Log <span style="font-size:11px;background:rgba(0,245,255,0.15);padding:2px 8px;border-radius:4px;color:var(--text2);">(' +
             (data.progressTotal || data.progress?.length || 0) +
-            " events)</summary>" +
-            '<div style="max-height:260px;overflow-y:auto;background:var(--surface);border-radius:6px;padding:10px;margin-top:8px;">';
+            ' events)</span></summary>' +
+            '<div style="max-height:340px;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:8px;font-family:\'Courier New\',monospace;">';
           for (const p of progressLines) {
             const phaseColor =
               {
+                config: "#00f5ff",
+                analyze: "#00f5ff",
+                auth: "#00f5ff",
+                clone: "#ff3366",
+                discovery: "#ff8c42",
+                planning: "#ff3366",
+                attacks: "#ff3366",
+                refine: "#ff8c42",
+                report: "#00e6a8",
+                static: "#ffd700",
+              }[p.phase] || "#7d8590";
+            const bgColor = phaseBgColor[p.phase] || "transparent";
+            const icon = phaseIcons[p.phase] || "•";
                 config: "#2563eb",
                 analyze: "#2563eb",
                 auth: "#2563eb",
@@ -7382,13 +7471,25 @@
                 static: "#ca8a04",
               }[p.phase] || "#5a6b82";
             html +=
-              '<div style="font-size:11px;font-family:monospace;padding:1px 0;"><span style="color:' +
+              '<div style="font-size:12px;padding:8px 10px;margin-bottom:4px;background:' +
+              bgColor +
+              ';border-left:3px solid ' +
               phaseColor +
-              ';">[' +
+              ';border-radius:4px;display:flex;gap:8px;align-items:flex-start;">' +
+              '<span style="color:' +
+              phaseColor +
+              ';font-weight:600;min-width:20px;">' +
+              icon +
+              '</span>' +
+              '<div style="flex:1;">' +
+              '<span style="color:' +
+              phaseColor +
+              ';font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:0.5px;">[' +
               esc(p.phase) +
-              "]</span> " +
-              esc(p.message).slice(0, 120) +
-              "</div>";
+              "]</span>" +
+              '<div style="color:var(--text);margin-top:2px;line-height:1.4;word-break:break-word;">' +
+              esc(p.message) +
+              '</div></div></div>';
           }
           html += "</div></details>";
         }
@@ -14163,6 +14264,17 @@
             }
             closeNewRunPanel();
             switchTab("runs");
+            // Immediately populate cache so run appears in UI without waiting for first poll
+            runDataCache.set(data.runId, {
+              runId: data.runId,
+              status: data.status || "queued",
+              startedAt: new Date().toISOString(),
+              targetUrl: configObj.target?.baseUrl || "",
+              progress: [],
+              progressTotal: 0,
+              estimatedTotal: data.estimatedTotal || 0,
+            });
+            renderSidebarRuns();
             pollRun(data.runId);
             refreshActiveRuns();
           } catch (e) {
@@ -14204,10 +14316,17 @@
 
             // Merge new progress into cached entry instead of replacing
             const cached = runDataCache.get(runId);
-            if (cached && data.progress?.length > 0) {
-              cached.progress = [...(cached.progress || []), ...data.progress];
+            if (cached) {
+              // Always preserve and append progress
+              if (data.progress?.length > 0) {
+                cached.progress = [...(cached.progress || []), ...data.progress];
+              }
             }
-            const merged = cached || data;
+            const merged = cached || {
+              runId: data.runId,
+              progress: data.progress || [],
+              ...data,
+            };
             // Don't let server "running" overwrite local "cancelled" (race window)
             if (merged.status !== "cancelled" || data.status === "cancelled") {
               merged.status = data.status;
@@ -14217,8 +14336,8 @@
             merged.summary = data.summary;
             merged.reportFile = data.reportFile;
             merged.progressTotal = data.progressTotal;
+            merged.estimatedTotal = data.estimatedTotal || merged.estimatedTotal;
             merged.targetUrl = data.targetUrl || merged.targetUrl;
-            if (!cached) merged.progress = data.progress || [];
             runDataCache.set(runId, merged);
 
             renderSidebarRuns();
@@ -14255,7 +14374,7 @@
           } catch {
             // ignore transient errors
           }
-        }, 2000);
+        }, 1000);
         pollingIntervals.set(runId, interval);
       }
 
@@ -14599,7 +14718,7 @@
           const runs = await resp.json();
           for (const run of runs) {
             if (run.status === "queued" || run.status === "running") {
-              // Only fetch full progress for actively running jobs
+              // Fetch full progress for actively running jobs
               try {
                 const fullResp = await fetch(`/api/run/${run.runId}?since=0`);
                 const fullData = await fullResp.json();
@@ -14609,8 +14728,15 @@
               }
               pollRun(run.runId);
             } else if (!runDataCache.has(run.runId)) {
-              // For done/error/cancelled, use list data directly (no extra fetch)
-              runDataCache.set(run.runId, { ...run, progress: [] });
+              // For done/error/cancelled, fetch full data too (so detail view works)
+              try {
+                const fullResp = await fetch(`/api/run/${run.runId}?since=0`);
+                const fullData = await fullResp.json();
+                runDataCache.set(run.runId, fullData);
+              } catch {
+                // Fallback to list data if fetch fails
+                runDataCache.set(run.runId, { ...run, progress: [] });
+              }
             }
           }
           renderSidebarRuns();
