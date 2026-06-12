@@ -7013,12 +7013,16 @@
               data.progress?.length > 0
                 ? data.progress[data.progress.length - 1]
                 : null;
-            const progressText = lastProgress
-              ? "[" +
-                lastProgress.phase +
-                "] " +
-                lastProgress.message.slice(0, 80)
-              : "";
+            const errorSummary = runErrorSummary(data, 220);
+            const progressText =
+              data.status === "error" && errorSummary
+                ? "Error: " + errorSummary
+                : lastProgress
+                  ? "[" +
+                    lastProgress.phase +
+                    "] " +
+                    lastProgress.message.slice(0, 80)
+                  : "";
             const summary = data.summary;
 
             const isSelected = selectedRunId === runId;
@@ -7066,6 +7070,10 @@
               '<div class="u-text-md u-mb-1">' +
               esc(targetUrl) +
               "</div>";
+
+            if (runErrorDetail(data) && errorSummary) {
+              html += buildRunErrorBlock(data, true);
+            }
 
             // Progress bar for running jobs
             if (data.status === "running" || data.status === "queued") {
@@ -7167,7 +7175,7 @@
                 summary.failed +
                 " blocked</span>" +
                 "</div>";
-            } else if (progressText) {
+            } else if (progressText && data.status !== "error") {
               html +=
                 '<div class="u-text-sm u-text-muted u-mono">' +
                 esc(progressText) +
@@ -7199,6 +7207,25 @@
             searchInput.focus();
             searchInput.selectionStart = searchInput.selectionEnd = searchInput.value.length;
           }
+        }
+      }
+
+      function renderRunsTabLiveUpdate() {
+        if (currentTab !== "runs") return;
+        const appScrollTop = app ? app.scrollTop : 0;
+        const detailEl = document.getElementById("runDetailInline");
+        const detailScrollTop = detailEl ? detailEl.scrollTop : 0;
+        const progressLogEl = detailEl?.querySelector("details[data-progress-log] > div");
+        const progressLogScrollTop = progressLogEl ? progressLogEl.scrollTop : 0;
+
+        renderRunsTab();
+
+        if (app) app.scrollTop = appScrollTop;
+        const newDetailEl = document.getElementById("runDetailInline");
+        if (newDetailEl) {
+          newDetailEl.scrollTop = detailScrollTop;
+          const newProgressLogEl = newDetailEl.querySelector("details[data-progress-log] > div");
+          if (newProgressLogEl) newProgressLogEl.scrollTop = progressLogScrollTop;
         }
       }
 
@@ -7257,6 +7284,10 @@
             : 1;
 
         let html = "";
+
+        if (runErrorDetail(data)) {
+          html += buildRunErrorBlock(data, false);
+        }
 
         // Stats row
         if (totalAttacks > 0) {
@@ -13295,6 +13326,44 @@
         return d.innerHTML;
       }
 
+      function runErrorDetail(data) {
+        return typeof data?.error === "string" ? data.error.trim() : "";
+      }
+
+      function runErrorSummary(data, maxLen) {
+        const detail = runErrorDetail(data);
+        if (!detail) return "";
+        const lines = detail
+          .split(/\r?\n/)
+          .map(function (line) { return line.trim(); })
+          .filter(Boolean);
+        const useful =
+          lines.find(function (line) {
+            return /(ECONN|ENOTFOUND|ETIMEDOUT|EAI_AGAIN|status=|code=|address=|hostname=|url=|CUSTOM_LLM_BASE_URL)/i.test(line);
+          }) || lines[0] || detail;
+        const oneLine = useful.replace(/\s+/g, " ");
+        const limit = maxLen || 180;
+        return oneLine.length > limit ? oneLine.slice(0, limit - 1) + "..." : oneLine;
+      }
+
+      function buildRunErrorBlock(data, compact) {
+        const detail = runErrorDetail(data);
+        if (!detail) return "";
+        const summary = runErrorSummary(data, compact ? 160 : 240) || "Run failed";
+        return (
+          '<div style="margin-top:' +
+          (compact ? "8px" : "0") +
+          ';margin-bottom:12px;padding:12px 14px;border:1px solid var(--red-border);border-left:4px solid var(--red);border-radius:8px;background:var(--red-bg-subtle);color:var(--red);">' +
+          '<div style="font-size:12px;font-weight:700;margin-bottom:6px;">Run failed: ' +
+          esc(summary) +
+          "</div>" +
+          '<pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.5;color:var(--text);font-family:\'JetBrains Mono\',\'SF Mono\',Monaco,Consolas,monospace;">' +
+          esc(detail) +
+          "</pre>" +
+          "</div>"
+        );
+      }
+
       function downloadCsv() {
         if (!currentFile) return;
         const a = document.createElement("a");
@@ -14158,7 +14227,8 @@
             });
             const data = await resp.json();
             if (!resp.ok) {
-              errEl.textContent = data.error || "Failed to start run";
+              errEl.textContent =
+                data.detail || data.error || "Failed to start run";
               return;
             }
             closeNewRunPanel();
@@ -14193,7 +14263,10 @@
         }
         pollingRuns.add(runId);
 
-        let progressOffset = 0;
+        let progressOffset =
+          typeof existing?.progressTotal === "number"
+            ? existing.progressTotal
+            : existing?.progress?.length || 0;
         const interval = setInterval(async () => {
           try {
             const resp = await fetch(
@@ -14222,23 +14295,10 @@
             runDataCache.set(runId, merged);
 
             renderSidebarRuns();
-            if (selectedRunId === runId) {
-              if (currentTab === "runs") {
-                // Targeted update: only re-render the inline detail panel, not the entire tab
-                const detailEl = document.getElementById("runDetailInline");
-                if (detailEl) {
-                  // Preserve scroll position across re-renders
-                  const scrollTop = detailEl.scrollTop;
-                  const progressLogEl = detailEl.querySelector("details[data-progress-log]");
-                  const progressLogScrollTop = progressLogEl?.querySelector("div")?.scrollTop || 0;
-                  detailEl.innerHTML = buildRunDetailContent(runId, merged);
-                  detailEl.scrollTop = scrollTop;
-                  const newProgressLog = detailEl.querySelector("details[data-progress-log] > div");
-                  if (newProgressLog) newProgressLog.scrollTop = progressLogScrollTop;
-                } else {
-                  renderRunsTab();
-                }
-              } else renderRunMainPanel(runId, merged);
+            if (currentTab === "runs") {
+              renderRunsTabLiveUpdate();
+            } else if (selectedRunId === runId) {
+              renderRunMainPanel(runId, merged);
             }
 
             if (data.status === "done" || data.status === "error" || data.status === "cancelled") {
@@ -14337,11 +14397,12 @@
               minute: "2-digit",
             });
 
+            const sidebarErrorSummary = runErrorSummary(data, 120);
             const progressText =
               data.status === "running" && lastMsg
                 ? `[${lastProgress.phase}] ${lastMsg.slice(0, 50)}`
                 : data.status === "error"
-                  ? (data.error || "Failed").slice(0, 50)
+                  ? sidebarErrorSummary || "Failed"
                   : "Waiting...";
 
             const cancelBtn =
@@ -14357,7 +14418,7 @@
                 ${cancelBtn}
               </div>
               <div class="run-item-target" title="${esc(targetUrl)}">${esc(targetUrl)}</div>
-              <div class="run-item-progress">${esc(progressText)}</div>
+              <div class="run-item-progress" title="${esc(runErrorDetail(data) || progressText)}">${esc(progressText)}</div>
             </div>
           </div>`;
           })
@@ -14550,9 +14611,10 @@
           })
           .join("");
 
-        const errorHtml = data.error
-          ? `<div style="background:rgba(219,39,119,0.1);border:1px solid var(--red);border-radius:8px;padding:12px;margin-bottom:16px;color:var(--red);font-size:13px;">${esc(data.error)}</div>`
-          : "";
+        const errorHtml =
+          runErrorDetail(data)
+            ? buildRunErrorBlock(data, false)
+            : "";
 
         // Active parallel categories indicator
         let parallelHtml = "";
