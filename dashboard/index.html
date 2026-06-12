@@ -6199,11 +6199,15 @@
           buildAttackCardSkeleton("Attack Severity Distribution") +
           "</div>" +
           "</div>" +
-          // Row 2: Scan Risk Distribution + Top Targets + Top Vulnerable Endpoints
+          // Row 2: Scan Score Distribution + Top Targets + Top Vulnerable Endpoints
           '<div class="u-grid-3 u-gap-4 u-mb-4">' +
-          // Risk Distribution
+          // Score Distribution
           '<div class="c-card">' +
-          '<div class="u-text-md u-font-semibold u-mb-4">Scan Risk Distribution</div>' +
+          '<div class="u-flex u-items-center u-mb-2" style="justify-content:space-between;">' +
+          '<div class="u-text-md u-font-semibold">Scan Score Distribution</div>' +
+          '<div class="u-text-xs u-text-muted">Overall scan score</div>' +
+          "</div>" +
+          '<div class="u-text-xs u-text-muted u-mb-4">Grouped by each scan report score, not by individual finding severity.</div>' +
           buildRiskDistribution(
             criticalScans,
             highScans,
@@ -6838,10 +6842,10 @@
       function buildRiskDistribution(critical, high, medium, secure, total) {
         if (total === 0) return '<div class="c-empty u-p-5">No scans</div>';
         var items = [
-          { label: "Critical", count: critical, color: "var(--red)" },
-          { label: "High Risk", count: high, color: "var(--orange)" },
-          { label: "Medium", count: medium, color: "var(--accent)" },
-          { label: "Secure", count: secure, color: "var(--green)" },
+          { label: "Critical Score", range: "<30", count: critical, color: "var(--red)" },
+          { label: "High Risk Score", range: "30-59", count: high, color: "var(--orange)" },
+          { label: "Medium Score", range: "60-79", count: medium, color: "var(--accent)" },
+          { label: "Secure Score", range: "80+", count: secure, color: "var(--green)" },
         ];
         var html = '<div class="c-progress u-mb-4" style="height:8px;">';
         items.forEach(function (it) {
@@ -6864,6 +6868,9 @@
             ';"></div>' +
             '<span class="u-text-base">' +
             it.label +
+            "</span>" +
+            '<span class="u-text-xs u-text-muted">Score ' +
+            esc(it.range) +
             "</span>" +
             "</div>" +
             '<div class="u-flex u-items-center u-gap-2">' +
