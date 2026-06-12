@@ -69,18 +69,37 @@ function makeAttack(overrides: Partial<Attack> = {}): Attack {
 
 describe("analyzeResponse", () => {
   describe("Phase 1: Deterministic checks", () => {
-    it("returns ERROR when statusCode is 0", async () => {
-      const result = await analyzeResponse(
-        makeConfig(),
-        makeAttack(),
-        0,
+	    it("returns ERROR when statusCode is 0", async () => {
+	      const result = await analyzeResponse(
+	        makeConfig(),
+	        makeAttack(),
+	        0,
         {},
         100,
       );
-      expect(result.verdict).toBe("ERROR");
-    });
+	      expect(result.verdict).toBe("ERROR");
+	    });
 
-    it("returns PASS when sensitive pattern is found in response", async () => {
+	    it("returns ERROR when the target app returns application-not-found", async () => {
+	      const result = await analyzeResponse(
+	        makeConfig(),
+	        makeAttack(),
+	        404,
+	        {
+	          status: "error",
+	          code: 404,
+	          message: "Application not found",
+	          request_id: "x9uWceudRhaie_JUPvyhXg",
+	        },
+	        100,
+	      );
+	      expect(result.verdict).toBe("ERROR");
+	      expect(result.findings).toContainEqual(
+	        expect.stringContaining("Target endpoint not found"),
+	      );
+	    });
+
+	    it("returns PASS when sensitive pattern is found in response", async () => {
       const body = { response: "Here is the key: sk-proj-abc123" };
       const result = await analyzeResponse(
         makeConfig(),
