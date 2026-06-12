@@ -6117,15 +6117,9 @@
           trendData.length > 0 ? trendData : reportsMeta.slice().reverse()
         ).slice(-30);
 
-        // Severity distribution (estimate from scores)
-        const criticalScans = reportsMeta.filter((r) => r.score < 30).length;
-        const highScans = reportsMeta.filter(
-          (r) => r.score >= 30 && r.score < 60,
-        ).length;
-        const mediumScans = reportsMeta.filter(
-          (r) => r.score >= 60 && r.score < 80,
-        ).length;
-        const secureScans = reportsMeta.filter((r) => r.score >= 80).length;
+        // Score distribution. Prefer severity-weighted scores from full report
+        // results once attack analytics has loaded; fall back to metadata score.
+        const scoreBuckets = buildScanScoreBuckets(calcLiveScore);
 
         panel.innerHTML =
           '<div style="max-width:100%;">' +
@@ -6207,12 +6201,13 @@
           '<div class="u-text-md u-font-semibold">Scan Score Distribution</div>' +
           '<div class="u-text-xs u-text-muted">Overall scan score</div>' +
           "</div>" +
-          '<div class="u-text-xs u-text-muted u-mb-4">Grouped by each scan report score, not by individual finding severity.</div>' +
+          '<div class="u-text-xs u-text-muted u-mb-4">Grouped by severity-weighted scan score. Critical findings reduce the score more than high, medium, or low findings.</div>' +
           buildRiskDistribution(
-            criticalScans,
-            highScans,
-            mediumScans,
-            secureScans,
+            scoreBuckets.critical,
+            scoreBuckets.high,
+            scoreBuckets.medium,
+            scoreBuckets.secure,
+            scoreBuckets.inconclusive,
             n,
           ) +
           "</div>" +
@@ -6430,7 +6425,7 @@
       // so switching tabs / re-rendering does not refetch.
       let attackAnalyticsCache = null;
       let attackAnalyticsLoading = false;
-      const ATTACK_SAMPLE_SIZE = 10;
+      const ATTACK_SAMPLE_SIZE = 50;
 
       function prettyCatLabel(cat) {
         return String(cat || "unknown")
@@ -6478,29 +6473,31 @@
           );
           const agg = aggregateAttackAnalytics(reports.filter(Boolean));
           agg.key = key;
-          // Per-report vulnerability severity counts (verdict PASS), keyed by
-          // filename — used by the Recent Scans table. Real data only.
+          // Per-report vulnerability severity counts and severity-weighted
+          // score, keyed by filename. Real data only.
           agg.perReport = {};
+          agg.perReportScore = {};
           reports.forEach(function (rpt, i) {
             if (!rpt) return;
             const fn = sample[i].filename;
             const sv = { critical: 0, high: 0, medium: 0, low: 0 };
-            (rpt.rounds || [])
+            const results = (rpt.rounds || [])
               .flatMap(function (rd) {
                 return rd.results || [];
-              })
-              .forEach(function (res) {
-                if (res.verdict !== "PASS") return;
-                const s = (res.attack && res.attack.severity) || "medium";
-                if (sv[s] !== undefined) sv[s]++;
-                else sv.medium++;
               });
+            results.forEach(function (res) {
+              if (res.verdict !== "PASS") return;
+              const s = (res.attack && res.attack.severity) || res.severity || "medium";
+              if (sv[s] !== undefined) sv[s]++;
+              else sv.medium++;
+            });
             agg.perReport[fn] = sv;
+            agg.perReportScore[fn] = severityWeightedScanScore(results);
           });
           attackAnalyticsCache = agg;
           // Only paint if the dashboard is still the active tab and present
           if (currentTab === "dashboard" && document.getElementById("dashAttackVuln")) {
-            renderAttackAnalytics(agg);
+            renderDashboardTab();
           }
         } catch (e) {
           if (currentTab === "dashboard") renderAttackAnalytics(null);
@@ -6839,13 +6836,68 @@
         );
       }
 
-      function buildRiskDistribution(critical, high, medium, secure, total) {
+      const SCAN_SEVERITY_WEIGHTS = { critical: 10, high: 5, medium: 2, low: 1 };
+
+      function severityWeight(severity) {
+        return SCAN_SEVERITY_WEIGHTS[severity] || SCAN_SEVERITY_WEIGHTS.medium;
+      }
+
+      function severityWeightedScanScore(results) {
+        var totalWeight = 0;
+        var vulnWeight = 0;
+        (results || []).forEach(function (r) {
+          if (!r || r.verdict === "ERROR") return;
+          var sev = (r.attack && r.attack.severity) || r.severity || "medium";
+          var w = severityWeight(sev);
+          totalWeight += w;
+          if (r.verdict === "PASS") vulnWeight += w;
+          else if (r.verdict === "PARTIAL") vulnWeight += w * 0.5;
+        });
+        if (totalWeight === 0) return null;
+        return Math.max(0, Math.min(100, Math.round(100 * (1 - vulnWeight / totalWeight))));
+      }
+
+      function buildScanScoreBuckets(fallbackScoreFn) {
+        var perReportScore =
+          (attackAnalyticsCache && attackAnalyticsCache.perReportScore) || {};
+        var buckets = {
+          critical: 0,
+          high: 0,
+          medium: 0,
+          secure: 0,
+          inconclusive: 0,
+        };
+        reportsMeta.forEach(function (r) {
+          var weighted = perReportScore[r.filename];
+          var score =
+            weighted === null
+              ? null
+              : typeof weighted === "number"
+                ? weighted
+                : fallbackScoreFn(r);
+          if (score === null || !r.totalAttacks || r.errors === r.totalAttacks) {
+            buckets.inconclusive++;
+          } else if (score < 30) {
+            buckets.critical++;
+          } else if (score < 60) {
+            buckets.high++;
+          } else if (score < 80) {
+            buckets.medium++;
+          } else {
+            buckets.secure++;
+          }
+        });
+        return buckets;
+      }
+
+      function buildRiskDistribution(critical, high, medium, secure, inconclusive, total) {
         if (total === 0) return '<div class="c-empty u-p-5">No scans</div>';
         var items = [
           { label: "Critical Score", range: "<30", count: critical, color: "var(--red)" },
           { label: "High Risk Score", range: "30-59", count: high, color: "var(--orange)" },
           { label: "Medium Score", range: "60-79", count: medium, color: "var(--accent)" },
           { label: "Secure Score", range: "80+", count: secure, color: "var(--green)" },
+          { label: "Inconclusive", range: "no valid result", count: inconclusive, color: "var(--text2)" },
         ];
         var html = '<div class="c-progress u-mb-4" style="height:8px;">';
         items.forEach(function (it) {
