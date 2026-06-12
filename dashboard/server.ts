@@ -902,6 +902,9 @@ const server = createServer(
           JSON.stringify({
             runId: job.id,
             status: job.status,
+            startedAt: job.startedAt,
+            targetUrl: job.config.target.baseUrl,
+            estimatedTotal: job.estimatedTotal,
             message:
               job.status === "running"
                 ? "Run started"

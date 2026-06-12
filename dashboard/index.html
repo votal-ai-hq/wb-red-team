@@ -14233,6 +14233,7 @@
             }
             closeNewRunPanel();
             switchTab("runs");
+            showStartedRun(data, configObj);
             pollRun(data.runId);
             refreshActiveRuns();
           } catch (e) {
@@ -14253,6 +14254,32 @@
       let liveFilterSeverity = "";
       let progressLogOpen = false;
       const runDataCache = new Map();
+
+      function showStartedRun(data, configObj) {
+        if (!data || !data.runId) return;
+        const targetUrl =
+          data.targetUrl ||
+          configObj?.target?.baseUrl ||
+          configObj?.target?.url ||
+          "unknown";
+        const startedAt = data.startedAt || new Date().toISOString();
+        const existing = runDataCache.get(data.runId) || {};
+        runDataCache.set(data.runId, {
+          ...existing,
+          runId: data.runId,
+          status: data.status || "queued",
+          startedAt,
+          targetUrl,
+          estimatedTotal: data.estimatedTotal || existing.estimatedTotal,
+          progressTotal: existing.progressTotal || 0,
+          progress: existing.progress || [],
+          config: configObj,
+        });
+        selectedRunId = data.runId;
+        renderSidebarRuns();
+        if (currentTab === "runs") renderRunsTab();
+        if (currentTab === "dashboard") renderDashboardTab();
+      }
 
       function pollRun(runId) {
         if (pollingRuns.has(runId)) return;
@@ -14873,6 +14900,7 @@
             return;
           }
           switchTab("runs");
+          showStartedRun(started, data.config);
           pollRun(started.runId);
           refreshActiveRuns();
         } catch (err) {
