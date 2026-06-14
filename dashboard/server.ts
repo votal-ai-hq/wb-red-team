@@ -20,6 +20,7 @@ import { loadConfigFromObject } from "../lib/config-loader.js";
 import { loadEnvFile } from "../lib/env-loader.js";
 import { getJudgeProvider } from "../lib/llm-provider.js";
 import { runRedTeam, type RunProgress } from "../lib/run.js";
+import { formatErrorDetails } from "../lib/error-utils.js";
 import { type ComplianceItem } from "../lib/compliance-mappings.js";
 import {
   loadComplianceFrameworks,
@@ -542,7 +543,7 @@ async function startJob(job: Job): Promise<void> {
       }
     }
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = formatErrorDetails(err);
     if (!job.finishedAt) job.finishedAt = new Date().toISOString();
 
     // Don't overwrite if already cancelled by user
@@ -884,6 +885,7 @@ const server = createServer(
           res.end(
             JSON.stringify({
               error: "Invalid configuration",
+              detail: formatErrorDetails(err),
             }),
           );
           return;
@@ -900,6 +902,9 @@ const server = createServer(
           JSON.stringify({
             runId: job.id,
             status: job.status,
+            startedAt: job.startedAt,
+            targetUrl: job.config.target.baseUrl,
+            estimatedTotal: job.estimatedTotal,
             message:
               job.status === "running"
                 ? "Run started"
@@ -911,6 +916,7 @@ const server = createServer(
         res.end(
           JSON.stringify({
             error: "Bad request",
+            detail: formatErrorDetails(err),
           }),
         );
       }

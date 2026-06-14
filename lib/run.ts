@@ -14,6 +14,7 @@ import {
 import { getAllStrategies } from "./attack-strategies.js";
 import {
   preAuthenticate,
+  assertTargetAvailable,
   executeAttack,
   executeMultiTurn,
   executeAdaptiveMultiTurn,
@@ -846,6 +847,9 @@ export async function runRedTeam(
   checkAbort();
   log("auth", "Pre-authenticating...");
   await preAuthenticate(config);
+  checkAbort();
+  log("auth", "Checking target availability...");
+  await assertTargetAvailable(config);
 
   // 3.5. Discovery round
   let discoveryIntel: Report["discovery"] | undefined;

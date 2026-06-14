@@ -6117,15 +6117,9 @@
           trendData.length > 0 ? trendData : reportsMeta.slice().reverse()
         ).slice(-30);
 
-        // Severity distribution (estimate from scores)
-        const criticalScans = reportsMeta.filter((r) => r.score < 30).length;
-        const highScans = reportsMeta.filter(
-          (r) => r.score >= 30 && r.score < 60,
-        ).length;
-        const mediumScans = reportsMeta.filter(
-          (r) => r.score >= 60 && r.score < 80,
-        ).length;
-        const secureScans = reportsMeta.filter((r) => r.score >= 80).length;
+        // Score distribution. Prefer severity-weighted scores from full report
+        // results once attack analytics has loaded; fall back to metadata score.
+        const scoreBuckets = buildScanScoreBuckets(calcLiveScore);
 
         panel.innerHTML =
           '<div style="max-width:100%;">' +
@@ -6199,16 +6193,21 @@
           buildAttackCardSkeleton("Attack Severity Distribution") +
           "</div>" +
           "</div>" +
-          // Row 2: Scan Risk Distribution + Top Targets + Top Vulnerable Endpoints
+          // Row 2: Scan Score Distribution + Top Targets + Top Vulnerable Endpoints
           '<div class="u-grid-3 u-gap-4 u-mb-4">' +
-          // Risk Distribution
+          // Score Distribution
           '<div class="c-card">' +
-          '<div class="u-text-md u-font-semibold u-mb-4">Scan Risk Distribution</div>' +
+          '<div class="u-flex u-items-center u-mb-2" style="justify-content:space-between;">' +
+          '<div class="u-text-md u-font-semibold">Scan Score Distribution</div>' +
+          '<div class="u-text-xs u-text-muted">Overall scan score</div>' +
+          "</div>" +
+          '<div class="u-text-xs u-text-muted u-mb-4">Grouped by severity-weighted scan score. Critical findings reduce the score more than high, medium, or low findings.</div>' +
           buildRiskDistribution(
-            criticalScans,
-            highScans,
-            mediumScans,
-            secureScans,
+            scoreBuckets.critical,
+            scoreBuckets.high,
+            scoreBuckets.medium,
+            scoreBuckets.secure,
+            scoreBuckets.inconclusive,
             n,
           ) +
           "</div>" +
@@ -6426,7 +6425,7 @@
       // so switching tabs / re-rendering does not refetch.
       let attackAnalyticsCache = null;
       let attackAnalyticsLoading = false;
-      const ATTACK_SAMPLE_SIZE = 10;
+      const ATTACK_SAMPLE_SIZE = 50;
 
       function prettyCatLabel(cat) {
         return String(cat || "unknown")
@@ -6474,29 +6473,31 @@
           );
           const agg = aggregateAttackAnalytics(reports.filter(Boolean));
           agg.key = key;
-          // Per-report vulnerability severity counts (verdict PASS), keyed by
-          // filename — used by the Recent Scans table. Real data only.
+          // Per-report vulnerability severity counts and severity-weighted
+          // score, keyed by filename. Real data only.
           agg.perReport = {};
+          agg.perReportScore = {};
           reports.forEach(function (rpt, i) {
             if (!rpt) return;
             const fn = sample[i].filename;
             const sv = { critical: 0, high: 0, medium: 0, low: 0 };
-            (rpt.rounds || [])
+            const results = (rpt.rounds || [])
               .flatMap(function (rd) {
                 return rd.results || [];
-              })
-              .forEach(function (res) {
-                if (res.verdict !== "PASS") return;
-                const s = (res.attack && res.attack.severity) || "medium";
-                if (sv[s] !== undefined) sv[s]++;
-                else sv.medium++;
               });
+            results.forEach(function (res) {
+              if (res.verdict !== "PASS") return;
+              const s = (res.attack && res.attack.severity) || res.severity || "medium";
+              if (sv[s] !== undefined) sv[s]++;
+              else sv.medium++;
+            });
             agg.perReport[fn] = sv;
+            agg.perReportScore[fn] = severityWeightedScanScore(results);
           });
           attackAnalyticsCache = agg;
           // Only paint if the dashboard is still the active tab and present
           if (currentTab === "dashboard" && document.getElementById("dashAttackVuln")) {
-            renderAttackAnalytics(agg);
+            renderDashboardTab();
           }
         } catch (e) {
           if (currentTab === "dashboard") renderAttackAnalytics(null);
@@ -6835,13 +6836,68 @@
         );
       }
 
-      function buildRiskDistribution(critical, high, medium, secure, total) {
+      const SCAN_SEVERITY_WEIGHTS = { critical: 10, high: 5, medium: 2, low: 1 };
+
+      function severityWeight(severity) {
+        return SCAN_SEVERITY_WEIGHTS[severity] || SCAN_SEVERITY_WEIGHTS.medium;
+      }
+
+      function severityWeightedScanScore(results) {
+        var totalWeight = 0;
+        var vulnWeight = 0;
+        (results || []).forEach(function (r) {
+          if (!r || r.verdict === "ERROR") return;
+          var sev = (r.attack && r.attack.severity) || r.severity || "medium";
+          var w = severityWeight(sev);
+          totalWeight += w;
+          if (r.verdict === "PASS") vulnWeight += w;
+          else if (r.verdict === "PARTIAL") vulnWeight += w * 0.5;
+        });
+        if (totalWeight === 0) return null;
+        return Math.max(0, Math.min(100, Math.round(100 * (1 - vulnWeight / totalWeight))));
+      }
+
+      function buildScanScoreBuckets(fallbackScoreFn) {
+        var perReportScore =
+          (attackAnalyticsCache && attackAnalyticsCache.perReportScore) || {};
+        var buckets = {
+          critical: 0,
+          high: 0,
+          medium: 0,
+          secure: 0,
+          inconclusive: 0,
+        };
+        reportsMeta.forEach(function (r) {
+          var weighted = perReportScore[r.filename];
+          var score =
+            weighted === null
+              ? null
+              : typeof weighted === "number"
+                ? weighted
+                : fallbackScoreFn(r);
+          if (score === null || !r.totalAttacks || r.errors === r.totalAttacks) {
+            buckets.inconclusive++;
+          } else if (score < 30) {
+            buckets.critical++;
+          } else if (score < 60) {
+            buckets.high++;
+          } else if (score < 80) {
+            buckets.medium++;
+          } else {
+            buckets.secure++;
+          }
+        });
+        return buckets;
+      }
+
+      function buildRiskDistribution(critical, high, medium, secure, inconclusive, total) {
         if (total === 0) return '<div class="c-empty u-p-5">No scans</div>';
         var items = [
-          { label: "Critical", count: critical, color: "var(--red)" },
-          { label: "High Risk", count: high, color: "var(--orange)" },
-          { label: "Medium", count: medium, color: "var(--accent)" },
-          { label: "Secure", count: secure, color: "var(--green)" },
+          { label: "Critical Score", range: "<30", count: critical, color: "var(--red)" },
+          { label: "High Risk Score", range: "30-59", count: high, color: "var(--orange)" },
+          { label: "Medium Score", range: "60-79", count: medium, color: "var(--accent)" },
+          { label: "Secure Score", range: "80+", count: secure, color: "var(--green)" },
+          { label: "Inconclusive", range: "no valid result", count: inconclusive, color: "var(--text2)" },
         ];
         var html = '<div class="c-progress u-mb-4" style="height:8px;">';
         items.forEach(function (it) {
@@ -6864,6 +6920,9 @@
             ';"></div>' +
             '<span class="u-text-base">' +
             it.label +
+            "</span>" +
+            '<span class="u-text-xs u-text-muted">Score ' +
+            esc(it.range) +
             "</span>" +
             "</div>" +
             '<div class="u-flex u-items-center u-gap-2">' +
@@ -7013,12 +7072,16 @@
               data.progress?.length > 0
                 ? data.progress[data.progress.length - 1]
                 : null;
-            const progressText = lastProgress
-              ? "[" +
-                lastProgress.phase +
-                "] " +
-                lastProgress.message.slice(0, 80)
-              : "";
+            const errorSummary = runErrorSummary(data, 220);
+            const progressText =
+              data.status === "error" && errorSummary
+                ? "Error: " + errorSummary
+                : lastProgress
+                  ? "[" +
+                    lastProgress.phase +
+                    "] " +
+                    lastProgress.message.slice(0, 80)
+                  : "";
             const summary = data.summary;
 
             const isSelected = selectedRunId === runId;
@@ -7066,6 +7129,10 @@
               '<div class="u-text-md u-mb-1">' +
               esc(targetUrl) +
               "</div>";
+
+            if (runErrorDetail(data) && errorSummary) {
+              html += buildRunErrorBlock(data, true);
+            }
 
             // Progress bar for running jobs
             if (data.status === "running" || data.status === "queued") {
@@ -7167,7 +7234,7 @@
                 summary.failed +
                 " blocked</span>" +
                 "</div>";
-            } else if (progressText) {
+            } else if (progressText && data.status !== "error") {
               html +=
                 '<div class="u-text-sm u-text-muted u-mono">' +
                 esc(progressText) +
@@ -7199,6 +7266,25 @@
             searchInput.focus();
             searchInput.selectionStart = searchInput.selectionEnd = searchInput.value.length;
           }
+        }
+      }
+
+      function renderRunsTabLiveUpdate() {
+        if (currentTab !== "runs") return;
+        const appScrollTop = app ? app.scrollTop : 0;
+        const detailEl = document.getElementById("runDetailInline");
+        const detailScrollTop = detailEl ? detailEl.scrollTop : 0;
+        const progressLogEl = detailEl?.querySelector("details[data-progress-log] > div");
+        const progressLogScrollTop = progressLogEl ? progressLogEl.scrollTop : 0;
+
+        renderRunsTab();
+
+        if (app) app.scrollTop = appScrollTop;
+        const newDetailEl = document.getElementById("runDetailInline");
+        if (newDetailEl) {
+          newDetailEl.scrollTop = detailScrollTop;
+          const newProgressLogEl = newDetailEl.querySelector("details[data-progress-log] > div");
+          if (newProgressLogEl) newProgressLogEl.scrollTop = progressLogScrollTop;
         }
       }
 
@@ -7257,6 +7343,10 @@
             : 1;
 
         let html = "";
+
+        if (runErrorDetail(data)) {
+          html += buildRunErrorBlock(data, false);
+        }
 
         // Stats row
         if (totalAttacks > 0) {
@@ -13295,6 +13385,44 @@
         return d.innerHTML;
       }
 
+      function runErrorDetail(data) {
+        return typeof data?.error === "string" ? data.error.trim() : "";
+      }
+
+      function runErrorSummary(data, maxLen) {
+        const detail = runErrorDetail(data);
+        if (!detail) return "";
+        const lines = detail
+          .split(/\r?\n/)
+          .map(function (line) { return line.trim(); })
+          .filter(Boolean);
+        const useful =
+          lines.find(function (line) {
+            return /(ECONN|ENOTFOUND|ETIMEDOUT|EAI_AGAIN|status=|code=|address=|hostname=|url=|CUSTOM_LLM_BASE_URL)/i.test(line);
+          }) || lines[0] || detail;
+        const oneLine = useful.replace(/\s+/g, " ");
+        const limit = maxLen || 180;
+        return oneLine.length > limit ? oneLine.slice(0, limit - 1) + "..." : oneLine;
+      }
+
+      function buildRunErrorBlock(data, compact) {
+        const detail = runErrorDetail(data);
+        if (!detail) return "";
+        const summary = runErrorSummary(data, compact ? 160 : 240) || "Run failed";
+        return (
+          '<div style="margin-top:' +
+          (compact ? "8px" : "0") +
+          ';margin-bottom:12px;padding:12px 14px;border:1px solid var(--red-border);border-left:4px solid var(--red);border-radius:8px;background:var(--red-bg-subtle);color:var(--red);">' +
+          '<div style="font-size:12px;font-weight:700;margin-bottom:6px;">Run failed: ' +
+          esc(summary) +
+          "</div>" +
+          '<pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.5;color:var(--text);font-family:\'JetBrains Mono\',\'SF Mono\',Monaco,Consolas,monospace;">' +
+          esc(detail) +
+          "</pre>" +
+          "</div>"
+        );
+      }
+
       function downloadCsv() {
         if (!currentFile) return;
         const a = document.createElement("a");
@@ -14158,11 +14286,13 @@
             });
             const data = await resp.json();
             if (!resp.ok) {
-              errEl.textContent = data.error || "Failed to start run";
+              errEl.textContent =
+                data.detail || data.error || "Failed to start run";
               return;
             }
             closeNewRunPanel();
             switchTab("runs");
+            showStartedRun(data, configObj);
             pollRun(data.runId);
             refreshActiveRuns();
           } catch (e) {
@@ -14184,6 +14314,32 @@
       let progressLogOpen = false;
       const runDataCache = new Map();
 
+      function showStartedRun(data, configObj) {
+        if (!data || !data.runId) return;
+        const targetUrl =
+          data.targetUrl ||
+          configObj?.target?.baseUrl ||
+          configObj?.target?.url ||
+          "unknown";
+        const startedAt = data.startedAt || new Date().toISOString();
+        const existing = runDataCache.get(data.runId) || {};
+        runDataCache.set(data.runId, {
+          ...existing,
+          runId: data.runId,
+          status: data.status || "queued",
+          startedAt,
+          targetUrl,
+          estimatedTotal: data.estimatedTotal || existing.estimatedTotal,
+          progressTotal: existing.progressTotal || 0,
+          progress: existing.progress || [],
+          config: configObj,
+        });
+        selectedRunId = data.runId;
+        renderSidebarRuns();
+        if (currentTab === "runs") renderRunsTab();
+        if (currentTab === "dashboard") renderDashboardTab();
+      }
+
       function pollRun(runId) {
         if (pollingRuns.has(runId)) return;
         // Don't poll terminal runs
@@ -14193,7 +14349,10 @@
         }
         pollingRuns.add(runId);
 
-        let progressOffset = 0;
+        let progressOffset =
+          typeof existing?.progressTotal === "number"
+            ? existing.progressTotal
+            : existing?.progress?.length || 0;
         const interval = setInterval(async () => {
           try {
             const resp = await fetch(
@@ -14222,23 +14381,10 @@
             runDataCache.set(runId, merged);
 
             renderSidebarRuns();
-            if (selectedRunId === runId) {
-              if (currentTab === "runs") {
-                // Targeted update: only re-render the inline detail panel, not the entire tab
-                const detailEl = document.getElementById("runDetailInline");
-                if (detailEl) {
-                  // Preserve scroll position across re-renders
-                  const scrollTop = detailEl.scrollTop;
-                  const progressLogEl = detailEl.querySelector("details[data-progress-log]");
-                  const progressLogScrollTop = progressLogEl?.querySelector("div")?.scrollTop || 0;
-                  detailEl.innerHTML = buildRunDetailContent(runId, merged);
-                  detailEl.scrollTop = scrollTop;
-                  const newProgressLog = detailEl.querySelector("details[data-progress-log] > div");
-                  if (newProgressLog) newProgressLog.scrollTop = progressLogScrollTop;
-                } else {
-                  renderRunsTab();
-                }
-              } else renderRunMainPanel(runId, merged);
+            if (currentTab === "runs") {
+              renderRunsTabLiveUpdate();
+            } else if (selectedRunId === runId) {
+              renderRunMainPanel(runId, merged);
             }
 
             if (data.status === "done" || data.status === "error" || data.status === "cancelled") {
@@ -14337,11 +14483,12 @@
               minute: "2-digit",
             });
 
+            const sidebarErrorSummary = runErrorSummary(data, 120);
             const progressText =
               data.status === "running" && lastMsg
                 ? `[${lastProgress.phase}] ${lastMsg.slice(0, 50)}`
                 : data.status === "error"
-                  ? (data.error || "Failed").slice(0, 50)
+                  ? sidebarErrorSummary || "Failed"
                   : "Waiting...";
 
             const cancelBtn =
@@ -14357,7 +14504,7 @@
                 ${cancelBtn}
               </div>
               <div class="run-item-target" title="${esc(targetUrl)}">${esc(targetUrl)}</div>
-              <div class="run-item-progress">${esc(progressText)}</div>
+              <div class="run-item-progress" title="${esc(runErrorDetail(data) || progressText)}">${esc(progressText)}</div>
             </div>
           </div>`;
           })
@@ -14550,9 +14697,10 @@
           })
           .join("");
 
-        const errorHtml = data.error
-          ? `<div style="background:rgba(219,39,119,0.1);border:1px solid var(--red);border-radius:8px;padding:12px;margin-bottom:16px;color:var(--red);font-size:13px;">${esc(data.error)}</div>`
-          : "";
+        const errorHtml =
+          runErrorDetail(data)
+            ? buildRunErrorBlock(data, false)
+            : "";
 
         // Active parallel categories indicator
         let parallelHtml = "";
@@ -14811,6 +14959,7 @@
             return;
           }
           switchTab("runs");
+          showStartedRun(started, data.config);
           pollRun(started.runId);
           refreshActiveRuns();
         } catch (err) {
