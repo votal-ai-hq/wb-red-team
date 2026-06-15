@@ -26,6 +26,7 @@ COPY lib/migrations/ ./lib/migrations/
 COPY compliance/ ./compliance/
 COPY config.example.json ./
 COPY examples/ ./examples/
+COPY data/ ./data/
 
 COPY scripts/ ./scripts/
 

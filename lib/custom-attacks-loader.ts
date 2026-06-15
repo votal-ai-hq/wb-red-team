@@ -1,5 +1,5 @@
-import { readFileSync, existsSync } from "node:fs";
-import { extname, resolve } from "node:path";
+import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
+import { basename, extname, join, resolve } from "node:path";
 import { parse } from "csv-parse/sync";
 import {
   isAttackCategory,
@@ -265,26 +265,12 @@ export interface LoadCustomAttacksOptions {
   configDir: string;
 }
 
-/**
- * Load custom attacks from `config.customAttacksFile` (.json or .csv).
- * JSON: array of row objects { prompt, successCriteria, category, severity, description }
- * or full `Attack` objects with `id`, `category`, `payload`.
- */
-export function loadCustomAttacksFromConfig(
+/** Parse a single .json or .csv custom-attacks file into Attack values. */
+function loadAttacksFromFile(
   config: Config,
-  options: LoadCustomAttacksOptions,
+  abs: string,
+  defaultAuth: Attack["authMethod"],
 ): Attack[] {
-  const filePath = config.customAttacksFile?.trim();
-  if (!filePath) return [];
-
-  const abs = resolve(options.configDir, filePath);
-  if (!existsSync(abs)) {
-    throw new Error(`customAttacksFile not found: ${abs}`);
-  }
-
-  const defaultAuth: Attack["authMethod"] =
-    config.customAttacksDefaults?.authMethod ?? "body_role";
-
   const buf = readFileSync(abs, "utf-8");
   const ext = extname(abs).toLowerCase();
 
@@ -310,8 +296,80 @@ export function loadCustomAttacksFromConfig(
   }
 
   throw new Error(
-    `customAttacksFile must end in .json or .csv (got extension "${ext || "(none)"}" for ${abs})`,
+    `customAttacksFile entries must end in .json or .csv (got extension "${ext || "(none)"}" for ${abs})`,
   );
+}
+
+/** List top-level .json/.csv pack files in a directory (sorted, stable order). */
+function listPackFiles(dir: string): string[] {
+  return readdirSync(dir)
+    .filter((n) => /\.(json|csv)$/i.test(n))
+    .sort()
+    .map((n) => join(dir, n));
+}
+
+/**
+ * Load custom attacks from `config.customAttacksFile`.
+ *
+ * The value is a comma-separated list of paths; each path may be:
+ *  - a `.json` file (row objects or full `Attack` objects), or
+ *  - a `.csv` file, or
+ *  - a directory (loads every top-level `.json`/`.csv` pack inside it).
+ *
+ * Attacks from all sources are concatenated and deduped by `id` (last wins),
+ * so an attack present in two packs fires once. A single file path (the common
+ * case) behaves exactly as before.
+ */
+export function loadCustomAttacksFromConfig(
+  config: Config,
+  options: LoadCustomAttacksOptions,
+): Attack[] {
+  const raw = config.customAttacksFile?.trim();
+  if (!raw) return [];
+
+  const entries = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (entries.length === 0) return [];
+
+  const defaultAuth: Attack["authMethod"] =
+    config.customAttacksDefaults?.authMethod ?? "body_role";
+
+  const collected: Attack[] = [];
+  for (const entry of entries) {
+    const abs = resolve(options.configDir, entry);
+    if (!existsSync(abs)) {
+      throw new Error(`customAttacksFile not found: ${abs}`);
+    }
+    const files = statSync(abs).isDirectory() ? listPackFiles(abs) : [abs];
+    if (files.length === 0) {
+      console.warn(`  [custom attacks] no .json/.csv packs found in ${abs}`);
+      continue;
+    }
+    for (const file of files) {
+      const attacks = loadAttacksFromFile(config, file, defaultAuth);
+      // Namespace auto-generated ids by source file so id-less rows in
+      // different packs don't collide (and get wrongly deduped).
+      const base = basename(file).replace(/\.(json|csv)$/i, "");
+      for (const a of attacks) {
+        if (/^custom-file-\d+$/.test(a.id)) a.id = `${base}-${a.id}`;
+        collected.push(a);
+      }
+    }
+  }
+
+  // Dedupe by id (last wins).
+  const byId = new Map<string, Attack>();
+  for (const a of collected) byId.set(a.id, a);
+  const deduped = [...byId.values()];
+  const removed = collected.length - deduped.length;
+  if (removed > 0) {
+    console.warn(
+      `  [custom attacks] removed ${removed} duplicate id(s) across sources`,
+    );
+  }
+  return deduped;
 }
 /**
  * Round 1 merge: prepends `custom` (file + app-tailored) before `planned` when `custom` is non-empty.

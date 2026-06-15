@@ -294,8 +294,14 @@ export async function analyzeResponse(
     statusCode >= 400 &&
     hasStructuredErrorBody &&
     authErrorPatterns.some((p) => p.test(bodyStr));
+  const isTargetNotFound =
+    statusCode === 404 &&
+    hasStructuredErrorBody &&
+    /(?:application|app|endpoint|route|model|page|resource).{0,40}not found|not found.{0,40}(?:application|app|endpoint|route|model|page|resource)/i.test(
+      bodyStr,
+    );
 
-  if (isInfraError || hasAuthError) {
+  if (isInfraError || hasAuthError || isTargetNotFound) {
     verdict = "ERROR";
     if (
       statusCode === 401 ||
@@ -312,6 +318,10 @@ export async function analyzeResponse(
           ? ` (${(body as any).error})`
           : "";
       findings.push(`Connection failed — target unreachable${errorDetail}`);
+    } else if (isTargetNotFound) {
+      findings.push(
+        `Target endpoint not found (${statusCode}) — attack did not reach the AI agent`,
+      );
     } else {
       findings.push(
         `Infrastructure error (${statusCode}) — attack did not reach the AI agent`,

@@ -348,6 +348,64 @@ export async function preAuthenticate(config: Config): Promise<void> {
   }
 }
 
+function chooseProbeAuth(config: Config): Pick<Attack, "authMethod" | "role"> {
+  if (config.auth.methods.includes("jwt")) {
+    return {
+      authMethod: "jwt",
+      role: config.auth.credentials[0]?.role || "viewer",
+    };
+  }
+  if (config.auth.methods.includes("api_key")) {
+    return {
+      authMethod: "api_key",
+      role: Object.keys(config.auth.apiKeys)[0] || "viewer",
+    };
+  }
+  if (config.auth.methods.includes("body_role")) {
+    return { authMethod: "body_role", role: "viewer" };
+  }
+  return { authMethod: "none", role: "viewer" };
+}
+
+function summarizeProbeBody(body: unknown): string {
+  if (body == null) return "";
+  const text = typeof body === "string" ? body : JSON.stringify(body);
+  return text.replace(/\s+/g, " ").trim().slice(0, 500);
+}
+
+export async function assertTargetAvailable(config: Config): Promise<void> {
+  if (config.target.type === "mcp") return;
+
+  const auth = chooseProbeAuth(config);
+  const probe: Attack = {
+    id: "target-availability-probe",
+    category: "off_topic",
+    name: "Target availability probe",
+    description: "Benign probe used to verify that the configured target endpoint is reachable before scanning.",
+    authMethod: auth.authMethod,
+    role: auth.role,
+    payload: {
+      message: "Hello. Please respond with a short health check acknowledgement.",
+    },
+    expectation: "Target endpoint should be reachable and return a normal 2xx response.",
+    severity: "low",
+    isLlmGenerated: false,
+  };
+
+  const result = await executeAttack(config, probe);
+  if (result.statusCode >= 200 && result.statusCode < 300) return;
+
+  const target = `${config.target.baseUrl ?? ""}${config.target.agentEndpoint ?? ""}`;
+  const body = summarizeProbeBody(result.body);
+  const reason =
+    result.statusCode === 0
+      ? "connection failed"
+      : `HTTP ${result.statusCode}`;
+  throw new Error(
+    `Target LLM application is unavailable (${reason}) at ${target}${body ? ` | response: ${body}` : ""}`,
+  );
+}
+
 async function loginForToken(
   config: Config,
   cred: Credential,
