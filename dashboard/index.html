@@ -13991,42 +13991,16 @@
               label: "Enabled categories",
               type: "tags",
               full: true,
-              examples: [
-                "prompt_injection",
-                "indirect_prompt_injection",
-                "goal_hijack",
-                "sensitive_data",
-                "data_exfiltration",
-                "tool_misuse",
-                "rbac_bypass",
-                "auth_bypass",
-                "output_evasion",
-                "content_filter_bypass",
-                "harmful_advice",
-                "misinformation",
-              ],
+              optionsKey: "categories",
+              help: "Leave empty to scan all categories. Search and click to pick specific ones.",
             },
             {
               path: "attackConfig.enabledStrategies",
               label: "Enabled strategies",
               type: "tags",
               full: true,
-              examples: [
-                "trusted_source_context",
-                "role_consistency_override",
-                "system_prompt_as_authority",
-                "dan_style_persona",
-                "educational_series_framing",
-                "incremental_escalation_setup",
-                "building_on_previous_context",
-                "life_or_death_emergency",
-                "base64_context_hint",
-                "json_format_bypass",
-                "crescendo_multi_turn",
-                "skeleton_key_policy_override",
-                "policy_puppetry",
-                "guardrail_mode_override",
-              ],
+              optionsKey: "strategies",
+              help: "Leave empty to let the run choose strategies. Search and click to pin specific ones.",
             },
           ],
         },
@@ -14171,22 +14145,129 @@
             chips.appendChild(chip);
           });
           tbox.appendChild(chips);
-          var add = _rfEl("input", _rfInputStyle, { type: "text", placeholder: "Type a value and press Enter to add…" });
+
+          function addTag(val) {
+            val = (val || "").trim();
+            if (!val) return;
+            var a = (_rfGet(currentRunConfig, field.path) || []).slice();
+            if (a.indexOf(val) === -1) a.push(val);
+            _rfSet(currentRunConfig, field.path, a);
+            syncJsonFromForm();
+            renderRunForm();
+          }
+
+          // Resolve the canonical option list (loaded from /api/reference)
+          var refOptions = null;
+          if (field.optionsKey === "categories" && Array.isArray(window._refCategories)) {
+            refOptions = window._refCategories.map(function (c) {
+              return { slug: c, name: "" };
+            });
+          } else if (field.optionsKey === "strategies" && Array.isArray(window._refStrategies)) {
+            refOptions = window._refStrategies.map(function (s) {
+              return { slug: s.slug, name: s.name || "", level: s.level || "" };
+            });
+          }
+
+          var add = _rfEl("input", _rfInputStyle, {
+            type: "text",
+            placeholder: refOptions
+              ? "Search " + refOptions.length + " options… (or type a custom value + Enter)"
+              : "Type a value and press Enter to add…",
+          });
           add.addEventListener("keydown", function (ev) {
             if (ev.key === "Enter") {
               ev.preventDefault();
-              var val = add.value.trim();
-              if (!val) return;
-              var a = (_rfGet(currentRunConfig, field.path) || []).slice();
-              a.push(val);
-              _rfSet(currentRunConfig, field.path, a);
-              syncJsonFromForm();
-              renderRunForm();
+              addTag(add.value);
             }
           });
           tbox.appendChild(add);
-          // Suggestion chips for known/example values (click to add)
-          if (Array.isArray(field.examples) && field.examples.length) {
+
+          if (field.optionsKey && refOptions) {
+            // Searchable picker over the full canonical list
+            var selected = Array.isArray(v) ? v : [];
+            var picker = _rfEl(
+              "div",
+              "max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:8px;background:var(--bg);"
+            );
+            function renderPicker(filter) {
+              picker.innerHTML = "";
+              filter = (filter || "").toLowerCase();
+              var sel = _rfGet(currentRunConfig, field.path) || [];
+              var avail = refOptions.filter(function (o) {
+                if (sel.indexOf(o.slug) !== -1) return false;
+                if (!filter) return true;
+                return (
+                  o.slug.toLowerCase().indexOf(filter) !== -1 ||
+                  (o.name && o.name.toLowerCase().indexOf(filter) !== -1) ||
+                  (o.level && o.level.toLowerCase().indexOf(filter) !== -1)
+                );
+              });
+              if (!avail.length) {
+                picker.appendChild(
+                  _rfEl("div", "font-size:11px;color:var(--text2);padding:4px;", {
+                    textContent: filter ? "No matches — press Enter to add as custom value" : "All options selected",
+                  })
+                );
+                return;
+              }
+              var CAP = 60;
+              var shown = avail.slice(0, CAP);
+              // Group by level when available (strategies)
+              var groups = {};
+              var order = [];
+              shown.forEach(function (o) {
+                var g = o.level || "";
+                if (!groups[g]) {
+                  groups[g] = [];
+                  order.push(g);
+                }
+                groups[g].push(o);
+              });
+              order.forEach(function (g) {
+                if (g) {
+                  picker.appendChild(
+                    _rfEl("div", "font-size:9px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;", {
+                      textContent: g,
+                    })
+                  );
+                }
+                var row = _rfEl("div", "display:flex;flex-wrap:wrap;gap:6px;");
+                groups[g].forEach(function (o) {
+                  var pill = _rfEl(
+                    "span",
+                    "padding:3px 9px;border-radius:12px;font-size:10px;cursor:pointer;border:1px dashed var(--border);background:var(--surface);color:var(--text2);font-family:'JetBrains Mono',monospace;",
+                    { textContent: "+ " + o.slug, title: o.name || o.slug }
+                  );
+                  pill.addEventListener("mouseover", function () {
+                    pill.style.borderColor = "var(--accent)";
+                    pill.style.color = "var(--accent)";
+                  });
+                  pill.addEventListener("mouseout", function () {
+                    pill.style.borderColor = "var(--border)";
+                    pill.style.color = "var(--text2)";
+                  });
+                  pill.addEventListener("click", function () {
+                    addTag(o.slug);
+                  });
+                  row.appendChild(pill);
+                });
+                picker.appendChild(row);
+              });
+              if (avail.length > CAP) {
+                picker.appendChild(
+                  _rfEl("div", "font-size:10px;color:var(--text2);padding:2px;", {
+                    textContent: avail.length - CAP + " more — refine your search to narrow down",
+                  })
+                );
+              }
+            }
+            add.addEventListener("input", function () {
+              renderPicker(add.value);
+            });
+            renderPicker("");
+            tbox.appendChild(picker);
+          } else if (Array.isArray(field.examples) && field.examples.length) {
+            // Static example chips for free-text fields (click to add)
             var already = Array.isArray(v) ? v : [];
             var suggestions = field.examples.filter(function (s) {
               return already.indexOf(s) === -1;
@@ -14205,11 +14286,7 @@
                   { textContent: "+ " + s }
                 );
                 sc.addEventListener("click", function () {
-                  var a = (_rfGet(currentRunConfig, field.path) || []).slice();
-                  if (a.indexOf(s) === -1) a.push(s);
-                  _rfSet(currentRunConfig, field.path, a);
-                  syncJsonFromForm();
-                  renderRunForm();
+                  addTag(s);
                 });
                 sbox.appendChild(sc);
               });
@@ -14358,6 +14435,13 @@
                 })
               );
               cell.appendChild(_rfBuildControl(field));
+              if (field.help) {
+                cell.appendChild(
+                  _rfEl("div", "font-size:10px;color:var(--text2);margin-top:5px;line-height:1.4;", {
+                    textContent: field.help,
+                  })
+                );
+              }
               body.appendChild(cell);
             });
             card.appendChild(body);
@@ -14425,7 +14509,15 @@
           var compMap = ref.categoryCompliance || {};
           var allFrameworks = ref.frameworks || [];
           window._refCategories = ref.categories;
+          window._refStrategies = ref.strategies || [];
           window._compMap = compMap;
+          // Re-render the New Scan form so the category/strategy pickers
+          // populate with the full canonical list now that it's loaded.
+          if (typeof renderRunForm === "function") {
+            try {
+              renderRunForm();
+            } catch (e) {}
+          }
 
           // Build framework filter buttons
           var filterEl = document.getElementById("refFrameworkFilter");
