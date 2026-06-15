@@ -13960,7 +13960,13 @@
           icon: "🕵️",
           collapsed: true,
           fields: [
-            { path: "sensitivePatterns", label: "Patterns the scan should treat as leaks", type: "tags", full: true },
+            {
+              path: "sensitivePatterns",
+              label: "Patterns the scan should treat as leaks",
+              type: "tags",
+              full: true,
+              examples: ["sk-proj-", "sk_live_", "AKIA", "xoxb-", "SG.", "password", "secret", "token", "credentials", "ssn"],
+            },
           ],
         },
         {
@@ -13980,8 +13986,48 @@
             { path: "attackConfig.enableMultiTurnGeneration", label: "Enable multi-turn generation", type: "toggle" },
             { path: "attackConfig.enableAdaptiveMultiTurn", label: "Enable adaptive multi-turn", type: "toggle" },
             { path: "attackConfig.requireReviewConfirmation", label: "Require review confirmation", type: "toggle" },
-            { path: "attackConfig.enabledCategories", label: "Enabled categories", type: "tags", full: true },
-            { path: "attackConfig.enabledStrategies", label: "Enabled strategies", type: "tags", full: true },
+            {
+              path: "attackConfig.enabledCategories",
+              label: "Enabled categories",
+              type: "tags",
+              full: true,
+              examples: [
+                "prompt_injection",
+                "indirect_prompt_injection",
+                "goal_hijack",
+                "sensitive_data",
+                "data_exfiltration",
+                "tool_misuse",
+                "rbac_bypass",
+                "auth_bypass",
+                "output_evasion",
+                "content_filter_bypass",
+                "harmful_advice",
+                "misinformation",
+              ],
+            },
+            {
+              path: "attackConfig.enabledStrategies",
+              label: "Enabled strategies",
+              type: "tags",
+              full: true,
+              examples: [
+                "trusted_source_context",
+                "role_consistency_override",
+                "system_prompt_as_authority",
+                "dan_style_persona",
+                "educational_series_framing",
+                "incremental_escalation_setup",
+                "building_on_previous_context",
+                "life_or_death_emergency",
+                "base64_context_hint",
+                "json_format_bypass",
+                "crescendo_multi_turn",
+                "skeleton_key_policy_override",
+                "policy_puppetry",
+                "guardrail_mode_override",
+              ],
+            },
           ],
         },
       ];
@@ -14139,6 +14185,37 @@
             }
           });
           tbox.appendChild(add);
+          // Suggestion chips for known/example values (click to add)
+          if (Array.isArray(field.examples) && field.examples.length) {
+            var already = Array.isArray(v) ? v : [];
+            var suggestions = field.examples.filter(function (s) {
+              return already.indexOf(s) === -1;
+            });
+            if (suggestions.length) {
+              tbox.appendChild(
+                _rfEl("div", "font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;", {
+                  textContent: "Examples — click to add",
+                })
+              );
+              var sbox = _rfEl("div", "display:flex;flex-wrap:wrap;gap:6px;");
+              suggestions.forEach(function (s) {
+                var sc = _rfEl(
+                  "span",
+                  "padding:3px 9px;border-radius:12px;font-size:10px;cursor:pointer;border:1px dashed var(--border);background:var(--surface);color:var(--text2);font-family:'JetBrains Mono',monospace;",
+                  { textContent: "+ " + s }
+                );
+                sc.addEventListener("click", function () {
+                  var a = (_rfGet(currentRunConfig, field.path) || []).slice();
+                  if (a.indexOf(s) === -1) a.push(s);
+                  _rfSet(currentRunConfig, field.path, a);
+                  syncJsonFromForm();
+                  renderRunForm();
+                });
+                sbox.appendChild(sc);
+              });
+              tbox.appendChild(sbox);
+            }
+          }
           return tbox;
         }
 
