@@ -5254,64 +5254,74 @@
                   padding: 24px;
                 "
               >
-                <div style="max-width: 1000px; margin: 0 auto">
-                  <!-- Two-column layout: Left = Templates, Right = Config -->
-                  <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start;">
-
-                    <!-- LEFT: Template Chooser -->
-                    <div style="flex: 0 0 280px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
-                      <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">Choose a Template</div>
-                      <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <div onclick="loadConfigTemplate('openai-compatible')" class="tpl-card" id="tpl-openai-compatible" style="background: rgba(37,99,235,0.08); border: 1px solid var(--accent); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); display: flex; align-items: center; gap: 12px;">
-                          <span style="font-size: 22px; flex-shrink:0;">🤖</span>
-                          <div>
-                            <div style="font-size: 12px; font-weight: 600; color: var(--accent);">OpenAI</div>
-                            <div style="font-size: 10px; color: var(--text2); margin-top: 2px;">LiteLLM, vLLM, Ollama</div>
-                          </div>
+                <div style="max-width: 1320px; margin: 0 auto">
+                  <!-- Template chooser row -->
+                  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 16px;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">Choose a Template</div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px;">
+                      <div onclick="loadConfigTemplate('openai-compatible')" class="tpl-card" id="tpl-openai-compatible" style="background: rgba(37,99,235,0.08); border: 1px solid var(--accent); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 22px; flex-shrink:0;">🤖</span>
+                        <div>
+                          <div style="font-size: 12px; font-weight: 600; color: var(--accent);">OpenAI</div>
+                          <div style="font-size: 10px; color: var(--text2); margin-top: 2px;">LiteLLM, vLLM, Ollama</div>
                         </div>
-                        <div onclick="loadConfigTemplate('custom-agent')" class="tpl-card" id="tpl-custom-agent" style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); display: flex; align-items: center; gap: 12px;">
-                          <span style="font-size: 22px; flex-shrink:0;">🛡️</span>
-                          <div>
-                            <div style="font-size: 12px; font-weight: 600; color: var(--text);">Custom Agent</div>
-                            <div style="font-size: 10px; color: var(--text2); margin-top: 2px;">Auth, roles, tools</div>
-                          </div>
+                      </div>
+                      <div onclick="loadConfigTemplate('custom-agent')" class="tpl-card" id="tpl-custom-agent" style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 22px; flex-shrink:0;">🛡️</span>
+                        <div>
+                          <div style="font-size: 12px; font-weight: 600; color: var(--text);">Custom Agent</div>
+                          <div style="font-size: 10px; color: var(--text2); margin-top: 2px;">Auth, roles, tools</div>
                         </div>
-                        <div onclick="loadConfigTemplate('full')" class="tpl-card" id="tpl-full" style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); display: flex; align-items: center; gap: 12px;">
-                          <span style="font-size: 22px; flex-shrink:0;">⚙️</span>
-                          <div>
-                            <div style="font-size: 12px; font-weight: 600; color: var(--text);">Full Config</div>
-                            <div style="font-size: 10px; color: var(--text2); margin-top: 2px;">All options</div>
-                          </div>
+                      </div>
+                      <div onclick="loadConfigTemplate('full')" class="tpl-card" id="tpl-full" style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 22px; flex-shrink:0;">⚙️</span>
+                        <div>
+                          <div style="font-size: 12px; font-weight: 600; color: var(--text);">Full Config</div>
+                          <div style="font-size: 10px; color: var(--text2); margin-top: 2px;">All options</div>
                         </div>
-                        <div onclick="loadConfigTemplate('quick')" class="tpl-card" id="tpl-quick" style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); display: flex; align-items: center; gap: 12px;">
-                          <span style="font-size: 22px; flex-shrink:0;">⚡</span>
-                          <div>
-                            <div style="font-size: 12px; font-weight: 600; color: var(--text);">Quick Test</div>
-                            <div style="font-size: 10px; color: var(--text2); margin-top: 2px;">Demo agentic app</div>
-                          </div>
+                      </div>
+                      <div onclick="loadConfigTemplate('quick')" class="tpl-card" id="tpl-quick" style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 22px; flex-shrink:0;">⚡</span>
+                        <div>
+                          <div style="font-size: 12px; font-weight: 600; color: var(--text);">Quick Test</div>
+                          <div style="font-size: 10px; color: var(--text2); margin-top: 2px;">Demo agentic app</div>
                         </div>
-                        <div onclick="loadConfigTemplate('mcp')" class="tpl-card" id="tpl-mcp" style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); display: flex; align-items: center; gap: 12px;">
-                          <span style="font-size: 22px; flex-shrink:0;">🔌</span>
-                          <div>
-                            <div style="font-size: 12px; font-weight: 600; color: var(--text);">MCP Server</div>
-                            <div style="font-size: 10px; color: var(--text2); margin-top: 2px;">stdio, SSE, HTTP</div>
-                          </div>
+                      </div>
+                      <div onclick="loadConfigTemplate('mcp')" class="tpl-card" id="tpl-mcp" style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 22px; flex-shrink:0;">🔌</span>
+                        <div>
+                          <div style="font-size: 12px; font-weight: 600; color: var(--text);">MCP Server</div>
+                          <div style="font-size: 10px; color: var(--text2); margin-top: 2px;">stdio, SSE, HTTP</div>
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    <!-- RIGHT: Config Editor -->
-                    <div style="flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
-                      <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <!-- Two-column layout: Left = Form, Right = Live JSON -->
+                  <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start;">
+
+                    <!-- LEFT: Form builder -->
+                    <div style="flex: 1 1 0; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                         <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px;">Configuration</div>
-                        <div style="font-size: 10px; color: var(--text2);">Edit <span style="color:var(--accent)">baseUrl</span> and <span style="color:var(--accent)">applicationDetails</span></div>
+                        <div style="font-size: 10px; color: var(--text2);">Fill the fields — the JSON updates live →</div>
+                      </div>
+                      <div id="runFormFields"></div>
+                    </div>
+
+                    <!-- RIGHT: Live JSON (generated from the form, editable) -->
+                    <div style="flex: 1 1 0; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 16px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px;">Generated JSON</div>
+                        <span id="runJsonStatus" style="font-size: 10px; color: var(--green); font-weight: 600;">● in sync</span>
                       </div>
                       <textarea
                         id="runConfigEditor"
                         spellcheck="false"
+                        title="Edit the JSON directly — the form re-syncs when you click away"
                         style="
                           width: 100%;
-                          height: 520px;
+                          height: 600px;
                           background: var(--bg);
                           color: var(--text);
                           border: 1px solid var(--border);
@@ -13838,33 +13848,495 @@
         },
       };
 
+      // ───────────────────────────────────────────────────────────
+      // New Scan — schema-driven form (left) ↔ live JSON (right)
+      // ───────────────────────────────────────────────────────────
+      const runConfigEditor = document.getElementById("runConfigEditor");
+      let currentRunConfig = {};
+
+      function _rfClone(o) {
+        return JSON.parse(JSON.stringify(o));
+      }
+      function _rfGet(obj, path) {
+        return path.split(".").reduce(function (o, k) {
+          return o == null ? undefined : o[k];
+        }, obj);
+      }
+      function _rfSet(obj, path, val) {
+        var keys = path.split(".");
+        var o = obj;
+        for (var i = 0; i < keys.length - 1; i++) {
+          if (o[keys[i]] == null || typeof o[keys[i]] !== "object")
+            o[keys[i]] = {};
+          o = o[keys[i]];
+        }
+        o[keys[keys.length - 1]] = val;
+      }
+      function _rfDel(obj, path) {
+        var keys = path.split(".");
+        var o = obj;
+        for (var i = 0; i < keys.length - 1; i++) {
+          if (o[keys[i]] == null) return;
+          o = o[keys[i]];
+        }
+        delete o[keys[keys.length - 1]];
+      }
+      function _rfNotMcp(c) {
+        return _rfGet(c, "target.type") !== "mcp";
+      }
+      function _rfIsMcp(c) {
+        return _rfGet(c, "target.type") === "mcp";
+      }
+      function _rfHasMethod(c, m) {
+        var ms = _rfGet(c, "auth.methods");
+        return Array.isArray(ms) && ms.indexOf(m) !== -1;
+      }
+
+      // Field schema: each section groups labelled fields. Optional fields are
+      // only written to the JSON once the user enters a value, keeping it clean.
+      const RUN_FORM_SCHEMA = [
+        {
+          title: "Target",
+          icon: "🎯",
+          fields: [
+            { path: "target.type", label: "Target type", type: "select", options: ["http_agent", "mcp"], rerender: true },
+            { path: "target.baseUrl", label: "Base URL", type: "text", placeholder: "http://host.docker.internal:4000", cond: _rfNotMcp },
+            { path: "target.agentEndpoint", label: "Agent endpoint", type: "text", placeholder: "/v1/chat/completions", cond: _rfNotMcp },
+            { path: "target.authEndpoint", label: "Auth endpoint (optional)", type: "text", placeholder: "/api/auth/login", cond: _rfNotMcp },
+            { path: "target.mcp.transport", label: "MCP transport", type: "select", options: ["streamable_http", "sse", "stdio"], cond: _rfIsMcp },
+            { path: "target.mcp.url", label: "MCP URL", type: "text", placeholder: "https://your-mcp-server.com/api/mcp", cond: _rfIsMcp },
+            { path: "target.applicationDetails", label: "Application details", type: "textarea", full: true, placeholder: "Describe what your model/agent does, the tools it has, the data it can access, and any safety guidelines." },
+          ],
+        },
+        {
+          title: "Custom API Template",
+          icon: "🔧",
+          cond: _rfNotMcp,
+          collapsed: true,
+          fields: [
+            { path: "target.customApiTemplate.method", label: "HTTP method", type: "select", options: ["POST", "GET", "PUT"] },
+            { path: "target.customApiTemplate.responsePath", label: "Response path", type: "text", placeholder: "choices[0].message.content" },
+            { path: "target.customApiTemplate.bodyTemplate", label: "Body template", type: "textarea", full: true, placeholder: '{"model":"your-model","messages":[{"role":"user","content":"{{message}}"}]}' },
+          ],
+        },
+        {
+          title: "Authentication",
+          icon: "🔐",
+          fields: [
+            { path: "auth.methods", label: "Methods", type: "multiselect", full: true, options: ["none", "jwt", "api_key", "body_role"], rerender: true },
+            { path: "auth.jwtSecret", label: "JWT secret", type: "text", cond: function (c) { return _rfHasMethod(c, "jwt"); } },
+            { path: "auth.apiKeys", label: "API keys (role → key)", type: "keyvalue", full: true, cond: function (c) { return _rfHasMethod(c, "api_key"); } },
+            { path: "auth.credentials", label: "Credentials", type: "credentials", full: true, cond: function (c) { return _rfHasMethod(c, "jwt") || _rfHasMethod(c, "body_role"); } },
+          ],
+        },
+        {
+          title: "Request & Response Schema",
+          icon: "🔁",
+          collapsed: true,
+          fields: [
+            { path: "requestSchema.messageField", label: "Message field", type: "text", placeholder: "message" },
+            { path: "requestSchema.roleField", label: "Role field", type: "text", placeholder: "role" },
+            { path: "requestSchema.apiKeyField", label: "API key field", type: "text", placeholder: "api_key" },
+            { path: "requestSchema.guardrailModeField", label: "Guardrail mode field", type: "text" },
+            { path: "responseSchema.responsePath", label: "Response path", type: "text", placeholder: "response" },
+            { path: "responseSchema.toolCallsPath", label: "Tool calls path", type: "text" },
+            { path: "responseSchema.userInfoPath", label: "User info path", type: "text" },
+            { path: "responseSchema.guardrailsPath", label: "Guardrails path", type: "text" },
+          ],
+        },
+        {
+          title: "Codebase (optional)",
+          icon: "📦",
+          collapsed: true,
+          fields: [
+            { path: "codebasePath", label: "Local path", type: "text", placeholder: "leave blank for none" },
+            { path: "codebaseRepo", label: "Git repo URL", type: "text", placeholder: "https://github.com/org/repo.git" },
+            { path: "codebaseRepoBranch", label: "Branch", type: "text", placeholder: "main" },
+            { path: "codebaseGlob", label: "Glob", type: "text", placeholder: "**/*.ts" },
+          ],
+        },
+        {
+          title: "Sensitive Patterns",
+          icon: "🕵️",
+          collapsed: true,
+          fields: [
+            { path: "sensitivePatterns", label: "Patterns the scan should treat as leaks", type: "tags", full: true },
+          ],
+        },
+        {
+          title: "Attack Configuration",
+          icon: "⚔️",
+          fields: [
+            { path: "attackConfig.llmProvider", label: "LLM provider", type: "text", placeholder: "anthropic" },
+            { path: "attackConfig.llmModel", label: "LLM model", type: "text", placeholder: "claude-sonnet-4-20250514" },
+            { path: "attackConfig.judgeProvider", label: "Judge provider", type: "text", placeholder: "anthropic" },
+            { path: "attackConfig.judgeModel", label: "Judge model", type: "text" },
+            { path: "attackConfig.adaptiveRounds", label: "Adaptive rounds", type: "number" },
+            { path: "attackConfig.maxAttacksPerCategory", label: "Max attacks / category", type: "number" },
+            { path: "attackConfig.concurrency", label: "Concurrency", type: "number" },
+            { path: "attackConfig.delayBetweenRequestsMs", label: "Delay between requests (ms)", type: "number" },
+            { path: "attackConfig.maxAdaptiveTurns", label: "Max adaptive turns", type: "number" },
+            { path: "attackConfig.enableLlmGeneration", label: "Enable LLM generation", type: "toggle" },
+            { path: "attackConfig.enableMultiTurnGeneration", label: "Enable multi-turn generation", type: "toggle" },
+            { path: "attackConfig.enableAdaptiveMultiTurn", label: "Enable adaptive multi-turn", type: "toggle" },
+            { path: "attackConfig.requireReviewConfirmation", label: "Require review confirmation", type: "toggle" },
+            { path: "attackConfig.enabledCategories", label: "Enabled categories", type: "tags", full: true },
+            { path: "attackConfig.enabledStrategies", label: "Enabled strategies", type: "tags", full: true },
+          ],
+        },
+      ];
+
+      const _rfInputStyle =
+        "width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;outline:none;box-sizing:border-box;font-family:inherit;";
+      const runFormCollapsed = new Set();
+      RUN_FORM_SCHEMA.forEach(function (s) {
+        if (s.collapsed) runFormCollapsed.add(s.title);
+      });
+
+      function syncJsonFromForm() {
+        runConfigEditor.value = JSON.stringify(currentRunConfig, null, 2);
+        setRunJsonStatus(true);
+      }
+      function setRunJsonStatus(ok, msg) {
+        var el = document.getElementById("runJsonStatus");
+        if (!el) return;
+        el.textContent = ok ? "● in sync" : "● " + (msg || "invalid JSON");
+        el.style.color = ok ? "var(--green)" : "var(--red)";
+      }
+
+      function _rfEl(tag, style, props) {
+        var e = document.createElement(tag);
+        if (style) e.style.cssText = style;
+        if (props)
+          Object.keys(props).forEach(function (k) {
+            e[k] = props[k];
+          });
+        return e;
+      }
+
+      // Build the control DOM node for a single field
+      function _rfBuildControl(field) {
+        var v = _rfGet(currentRunConfig, field.path);
+        var t = field.type;
+
+        if (t === "text" || t === "number" || t === "textarea") {
+          var input =
+            t === "textarea"
+              ? _rfEl("textarea", _rfInputStyle + "min-height:70px;resize:vertical;line-height:1.5;")
+              : _rfEl("input", _rfInputStyle, { type: t === "number" ? "number" : "text" });
+          input.value = v == null ? "" : v;
+          if (field.placeholder) input.placeholder = field.placeholder;
+          input.addEventListener("focus", function () {
+            input.style.borderColor = "var(--accent)";
+          });
+          input.addEventListener("blur", function () {
+            input.style.borderColor = "var(--border)";
+          });
+          input.addEventListener("input", function () {
+            var val = input.value;
+            if (val === "") _rfDel(currentRunConfig, field.path);
+            else _rfSet(currentRunConfig, field.path, t === "number" ? Number(val) : val);
+            syncJsonFromForm();
+          });
+          return input;
+        }
+
+        if (t === "select") {
+          var sel = _rfEl("select", _rfInputStyle + "cursor:pointer;");
+          field.options.forEach(function (opt) {
+            var o = _rfEl("option", null, { value: opt, textContent: opt });
+            sel.appendChild(o);
+          });
+          if (v != null) sel.value = v;
+          sel.addEventListener("change", function () {
+            _rfSet(currentRunConfig, field.path, sel.value);
+            syncJsonFromForm();
+            if (field.rerender) renderRunForm();
+          });
+          return sel;
+        }
+
+        if (t === "toggle") {
+          var wrap = _rfEl("label", "display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text);");
+          var cb = _rfEl("input", "width:16px;height:16px;cursor:pointer;accent-color:var(--accent);", { type: "checkbox" });
+          cb.checked = !!v;
+          cb.addEventListener("change", function () {
+            _rfSet(currentRunConfig, field.path, cb.checked);
+            syncJsonFromForm();
+          });
+          wrap.appendChild(cb);
+          wrap.appendChild(_rfEl("span", null, { textContent: cb.checked ? "Enabled" : "Disabled" }));
+          cb.addEventListener("change", function () {
+            wrap.lastChild.textContent = cb.checked ? "Enabled" : "Disabled";
+          });
+          return wrap;
+        }
+
+        if (t === "multiselect") {
+          var box = _rfEl("div", "display:flex;flex-wrap:wrap;gap:6px;");
+          var cur = Array.isArray(v) ? v : [];
+          field.options.forEach(function (opt) {
+            var active = cur.indexOf(opt) !== -1;
+            var chip = _rfEl(
+              "span",
+              "padding:5px 12px;border-radius:14px;font-size:11px;cursor:pointer;user-select:none;border:1px solid " +
+                (active ? "var(--accent)" : "var(--border)") +
+                ";background:" +
+                (active ? "var(--accent)" : "var(--surface)") +
+                ";color:" +
+                (active ? "#fff" : "var(--text2)") +
+                ";",
+              { textContent: opt }
+            );
+            chip.addEventListener("click", function () {
+              var arr = (_rfGet(currentRunConfig, field.path) || []).slice();
+              var idx = arr.indexOf(opt);
+              if (idx === -1) arr.push(opt);
+              else arr.splice(idx, 1);
+              _rfSet(currentRunConfig, field.path, arr);
+              syncJsonFromForm();
+              renderRunForm();
+            });
+            box.appendChild(chip);
+          });
+          return box;
+        }
+
+        if (t === "tags") {
+          var tbox = _rfEl("div", "display:flex;flex-direction:column;gap:8px;");
+          var chips = _rfEl("div", "display:flex;flex-wrap:wrap;gap:6px;");
+          var arr = Array.isArray(v) ? v : [];
+          arr.forEach(function (tag, i) {
+            var chip = _rfEl(
+              "span",
+              "display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 10px;border-radius:6px;font-size:11px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;"
+            );
+            chip.appendChild(_rfEl("span", null, { textContent: tag }));
+            var x = _rfEl("span", "cursor:pointer;color:var(--text2);font-weight:700;line-height:1;", { textContent: "×" });
+            x.addEventListener("click", function () {
+              var a = (_rfGet(currentRunConfig, field.path) || []).slice();
+              a.splice(i, 1);
+              if (a.length) _rfSet(currentRunConfig, field.path, a);
+              else _rfDel(currentRunConfig, field.path);
+              syncJsonFromForm();
+              renderRunForm();
+            });
+            chip.appendChild(x);
+            chips.appendChild(chip);
+          });
+          tbox.appendChild(chips);
+          var add = _rfEl("input", _rfInputStyle, { type: "text", placeholder: "Type a value and press Enter to add…" });
+          add.addEventListener("keydown", function (ev) {
+            if (ev.key === "Enter") {
+              ev.preventDefault();
+              var val = add.value.trim();
+              if (!val) return;
+              var a = (_rfGet(currentRunConfig, field.path) || []).slice();
+              a.push(val);
+              _rfSet(currentRunConfig, field.path, a);
+              syncJsonFromForm();
+              renderRunForm();
+            }
+          });
+          tbox.appendChild(add);
+          return tbox;
+        }
+
+        if (t === "keyvalue") {
+          var kvbox = _rfEl("div", "display:flex;flex-direction:column;gap:6px;");
+          var obj = v && typeof v === "object" ? v : {};
+          var rows = _rfEl("div", "display:flex;flex-direction:column;gap:6px;");
+          function gatherKv() {
+            var out = {};
+            rows.querySelectorAll(".rf-kv-row").forEach(function (r) {
+              var k = r.querySelector(".rf-kv-k").value.trim();
+              var vv = r.querySelector(".rf-kv-v").value;
+              if (k) out[k] = vv;
+            });
+            if (Object.keys(out).length) _rfSet(currentRunConfig, field.path, out);
+            else _rfDel(currentRunConfig, field.path);
+            syncJsonFromForm();
+          }
+          function addKvRow(k, vv) {
+            var row = _rfEl("div", "display:flex;gap:6px;align-items:center;", { className: "rf-kv-row" });
+            var ki = _rfEl("input", _rfInputStyle + "flex:1;", { type: "text", placeholder: "role", value: k || "" });
+            ki.className = "rf-kv-k";
+            var vi = _rfEl("input", _rfInputStyle + "flex:2;", { type: "text", placeholder: "key value", value: vv || "" });
+            vi.className = "rf-kv-v";
+            ki.addEventListener("input", gatherKv);
+            vi.addEventListener("input", gatherKv);
+            var del = _rfEl("button", "background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--red);cursor:pointer;padding:6px 10px;font-size:13px;", { type: "button", textContent: "×" });
+            del.addEventListener("click", function () {
+              row.remove();
+              gatherKv();
+            });
+            row.appendChild(ki);
+            row.appendChild(vi);
+            row.appendChild(del);
+            rows.appendChild(row);
+          }
+          Object.keys(obj).forEach(function (k) {
+            addKvRow(k, obj[k]);
+          });
+          kvbox.appendChild(rows);
+          var addBtn = _rfEl("button", "align-self:flex-start;background:var(--bg);border:1px dashed var(--border);border-radius:6px;color:var(--accent);cursor:pointer;padding:6px 12px;font-size:11px;font-weight:600;", { type: "button", textContent: "+ Add key" });
+          addBtn.addEventListener("click", function () {
+            addKvRow("", "");
+          });
+          kvbox.appendChild(addBtn);
+          return kvbox;
+        }
+
+        if (t === "credentials") {
+          var cbox = _rfEl("div", "display:flex;flex-direction:column;gap:6px;");
+          var list = Array.isArray(v) ? v : [];
+          var crows = _rfEl("div", "display:flex;flex-direction:column;gap:6px;");
+          function gatherCreds() {
+            var out = [];
+            crows.querySelectorAll(".rf-cred-row").forEach(function (r) {
+              var email = r.querySelector(".rf-cred-email").value.trim();
+              var pw = r.querySelector(".rf-cred-pw").value;
+              var role = r.querySelector(".rf-cred-role").value.trim();
+              if (email || pw || role) out.push({ email: email, password: pw, role: role });
+            });
+            if (out.length) _rfSet(currentRunConfig, field.path, out);
+            else _rfDel(currentRunConfig, field.path);
+            syncJsonFromForm();
+          }
+          function addCredRow(c) {
+            c = c || {};
+            var row = _rfEl("div", "display:flex;gap:6px;align-items:center;", { className: "rf-cred-row" });
+            var em = _rfEl("input", _rfInputStyle + "flex:2;", { type: "text", placeholder: "email", value: c.email || "" });
+            em.className = "rf-cred-email";
+            var pw = _rfEl("input", _rfInputStyle + "flex:2;", { type: "text", placeholder: "password", value: c.password || "" });
+            pw.className = "rf-cred-pw";
+            var ro = _rfEl("input", _rfInputStyle + "flex:1;", { type: "text", placeholder: "role", value: c.role || "" });
+            ro.className = "rf-cred-role";
+            [em, pw, ro].forEach(function (i) {
+              i.addEventListener("input", gatherCreds);
+            });
+            var del = _rfEl("button", "background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--red);cursor:pointer;padding:6px 10px;font-size:13px;", { type: "button", textContent: "×" });
+            del.addEventListener("click", function () {
+              row.remove();
+              gatherCreds();
+            });
+            row.appendChild(em);
+            row.appendChild(pw);
+            row.appendChild(ro);
+            row.appendChild(del);
+            crows.appendChild(row);
+          }
+          list.forEach(addCredRow);
+          cbox.appendChild(crows);
+          var addCred = _rfEl("button", "align-self:flex-start;background:var(--bg);border:1px dashed var(--border);border-radius:6px;color:var(--accent);cursor:pointer;padding:6px 12px;font-size:11px;font-weight:600;", { type: "button", textContent: "+ Add credential" });
+          addCred.addEventListener("click", function () {
+            addCredRow({});
+          });
+          cbox.appendChild(addCred);
+          return cbox;
+        }
+
+        return _rfEl("div", null, { textContent: String(v) });
+      }
+
+      function renderRunForm() {
+        var host = document.getElementById("runFormFields");
+        if (!host) return;
+        host.innerHTML = "";
+
+        RUN_FORM_SCHEMA.forEach(function (section) {
+          if (section.cond && !section.cond(currentRunConfig)) return;
+          var visibleFields = section.fields.filter(function (f) {
+            return !f.cond || f.cond(currentRunConfig);
+          });
+          if (!visibleFields.length) return;
+
+          var card = _rfEl("div", "border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;");
+          var collapsed = runFormCollapsed.has(section.title);
+
+          var header = _rfEl(
+            "div",
+            "display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;background:var(--bg);user-select:none;"
+          );
+          header.appendChild(
+            _rfEl("div", "font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;", {
+              textContent: (section.icon ? section.icon + "  " : "") + section.title,
+            })
+          );
+          header.appendChild(_rfEl("span", "font-size:12px;color:var(--text2);", { textContent: collapsed ? "▸" : "▾" }));
+          header.addEventListener("click", function () {
+            if (runFormCollapsed.has(section.title)) runFormCollapsed.delete(section.title);
+            else runFormCollapsed.add(section.title);
+            renderRunForm();
+          });
+          card.appendChild(header);
+
+          if (!collapsed) {
+            var body = _rfEl("div", "padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;");
+            visibleFields.forEach(function (field) {
+              var cell = _rfEl("div", field.full ? "grid-column:1/-1;" : "");
+              cell.appendChild(
+                _rfEl("label", "display:block;font-size:10px;font-weight:600;color:var(--text2);margin-bottom:5px;", {
+                  textContent: field.label,
+                })
+              );
+              cell.appendChild(_rfBuildControl(field));
+              body.appendChild(cell);
+            });
+            card.appendChild(body);
+          }
+          host.appendChild(card);
+        });
+      }
+
       function loadConfigTemplate(name) {
         var tpl = configTemplates[name];
         if (tpl) {
-          document.getElementById("runConfigEditor").value = JSON.stringify(
-            tpl,
-            null,
-            2,
-          );
+          currentRunConfig = _rfClone(tpl);
+          renderRunForm();
+          syncJsonFromForm();
         }
         // Highlight selected template card
         document.querySelectorAll(".tpl-card").forEach(function (el) {
           var isSelected = el.id === "tpl-" + name;
           el.style.background = isSelected ? "rgba(37,99,235,0.08)" : "var(--bg)";
           el.style.borderColor = isSelected ? "var(--accent)" : "var(--border)";
-          el.style.transform = isSelected ? "translateX(4px)" : "translateX(0)";
           el.style.boxShadow = isSelected ? "0 0 14px rgba(37,99,235,0.2)" : "none";
           var nameEl = el.querySelector("div > div:first-child");
           if (nameEl) nameEl.style.color = isSelected ? "var(--accent)" : "var(--text)";
         });
       }
 
-      const runConfigEditor = document.getElementById("runConfigEditor");
-      runConfigEditor.value = JSON.stringify(
-        configTemplates["openai-compatible"],
-        null,
-        2,
-      );
+      // Load an arbitrary config object into both the form and the JSON view
+      // (used by the "rerun" and "seed from report" flows).
+      function setRunConfigFromObject(obj) {
+        currentRunConfig = obj && typeof obj === "object" ? _rfClone(obj) : {};
+        renderRunForm();
+        syncJsonFromForm();
+      }
+
+      // Editing the JSON directly re-syncs the form when focus leaves the box.
+      runConfigEditor.addEventListener("input", function () {
+        try {
+          JSON.parse(runConfigEditor.value);
+          setRunJsonStatus(true);
+        } catch (e) {
+          setRunJsonStatus(false, "invalid JSON");
+        }
+      });
+      runConfigEditor.addEventListener("blur", function () {
+        try {
+          currentRunConfig = JSON.parse(runConfigEditor.value);
+          renderRunForm();
+          setRunJsonStatus(true);
+        } catch (e) {
+          setRunJsonStatus(false, "invalid JSON — not synced to form");
+        }
+      });
+
+      currentRunConfig = _rfClone(configTemplates["openai-compatible"]);
+      renderRunForm();
+      runConfigEditor.value = JSON.stringify(currentRunConfig, null, 2);
 
       // Load categories and strategies from API
       (async function loadReference() {
@@ -14782,8 +15254,7 @@
           }
           // Open the New Scan tab with the config prefilled (inline, no popup)
           switchTab("newscan");
-          const editor = document.getElementById("runConfigEditor");
-          editor.value = JSON.stringify(data.config, null, 2);
+          setRunConfigFromObject(data.config);
         } catch (err) {
           await uiAlert(
             "Failed to load run config: " +
@@ -15050,7 +15521,7 @@
               const cfg = JSON.parse(editor.value || "{}");
               if (cfg && cfg.target) {
                 cfg.target.baseUrl = targetUrl;
-                editor.value = JSON.stringify(cfg, null, 2);
+                setRunConfigFromObject(cfg);
               }
             }
           } catch (e) {}
