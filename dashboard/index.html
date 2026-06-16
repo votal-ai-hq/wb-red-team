@@ -498,6 +498,19 @@
         box-shadow: 0 0 20px rgba(37,99,235,0.1);
         transform: translateY(-2px);
       }
+      /* Row-style scan cards (Runs list): keep the border/shadow hover cue but
+         drop the vertical lift. The lift shifts the row and its action buttons
+         on every hover, which feels out of place on a dense list and makes the
+         buttons a moving target. */
+      .c-card-flush.is-row:hover {
+        transform: none;
+      }
+      /* Action buttons inside a scan-card row (Rescan / Edit & Rerun / Delete /
+         Cancel): keep the colour + shadow hover feedback but drop the lift, so
+         the click target never shifts out from under the cursor. */
+      .c-card-flush.is-row .c-btn:hover {
+        transform: none;
+      }
       .c-card-bg {
         background: var(--bg);
         border: 1px solid var(--border);
@@ -7097,7 +7110,7 @@
             const isSelected = selectedRunId === runId;
 
             html +=
-              '<div class="c-card-flush" style="border-color:' +
+              '<div class="c-card-flush is-row" style="border-color:' +
               (isSelected ? "var(--accent)" : "var(--border)") +
               ';">' +
               // Header (clickable)
@@ -7163,11 +7176,34 @@
                 return p.result.verdict === "ERROR";
               }).length;
 
-              // Use server-calculated estimate based on config (categories × maxAttacks × rounds + seeds)
-              var estimatedTotal =
-                data.estimatedTotal || Math.max(totalResults + 10, 50);
+              // Denominator: prefer the runner's REAL planned counts over the
+              // rough pre-run estimate. Each round emits its actual planned
+              // attack count (`totalAttacks`, keyed by `round`); summing the
+              // rounds seen so far is accurate and — unlike scaling the config
+              // by adaptiveRounds — never over-counts rounds that finish early.
+              // Fall back to the config estimate only until the first plan lands.
+              var plannedByRound = {};
+              (data.progress || []).forEach(function (p) {
+                if (typeof p.totalAttacks === "number" && p.round != null) {
+                  plannedByRound[p.round] = p.totalAttacks;
+                }
+              });
+              var plannedSoFar = Object.keys(plannedByRound).reduce(function (
+                s,
+                k,
+              ) {
+                return s + plannedByRound[k];
+              }, 0);
+              var hasPlan = plannedSoFar > 0;
+              var estimatedTotal = hasPlan
+                ? plannedSoFar
+                : data.estimatedTotal || Math.max(totalResults + 10, 50);
+              // Adaptive/refinement attacks can still run beyond the plan — grow
+              // the denominator with the live count so the bar is always sane
+              // (never the "52 / 36" paradox), and the count never exceeds it.
+              var denom = Math.max(estimatedTotal, totalResults, 1);
               var pct = Math.min(
-                Math.round((totalResults / estimatedTotal) * 100),
+                Math.round((totalResults / denom) * 100),
                 data.status === "done" ? 100 : 95,
               );
               if (data.status === "queued") pct = 0;
@@ -7178,8 +7214,9 @@
                 '<div class="u-text-sm u-text-muted">' +
                 (totalResults > 0
                   ? totalResults +
-                    " / ~" +
-                    estimatedTotal +
+                    " of " +
+                    (hasPlan ? "" : "~") +
+                    denom +
                     " attacks (" +
                     pct +
                     "%)"
@@ -7281,6 +7318,19 @@
 
       function renderRunsTabLiveUpdate() {
         if (currentTab !== "runs") return;
+
+        // While a run is active the poll loop calls this every tick, and
+        // renderRunsTab() rebuilds the whole panel via innerHTML — which
+        // destroys and recreates every action button. A click that lands in
+        // that window is silently dropped ("Edit/Rescan/Rerun intermittently
+        // fail"). If the pointer is currently on (or a button has focus in)
+        // the runs list, skip this rebuild so the DOM stays stable through the
+        // click; the next poll tick re-renders once the user moves away.
+        const runsPanel = document.getElementById("runsPanel");
+        if (runsPanel && runsPanel.querySelector(".c-btn:hover, .c-btn:focus")) {
+          return;
+        }
+
         const appScrollTop = app ? app.scrollTop : 0;
         const detailEl = document.getElementById("runDetailInline");
         const detailScrollTop = detailEl ? detailEl.scrollTop : 0;
@@ -7308,9 +7358,105 @@
           const st = cached?.status;
           if (st === "running" || st === "queued") {
             pollRun(runId);
+          } else {
+            // Finished run: live progress isn't persisted client-side, so the
+            // per-attack table would be empty after a reload. Lazily hydrate it
+            // from the saved report.
+            ensureRunResultsLoaded(runId);
           }
         }
         renderRunsTab();
+      }
+
+      // Map a saved-report AttackResult into the flattened "live result" shape
+      // the Run screen renders (mirrors emitResult() in lib/run.ts), so a
+      // finished run's per-attack table can be rebuilt from its report.
+      function reportResultToLiveResult(r) {
+        if (!r) return null;
+        const a = r.attack || {};
+        const payload =
+          a.payload && typeof a.payload.message === "string"
+            ? a.payload.message
+            : JSON.stringify(a.payload);
+        const rb = r.responseBody;
+        let responsePreview = "";
+        if (typeof rb === "string") responsePreview = rb.slice(0, 2000);
+        else if (rb)
+          responsePreview =
+            typeof rb.response === "string"
+              ? rb.response.slice(0, 2000)
+              : JSON.stringify(rb).slice(0, 2000);
+        return {
+          category: a.category,
+          name: a.name,
+          description: a.description,
+          severity: a.severity,
+          verdict: r.verdict,
+          findings: r.findings,
+          statusCode: r.statusCode,
+          responseTimeMs: r.responseTimeMs,
+          strategyName: a.strategyName,
+          llmReasoning: r.llmReasoning,
+          llmVerdict: r.llmVerdict,
+          judgeConfidence: r.judgeConfidence,
+          llmEvidenceFor: r.llmEvidenceFor,
+          llmEvidenceAgainst: r.llmEvidenceAgainst,
+          idealResponse: r.idealResponse,
+          payload: payload,
+          responsePreview: responsePreview,
+          authMethod: a.authMethod,
+          role: a.role,
+          conversation: r.conversation,
+        };
+      }
+
+      // For a finished run with no live results cached, fetch its saved report
+      // and synthesize "result" progress events so the detail view's category
+      // breakdown and per-attack table render (instead of being empty after a
+      // page reload). Cached on the run entry so it only fetches once.
+      async function ensureRunResultsLoaded(runId) {
+        const data = runDataCache.get(runId);
+        if (!data || data._reportLoaded || data._reportLoading) return;
+        if (data.status !== "done") return;
+        const hasResults = (data.progress || []).some((p) => p.result);
+        if (hasResults) return;
+
+        let fileName = data.reportFile ? data.reportFile.split("/").pop() : null;
+        if (!fileName) {
+          const meta = reportsMeta.find((m) => m.runId === runId);
+          if (meta) fileName = meta.filename;
+        }
+        if (!fileName) return;
+
+        data._reportLoading = true;
+        try {
+          const res = await fetch("/api/report/" + fileName + "?slim=1");
+          if (!res.ok) {
+            data._reportLoading = false;
+            return;
+          }
+          const report = await res.json();
+          const events = [];
+          (report.rounds || []).forEach((rd) => {
+            (rd.results || []).forEach((rr) => {
+              const lr = reportResultToLiveResult(rr);
+              if (lr) events.push({ phase: "result", round: rd.round, result: lr });
+            });
+          });
+          // Replace any prior (non-result) progress noise with the loaded results
+          data.progress = (data.progress || [])
+            .filter((p) => !p.result)
+            .concat(events);
+          data.progressTotal = data.progress.length;
+          data._reportLoaded = true;
+          data._reportLoading = false;
+          runDataCache.set(runId, data);
+          // Repaint whichever view is showing this run
+          if (currentTab === "runs" && selectedRunId === runId) renderRunsTab();
+          else if (selectedRunId === runId) renderRunMainPanel(runId, data);
+        } catch (e) {
+          data._reportLoading = false;
+        }
       }
 
       function buildRunDetailContent(runId, data) {
@@ -7318,12 +7464,26 @@
         const liveResults = (data.progress || [])
           .filter((p) => p.result)
           .map((p) => p.result);
-        const totalAttacks = liveResults.length;
-        const passed = liveResults.filter((r) => r.verdict === "PASS").length;
-        const failed = liveResults.filter((r) => r.verdict === "FAIL").length;
-        const errors = liveResults.filter((r) => r.verdict === "ERROR").length;
-        const liveScore =
-          totalAttacks > 0
+        // Once the run is done, the report summary is the authoritative count —
+        // use it for the headline stats so the Run screen matches the report and
+        // dashboard (avoids "conflicting" counts like 30 here vs 67 in the
+        // report). While running, fall back to the live tally.
+        const useSummary = data.status === "done" && data.summary;
+        const totalAttacks = useSummary
+          ? data.summary.totalAttacks
+          : liveResults.length;
+        const passed = useSummary
+          ? data.summary.passed
+          : liveResults.filter((r) => r.verdict === "PASS").length;
+        const failed = useSummary
+          ? data.summary.failed
+          : liveResults.filter((r) => r.verdict === "FAIL").length;
+        const errors = useSummary
+          ? data.summary.errors ?? 0
+          : liveResults.filter((r) => r.verdict === "ERROR").length;
+        const liveScore = useSummary
+          ? data.summary.score
+          : totalAttacks > 0
             ? Math.round(((failed + errors) / totalAttacks) * 100)
             : 0;
 
@@ -15065,6 +15225,8 @@
         renderSidebarRuns();
         const data = runDataCache.get(runId);
         if (data) renderRunMainPanel(runId, data);
+        // Finished run with no cached live results → hydrate from saved report.
+        ensureRunResultsLoaded(runId);
       }
 
       function renderSidebarRuns() {
@@ -15189,22 +15351,38 @@
           .filter((p) => p.result)
           .map((p) => p.result);
 
-        // Build live summary stats
-        const totalAttacks = liveResults.length;
-        const passed = liveResults.filter((r) => r.verdict === "PASS").length;
-        const failed = liveResults.filter((r) => r.verdict === "FAIL").length;
-        const partial = liveResults.filter(
-          (r) => r.verdict === "PARTIAL",
-        ).length;
-        const errors = liveResults.filter((r) => r.verdict === "ERROR").length;
-        const liveScore =
-          totalAttacks > 0
+        // Build summary stats. Once done, prefer the report summary (the
+        // authoritative count) so the Run screen agrees with the report and
+        // dashboard; while running, use the live tally.
+        const useSummary = data.status === "done" && data.summary;
+        const totalAttacks = useSummary
+          ? data.summary.totalAttacks
+          : liveResults.length;
+        const passed = useSummary
+          ? data.summary.passed
+          : liveResults.filter((r) => r.verdict === "PASS").length;
+        const failed = useSummary
+          ? data.summary.failed
+          : liveResults.filter((r) => r.verdict === "FAIL").length;
+        const partial = useSummary
+          ? data.summary.partial ?? 0
+          : liveResults.filter((r) => r.verdict === "PARTIAL").length;
+        const errors = useSummary
+          ? data.summary.errors ?? 0
+          : liveResults.filter((r) => r.verdict === "ERROR").length;
+        const liveScore = useSummary
+          ? data.summary.score
+          : totalAttacks > 0
             ? Math.round(((failed + errors) / totalAttacks) * 100)
             : 0;
 
         if ($("#metaScore"))
           $("#metaScore").textContent =
-            totalAttacks > 0 ? `Score: ~${liveScore}/100` : "";
+            totalAttacks > 0
+              ? useSummary
+                ? `Score: ${liveScore}/100`
+                : `Score: ~${liveScore}/100`
+              : "";
 
         // Show download buttons if run completed and has a report file
         if (data.status === "done" && data.reportFile) {

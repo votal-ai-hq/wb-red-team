@@ -156,6 +156,52 @@ interface ReportMeta {
 
 const metaCache = new Map<string, ReportMeta>();
 
+// Cache of fully-serialized report response bodies, keyed by
+// tenant|filename|variant. A stored report is immutable once written, so
+// repeat opens (Run screen, report view, dashboard analytics) can skip the
+// disk read + JSON.parse + normalize + slim-trim + stringify entirely — that
+// chain is what made attack data slow to load on revisits.
+//
+// Memory safety (matters in customer environments):
+//  - Total cache size is capped by BYTES, not entry count, so it can't balloon
+//    regardless of how large individual reports are. Oldest entries are evicted
+//    until the new body fits within the budget.
+//  - Individual reports larger than the per-entry cap are not cached at all —
+//    they're rare, their cold load is already acceptable, and caching them
+//    would let one report dominate the budget.
+const REPORT_BODY_CACHE_MAX_BYTES = 50 * 1024 * 1024; // 50 MB total budget
+const REPORT_BODY_CACHE_MAX_ENTRY_BYTES = 2 * 1024 * 1024; // skip caching reports over 2 MB
+let reportBodyCacheBytes = 0;
+const reportBodyCache = new Map<
+  string,
+  { body: string; bytes: number; id: string | null; source: "db" | "file" }
+>();
+function reportBodyCacheKey(
+  filename: string,
+  slim: boolean,
+  tenantId?: string,
+): string {
+  return `${tenantId ?? "_"}|${filename}|${slim ? "slim" : "full"}`;
+}
+function reportBodyCacheDelete(key: string): void {
+  const entry = reportBodyCache.get(key);
+  if (entry) {
+    reportBodyCacheBytes -= entry.bytes;
+    reportBodyCache.delete(key);
+  }
+}
+function invalidateReportBodyCache(filename?: string): void {
+  if (!filename) {
+    reportBodyCache.clear();
+    reportBodyCacheBytes = 0;
+    return;
+  }
+  for (const key of [...reportBodyCache.keys()]) {
+    // key format: tenant|filename|variant
+    if (key.split("|")[1] === filename) reportBodyCacheDelete(key);
+  }
+}
+
 interface LoadedReportRecord {
   id: string | null;
   report: Record<string, unknown>;
@@ -304,6 +350,58 @@ function normalizeReportSteps(
     }
   }
   return report;
+}
+
+// Max length of any response body sent to the browser for the Run screen.
+// Deliberately matched to what buildLiveResultsHtml actually displays — it caps
+// conversation-step responses at 2000 chars on screen — so trimming here is
+// invisible to the user (they see the same content, just without the multi-KB
+// tail that never rendered anyway). Full bodies remain in the in-memory job and
+// the saved report file, so downloads/Reports are unaffected.
+const RESPONSE_BODY_SLIM_LEN = 2000;
+
+/**
+ * Slim the result payloads on a slice of run progress events for transit to the
+ * browser. The /api/run/:id endpoint streams attack execution details to the
+ * Run screen, and each result carries the full target responseBody plus every
+ * multi-turn conversation step — on a large scan the first (since=0) load is
+ * multiple megabytes, which is what made attack data slow to appear.
+ *
+ * Returns a new array; events whose bodies need trimming are shallow-cloned so
+ * the long-lived job.progress (source of truth for the saved report and full
+ * downloads) is never mutated. Events needing no trim are passed through by
+ * reference (cheap — incremental polls usually carry only a handful of events).
+ */
+function slimProgressForTransit(events: unknown[]): unknown[] {
+  const trim = (s: unknown): string | null =>
+    typeof s === "string" && s.length > RESPONSE_BODY_SLIM_LEN
+      ? s.slice(0, RESPONSE_BODY_SLIM_LEN) + "...[truncated]"
+      : null;
+
+  return events.map((event) => {
+    const p = event as Record<string, unknown>;
+    const result = p.result as Record<string, unknown> | undefined;
+    if (!result) return event;
+
+    const trimmedBody = trim(result.responseBody);
+    const conv = Array.isArray(result.conversation)
+      ? (result.conversation as Record<string, unknown>[])
+      : null;
+    const convNeedsTrim =
+      conv !== null && conv.some((step) => trim(step.responseBody) !== null);
+
+    if (trimmedBody === null && !convNeedsTrim) return event;
+
+    const newResult: Record<string, unknown> = { ...result };
+    if (trimmedBody !== null) newResult.responseBody = trimmedBody;
+    if (convNeedsTrim && conv) {
+      newResult.conversation = conv.map((step) => {
+        const t = trim(step.responseBody);
+        return t === null ? step : { ...step, responseBody: t };
+      });
+    }
+    return { ...p, result: newResult };
+  });
 }
 
 function readBody(req: IncomingMessage): Promise<string> {
@@ -504,6 +602,7 @@ async function startJob(job: Job): Promise<void> {
       job.reportFile = result.jsonPath;
       job.finishedAt = new Date().toISOString();
       metaCache.clear();
+      invalidateReportBodyCache();
       if (isDbConfigured() && job.tenantId) {
         try {
           const storeResult = await storeReport(
@@ -952,7 +1051,7 @@ const server = createServer(
             targetUrl: job.config.target.baseUrl,
             error: job._cancelled ? "Cancelled by user" : job.error,
             progressTotal: job.progress.length,
-            progress: job.progress.slice(since),
+            progress: slimProgressForTransit(job.progress.slice(since)),
             reportFile: job.reportFile,
             summary: job.report?.summary,
             estimatedTotal: job.estimatedTotal,
@@ -1441,6 +1540,7 @@ const server = createServer(
         // Remove the companion markdown report if present
         const mdPath = join(REPORT_DIR, filename.replace(/\.json$/, ".md"));
         if (existsSync(mdPath)) rmSync(mdPath, { force: true });
+        invalidateReportBodyCache(filename);
         if (ctx) {
           await logAudit(ctx, "report.delete", "report", filename, { filename });
         }
@@ -1471,6 +1571,26 @@ const server = createServer(
       const download = url.searchParams.get("download") === "1";
 
       try {
+        const cacheKey = reportBodyCacheKey(filename, slim, ctx?.tenantId);
+        const cached = reportBodyCache.get(cacheKey);
+        if (cached) {
+          if (ctx) {
+            await logAudit(ctx, "report.view", "report", cached.id ?? filename, {
+              filename,
+              source: cached.source,
+            });
+          }
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+          };
+          if (download) {
+            headers["Content-Disposition"] = `attachment; filename="${filename}"`;
+          }
+          res.writeHead(200, headers);
+          res.end(cached.body);
+          return;
+        }
+
         const loaded = await loadReportRecord(filename, ctx?.tenantId);
         if (!loaded) {
           res.writeHead(404);
@@ -1507,12 +1627,37 @@ const server = createServer(
           }
         }
 
+        const body = JSON.stringify(report);
+
+        // Cache the serialized body so revisits skip the whole read/parse/trim
+        // chain. Skip oversized reports entirely, and evict oldest entries until
+        // the new body fits within the total byte budget.
+        const bodyBytes = Buffer.byteLength(body);
+        if (bodyBytes <= REPORT_BODY_CACHE_MAX_ENTRY_BYTES) {
+          reportBodyCacheDelete(cacheKey); // drop any stale copy before re-adding
+          while (
+            reportBodyCache.size > 0 &&
+            reportBodyCacheBytes + bodyBytes > REPORT_BODY_CACHE_MAX_BYTES
+          ) {
+            const oldest = reportBodyCache.keys().next().value;
+            if (oldest === undefined) break;
+            reportBodyCacheDelete(oldest);
+          }
+          reportBodyCache.set(cacheKey, {
+            body,
+            bytes: bodyBytes,
+            id: loaded.id,
+            source: loaded.source,
+          });
+          reportBodyCacheBytes += bodyBytes;
+        }
+
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (download) {
           headers["Content-Disposition"] = `attachment; filename="${filename}"`;
         }
         res.writeHead(200, headers);
-        res.end(JSON.stringify(report));
+        res.end(body);
       } catch (err) {
         console.error(`  Failed to load report ${filename}:`, err);
         res.writeHead(500, { "Content-Type": "application/json" });
