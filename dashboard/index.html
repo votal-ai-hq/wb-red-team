@@ -498,6 +498,13 @@
         box-shadow: 0 0 20px rgba(37,99,235,0.1);
         transform: translateY(-2px);
       }
+      /* Row-style scan cards (Runs list): keep the border/shadow hover cue but
+         drop the vertical lift. The lift shifts the row and its action buttons
+         on every hover, which feels out of place on a dense list and makes the
+         buttons a moving target. */
+      .c-card-flush.is-row:hover {
+        transform: none;
+      }
       .c-card-bg {
         background: var(--bg);
         border: 1px solid var(--border);
@@ -7097,7 +7104,7 @@
             const isSelected = selectedRunId === runId;
 
             html +=
-              '<div class="c-card-flush" style="border-color:' +
+              '<div class="c-card-flush is-row" style="border-color:' +
               (isSelected ? "var(--accent)" : "var(--border)") +
               ';">' +
               // Header (clickable)
