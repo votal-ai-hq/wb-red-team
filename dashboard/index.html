@@ -505,6 +505,12 @@
       .c-card-flush.is-row:hover {
         transform: none;
       }
+      /* Action buttons inside a scan-card row (Rescan / Edit & Rerun / Delete /
+         Cancel): keep the colour + shadow hover feedback but drop the lift, so
+         the click target never shifts out from under the cursor. */
+      .c-card-flush.is-row .c-btn:hover {
+        transform: none;
+      }
       .c-card-bg {
         background: var(--bg);
         border: 1px solid var(--border);
