@@ -352,9 +352,13 @@ function normalizeReportSteps(
   return report;
 }
 
-// Max length of any response body sent to the browser. Full bodies live in the
-// in-memory job and the saved report file; the UI only needs a preview.
-const RESPONSE_BODY_SLIM_LEN = 500;
+// Max length of any response body sent to the browser for the Run screen.
+// Deliberately matched to what buildLiveResultsHtml actually displays — it caps
+// conversation-step responses at 2000 chars on screen — so trimming here is
+// invisible to the user (they see the same content, just without the multi-KB
+// tail that never rendered anyway). Full bodies remain in the in-memory job and
+// the saved report file, so downloads/Reports are unaffected.
+const RESPONSE_BODY_SLIM_LEN = 2000;
 
 /**
  * Slim the result payloads on a slice of run progress events for transit to the
