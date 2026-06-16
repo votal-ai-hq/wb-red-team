@@ -7281,6 +7281,19 @@
 
       function renderRunsTabLiveUpdate() {
         if (currentTab !== "runs") return;
+
+        // While a run is active the poll loop calls this every tick, and
+        // renderRunsTab() rebuilds the whole panel via innerHTML — which
+        // destroys and recreates every action button. A click that lands in
+        // that window is silently dropped ("Edit/Rescan/Rerun intermittently
+        // fail"). If the pointer is currently on (or a button has focus in)
+        // the runs list, skip this rebuild so the DOM stays stable through the
+        // click; the next poll tick re-renders once the user moves away.
+        const runsPanel = document.getElementById("runsPanel");
+        if (runsPanel && runsPanel.querySelector(".c-btn:hover, .c-btn:focus")) {
+          return;
+        }
+
         const appScrollTop = app ? app.scrollTop : 0;
         const detailEl = document.getElementById("runDetailInline");
         const detailScrollTop = detailEl ? detailEl.scrollTop : 0;
