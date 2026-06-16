@@ -7358,9 +7358,105 @@
           const st = cached?.status;
           if (st === "running" || st === "queued") {
             pollRun(runId);
+          } else {
+            // Finished run: live progress isn't persisted client-side, so the
+            // per-attack table would be empty after a reload. Lazily hydrate it
+            // from the saved report.
+            ensureRunResultsLoaded(runId);
           }
         }
         renderRunsTab();
+      }
+
+      // Map a saved-report AttackResult into the flattened "live result" shape
+      // the Run screen renders (mirrors emitResult() in lib/run.ts), so a
+      // finished run's per-attack table can be rebuilt from its report.
+      function reportResultToLiveResult(r) {
+        if (!r) return null;
+        const a = r.attack || {};
+        const payload =
+          a.payload && typeof a.payload.message === "string"
+            ? a.payload.message
+            : JSON.stringify(a.payload);
+        const rb = r.responseBody;
+        let responsePreview = "";
+        if (typeof rb === "string") responsePreview = rb.slice(0, 2000);
+        else if (rb)
+          responsePreview =
+            typeof rb.response === "string"
+              ? rb.response.slice(0, 2000)
+              : JSON.stringify(rb).slice(0, 2000);
+        return {
+          category: a.category,
+          name: a.name,
+          description: a.description,
+          severity: a.severity,
+          verdict: r.verdict,
+          findings: r.findings,
+          statusCode: r.statusCode,
+          responseTimeMs: r.responseTimeMs,
+          strategyName: a.strategyName,
+          llmReasoning: r.llmReasoning,
+          llmVerdict: r.llmVerdict,
+          judgeConfidence: r.judgeConfidence,
+          llmEvidenceFor: r.llmEvidenceFor,
+          llmEvidenceAgainst: r.llmEvidenceAgainst,
+          idealResponse: r.idealResponse,
+          payload: payload,
+          responsePreview: responsePreview,
+          authMethod: a.authMethod,
+          role: a.role,
+          conversation: r.conversation,
+        };
+      }
+
+      // For a finished run with no live results cached, fetch its saved report
+      // and synthesize "result" progress events so the detail view's category
+      // breakdown and per-attack table render (instead of being empty after a
+      // page reload). Cached on the run entry so it only fetches once.
+      async function ensureRunResultsLoaded(runId) {
+        const data = runDataCache.get(runId);
+        if (!data || data._reportLoaded || data._reportLoading) return;
+        if (data.status !== "done") return;
+        const hasResults = (data.progress || []).some((p) => p.result);
+        if (hasResults) return;
+
+        let fileName = data.reportFile ? data.reportFile.split("/").pop() : null;
+        if (!fileName) {
+          const meta = reportsMeta.find((m) => m.runId === runId);
+          if (meta) fileName = meta.filename;
+        }
+        if (!fileName) return;
+
+        data._reportLoading = true;
+        try {
+          const res = await fetch("/api/report/" + fileName + "?slim=1");
+          if (!res.ok) {
+            data._reportLoading = false;
+            return;
+          }
+          const report = await res.json();
+          const events = [];
+          (report.rounds || []).forEach((rd) => {
+            (rd.results || []).forEach((rr) => {
+              const lr = reportResultToLiveResult(rr);
+              if (lr) events.push({ phase: "result", round: rd.round, result: lr });
+            });
+          });
+          // Replace any prior (non-result) progress noise with the loaded results
+          data.progress = (data.progress || [])
+            .filter((p) => !p.result)
+            .concat(events);
+          data.progressTotal = data.progress.length;
+          data._reportLoaded = true;
+          data._reportLoading = false;
+          runDataCache.set(runId, data);
+          // Repaint whichever view is showing this run
+          if (currentTab === "runs" && selectedRunId === runId) renderRunsTab();
+          else if (selectedRunId === runId) renderRunMainPanel(runId, data);
+        } catch (e) {
+          data._reportLoading = false;
+        }
       }
 
       function buildRunDetailContent(runId, data) {
@@ -15129,6 +15225,8 @@
         renderSidebarRuns();
         const data = runDataCache.get(runId);
         if (data) renderRunMainPanel(runId, data);
+        // Finished run with no cached live results → hydrate from saved report.
+        ensureRunResultsLoaded(runId);
       }
 
       function renderSidebarRuns() {
