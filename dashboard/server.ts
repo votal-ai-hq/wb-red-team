@@ -772,6 +772,9 @@ async function startJob(job: Job): Promise<void> {
       activeRuns = Math.max(0, activeRuns - 1);
       drainQueue();
     }
+    // Audit the finished run (start/finish/duration/size) — status & finishedAt
+    // are settled by now. Fire-and-forget; best-effort inside the helper.
+    void logRunComplete(job);
   }
 }
 
@@ -784,6 +787,42 @@ function drainQueue(): void {
     if (nextJob && nextJob.status === "queued") {
       startJob(nextJob);
     }
+  }
+}
+
+// Record a run's lifecycle in the audit log when it finishes: start time,
+// completion time, duration, final status, and how many attacks executed.
+// Audit logging is tenant/DB-scoped, so this is a no-op without an enterprise
+// DB + tenant. Best-effort — never let it disrupt job finalization.
+async function logRunComplete(job: Job): Promise<void> {
+  if (!job.tenantId) return;
+  try {
+    const startedMs = Date.parse(job.startedAt);
+    const finishedMs = job.finishedAt ? Date.parse(job.finishedAt) : Date.now();
+    const durationMs =
+      Number.isFinite(startedMs) && Number.isFinite(finishedMs)
+        ? Math.max(0, finishedMs - startedMs)
+        : null;
+    const resultEvents = (job.progress || []).filter((p) => p.result);
+    const summary = job.report?.summary;
+    await logAudit(
+      { tenantId: job.tenantId, userId: job.userId ?? "", ip: "" } as RequestContext,
+      "run.complete",
+      "run",
+      job.id,
+      {
+        status: job.status,
+        startedAt: job.startedAt,
+        finishedAt: job.finishedAt ?? null,
+        durationMs,
+        attacksExecuted: summary?.totalAttacks ?? resultEvents.length,
+        vulnerabilities: summary?.passed ?? null,
+        score: summary?.score ?? null,
+        targetUrl: job.config.target.baseUrl,
+      },
+    );
+  } catch {
+    // best-effort; auditing must never break job completion
   }
 }
 
@@ -996,6 +1035,8 @@ const server = createServer(
         if (ctx) {
           await logAudit(ctx, "run.start", "run", job.id, {
             targetUrl: config.target.baseUrl,
+            startedAt: job.startedAt,
+            estimatedTotal: job.estimatedTotal,
           });
         }
         res.writeHead(202, { "Content-Type": "application/json" });

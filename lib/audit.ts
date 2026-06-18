@@ -8,6 +8,7 @@ import type { RequestContext } from "./middleware.js";
 
 export type AuditAction =
   | "run.start"
+  | "run.complete"
   | "run.cancel"
   | "run.view"
   | "report.view"

@@ -9161,15 +9161,15 @@
                 const time = new Date(e.createdAt).toLocaleString();
                 const actionColors = {
                   "run.start": "var(--accent)",
+                  "run.complete": "var(--green)",
                   "run.cancel": "var(--orange)",
                   "report.view": "var(--green)",
                   "report.export_csv": "var(--green)",
                   "compliance.analyze": "var(--purple)",
                   "audit.view": "var(--text2)",
                 };
-                const meta = e.metadata
-                  ? JSON.stringify(e.metadata).slice(0, 80)
-                  : "";
+                const metaFull = e.metadata ? JSON.stringify(e.metadata) : "";
+                const meta = metaFull.slice(0, 80);
                 return (
                   '<tr style="border-bottom:1px solid var(--border);">' +
                   '<td style="padding:8px;white-space:nowrap;">' +
@@ -9189,7 +9189,9 @@
                   '<td style="padding:8px;color:var(--text2);">' +
                   esc(e.ipAddress || "-") +
                   "</td>" +
-                  '<td style="padding:8px;color:var(--text2);font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+                  '<td style="padding:8px;color:var(--text2);font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help;" title="' +
+                  esc(metaFull) +
+                  '">' +
                   esc(meta) +
                   "</td>" +
                   "</tr>"
@@ -9217,9 +9219,16 @@
         } catch (e) {
           console.warn("initAuth failed:", e);
         }
+        // Only load data once auth is actually ready, or the request goes out
+        // before the token exists, 401s, and the Runs/Reports lists sit empty
+        // until a manual refresh. For OIDC/Clerk the load is driven entirely by
+        // onClerkSignedIn() (both the already-signed-in and the sign-in-listener
+        // paths), so the bootstrap must NOT fire it early here.
         const shouldAutoLoad =
-          authMode !== "simple" ||
-          document.getElementById("authOverlay").style.display === "none";
+          authMode === "none" ||
+          authMode === "dev" ||
+          (authMode === "simple" &&
+            document.getElementById("authOverlay").style.display === "none");
         try {
           if (shouldAutoLoad) await loadReportsMeta();
         } catch (e) {
@@ -9273,6 +9282,8 @@
         if (searchTerm) params.set("search", searchTerm);
 
         const res = await fetch(`/api/reports-meta?${params}`);
+        // Not authenticated yet — keep any existing data instead of blanking.
+        if (!res.ok) return;
         const data = await res.json();
         reportsMeta = data.items || [];
         totalPages = data.totalPages || 1;
@@ -15662,7 +15673,11 @@
       async function refreshActiveRuns() {
         try {
           const resp = await fetch("/api/runs");
+          // Not authenticated yet (or a transient failure) — don't treat it as
+          // "no runs". A later authenticated call (after sign-in) repopulates.
+          if (!resp.ok) return;
           const runs = await resp.json();
+          if (!Array.isArray(runs)) return;
           for (const run of runs) {
             if (run.status === "queued" || run.status === "running") {
               // Only fetch full progress for actively running jobs
@@ -16574,8 +16589,10 @@
         input.value = "";
       }
 
-      // Load active runs on page load
-      refreshActiveRuns();
+      // Initial data load is driven by the bootstrap IIFE (after initAuth) and
+      // by the sign-in handlers (onClerkSignedIn / onSimpleSignedIn) — not here.
+      // A bare call at parse time fires before the auth token exists, 401s, and
+      // leaves the Runs list empty until a manual refresh.
     </script>
   </body>
 </html>
