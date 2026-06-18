@@ -1,0 +1,44 @@
+# Red-Team AI — AI security gate for CI/CD (GitHub Actions)
+#
+# TEMPLATE — this file lives under examples/ on purpose so it does NOT run on
+# this repo. To use it in YOUR application repo:
+#   1. Copy this file to .github/workflows/ai-security-gate.yml
+#   2. Copy examples/cicd/red-team-gate.sh next to it (or vendor it into your repo)
+#   3. Commit your target config (e.g. config-ticketio-smartticketagent.json)
+#   4. Add repo secret RED_TEAM_API_KEY (Settings → Secrets → Actions)
+#
+# What it does: on every PR (and nightly), it starts a red-team scan against
+# your deployed AI app, waits for it to finish, and FAILS the build if the
+# security score is too low or any vulnerability was reproduced.
+
+name: ai-security-gate
+
+on:
+  pull_request:
+  schedule:
+    - cron: "0 3 * * *" # nightly safety net at 03:00 UTC
+  workflow_dispatch: {} # allow manual runs
+
+jobs:
+  red-team:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run AI security gate
+        env:
+          RED_TEAM_URL: https://cart.votal.ai
+          RED_TEAM_API_KEY: ${{ secrets.RED_TEAM_API_KEY }}
+          CONFIG_FILE: config-ticketio-smartticketagent.json
+          MIN_SCORE: "80" # fail the build below this score
+          MAX_VULNS: "0" # fail if any attack reproduces a vulnerability
+        run: |
+          chmod +x examples/cicd/red-team-gate.sh
+          ./examples/cicd/red-team-gate.sh
+
+      - name: Upload red-team report
+        if: always() # keep the report even when the gate fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: red-team-report
+          path: red-team-result.json
