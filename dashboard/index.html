@@ -8567,6 +8567,7 @@
       let complianceSelectedReport = null;
       let complianceResults = [];
       let complianceAnalyzing = false;
+      let complianceMode = "static"; // "static" (rule-based) | "ai" (LLM)
 
       async function renderComplianceTab() {
         const panel = document.getElementById("compliancePanel");
@@ -8656,7 +8657,7 @@
               '<div class="u-text-lg u-font-semibold">Configure & Run</div>' +
               '<div class="u-ml-auto u-flex u-items-center u-gap-3">' +
               '<span id="compProgressText" class="u-text-base u-text-muted"></span>' +
-              '<button id="compRunBtn" class="c-btn c-btn-gradient" onclick="runComplianceInline()">Start Compliance Mapping</button>' +
+              '<button id="compRunBtn" class="c-btn c-btn-gradient" onclick="runComplianceInline()">Run AI deep analysis (optional)</button>' +
               "</div>" +
               "</div>" +
               '<div class="u-p-5">' +
@@ -8702,6 +8703,11 @@
                 '<div class="u-flex u-items-center u-gap-3 u-p-4 u-border-b">' +
                 '<div class="c-step c-step-done"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>' +
                 '<div class="u-text-lg u-font-semibold">Results</div>' +
+                '<span class="u-text-sm u-text-muted" style="margin-left:8px;">' +
+                (complianceMode === "ai"
+                  ? "AI-powered analysis"
+                  : "Rule-based mapping · all frameworks") +
+                "</span>" +
                 '<div class="u-ml-auto u-flex u-gap-2">' +
                 '<button class="c-btn c-btn-ghost c-btn-sm" onclick="downloadComplianceCsv()">Export CSV</button>' +
                 '<button class="c-btn c-btn-ghost c-btn-sm" onclick="downloadComplianceJson()">Export JSON</button>' +
@@ -8739,12 +8745,34 @@
       function selectComplianceReport(filename) {
         complianceSelectedReport = filename;
         complianceResults = [];
+        complianceMode = "static";
         renderComplianceTab();
+        // Show the deterministic (no-LLM) mapping across ALL frameworks right
+        // away; the AI analysis is an optional enrichment layered on top.
+        loadStaticCompliance();
+      }
+
+      async function loadStaticCompliance() {
+        if (!complianceSelectedReport) return;
+        try {
+          var res = await fetch(
+            "/api/compliance-static?file=" +
+              encodeURIComponent(complianceSelectedReport),
+          );
+          if (!res.ok) return;
+          var data = await res.json();
+          // Don't clobber an AI run the user kicked off in the meantime
+          if (complianceAnalyzing || complianceMode === "ai") return;
+          complianceResults = data.results || [];
+          complianceMode = "static";
+          renderComplianceTab();
+        } catch (e) {}
       }
 
       async function runComplianceInline() {
         if (complianceAnalyzing || !complianceSelectedReport) return;
         complianceAnalyzing = true;
+        complianceMode = "ai";
         complianceResults = [];
 
         var btn = document.getElementById("compRunBtn");

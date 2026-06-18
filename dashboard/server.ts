@@ -26,7 +26,9 @@ import {
   loadComplianceFrameworks,
   listComplianceFrameworks,
 } from "../lib/compliance-loader.js";
+import { mapResultsToCompliance } from "../lib/report-generator.js";
 import type { Config, Report } from "../lib/types.js";
+import type { AttackResult } from "../lib/types.js";
 import { withMiddleware, type RequestContext } from "../lib/middleware.js";
 import { isDbConfigured, runMigrations, query } from "../lib/db.js";
 import { logAudit, queryAuditLog } from "../lib/audit.js";
@@ -1827,6 +1829,60 @@ const server = createServer(
     }
 
     // API: compliance analysis — LLM-powered per-item analysis
+    // Deterministic, no-LLM compliance mapping for a report. Maps the report's
+    // attack results onto EVERY loaded framework (NIST, GDPR, EU AI Act, ISO,
+    // PDPL, PCI, OWASP, ...) using the category→control table. This is what the
+    // Compliance tab shows by default so frameworks appear without needing a
+    // judge-LLM key; the LLM /api/owasp-analyze path is optional enrichment.
+    if (url.pathname === "/api/compliance-static" && req.method === "GET") {
+      const file = url.searchParams.get("file") || "";
+      if (!file || file.includes("..") || file.includes("/")) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid report file" }));
+        return;
+      }
+      const loaded = await loadReportRecord(file, ctx?.tenantId);
+      if (!loaded) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Report not found" }));
+        return;
+      }
+      const reportData = loaded.report as unknown as Report;
+      const allResults: AttackResult[] = (reportData.rounds || []).flatMap(
+        (r) => r.results || [],
+      );
+      const mapping = mapResultsToCompliance(
+        allResults,
+        loadComplianceFrameworks(),
+      );
+      // Shape for buildComplianceResultsHtml (attacksAnalyzed + summary).
+      const results = mapping.map((m) => {
+        let summary: string;
+        if (m.status === "not_tested") {
+          summary =
+            "No attacks were executed for the categories mapped to this control.";
+        } else if (m.status === "vulnerable") {
+          summary = `${m.passed} of ${m.totalAttacks} mapped attack(s) succeeded against this control.`;
+        } else if (m.status === "at_risk") {
+          summary = `${m.partial} of ${m.totalAttacks} mapped attack(s) partially succeeded against this control.`;
+        } else {
+          summary = `All ${m.totalAttacks} mapped attack(s) were blocked.`;
+        }
+        return {
+          framework: m.framework,
+          code: m.code,
+          title: m.title,
+          status: m.status,
+          attacksAnalyzed: m.totalAttacks,
+          summary,
+          findings: m.findings,
+        };
+      });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ results }));
+      return;
+    }
+
     if (url.pathname === "/api/owasp-analyze" && req.method === "POST") {
       const clientIp = req.headers["x-forwarded-for"]?.toString().split(",")[0].trim() || req.socket.remoteAddress || "unknown";
       const { allowed, retryAfterSec } = checkApiRateLimit(clientIp, "owasp-analyze");
