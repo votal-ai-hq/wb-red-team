@@ -7202,6 +7202,12 @@
               // the denominator with the live count so the bar is always sane
               // (never the "52 / 36" paradox), and the count never exceeds it.
               var denom = Math.max(estimatedTotal, totalResults, 1);
+              // All currently-known attacks are done but the job hasn't flipped
+              // to "done" yet — it's generating the report (or about to plan a
+              // refinement round, which will bump `denom` back above the count).
+              // Don't print a percentage here: "22 of 22 (95%)" is contradictory.
+              // The 95% cap only ever applied while results were still streaming.
+              var finalizing = totalResults >= denom;
               var pct = Math.min(
                 Math.round((totalResults / denom) * 100),
                 data.status === "done" ? 100 : 95,
@@ -7213,13 +7219,18 @@
                 '<div class="u-flex u-items-center u-mb-1" style="justify-content:space-between;">' +
                 '<div class="u-text-sm u-text-muted">' +
                 (totalResults > 0
-                  ? totalResults +
-                    " of " +
-                    (hasPlan ? "" : "~") +
-                    denom +
-                    " attacks (" +
-                    pct +
-                    "%)"
+                  ? finalizing
+                    ? totalResults +
+                      " of " +
+                      denom +
+                      " attacks · finalizing…"
+                    : totalResults +
+                      " of " +
+                      (hasPlan ? "" : "~") +
+                      denom +
+                      " attacks (" +
+                      pct +
+                      "%)"
                   : "Starting...") +
                 "</div>" +
                 '<div class="u-text-sm u-flex u-gap-3">' +
