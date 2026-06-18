@@ -7202,6 +7202,12 @@
               // the denominator with the live count so the bar is always sane
               // (never the "52 / 36" paradox), and the count never exceeds it.
               var denom = Math.max(estimatedTotal, totalResults, 1);
+              // All currently-known attacks are done but the job hasn't flipped
+              // to "done" yet — it's generating the report (or about to plan a
+              // refinement round, which will bump `denom` back above the count).
+              // Don't print a percentage here: "22 of 22 (95%)" is contradictory.
+              // The 95% cap only ever applied while results were still streaming.
+              var finalizing = totalResults >= denom;
               var pct = Math.min(
                 Math.round((totalResults / denom) * 100),
                 data.status === "done" ? 100 : 95,
@@ -7211,15 +7217,21 @@
               html +=
                 '<div class="u-mt-2">' +
                 '<div class="u-flex u-items-center u-mb-1" style="justify-content:space-between;">' +
-                '<div class="u-text-sm u-text-muted">' +
+                '<div class="u-text-sm u-text-muted" title="Attack count is live and can rise during the run: attempts that come back PARTIAL are refined with follow-up attacks, and extra rounds may be planned. The starting number is an estimate.">' +
                 (totalResults > 0
-                  ? totalResults +
-                    " of " +
-                    (hasPlan ? "" : "~") +
-                    denom +
-                    " attacks (" +
-                    pct +
-                    "%)"
+                  ? (finalizing
+                      ? totalResults +
+                        " of " +
+                        denom +
+                        " attacks · finalizing…"
+                      : totalResults +
+                        " of " +
+                        (hasPlan ? "" : "~") +
+                        denom +
+                        " attacks (" +
+                        pct +
+                        "%)") +
+                    ' <span style="cursor:help;opacity:0.5;" aria-hidden="true">&#9432;</span>'
                   : "Starting...") +
                 "</div>" +
                 '<div class="u-text-sm u-flex u-gap-3">' +
@@ -7320,14 +7332,21 @@
         if (currentTab !== "runs") return;
 
         // While a run is active the poll loop calls this every tick, and
-        // renderRunsTab() rebuilds the whole panel via innerHTML — which
-        // destroys and recreates every action button. A click that lands in
-        // that window is silently dropped ("Edit/Rescan/Rerun intermittently
-        // fail"). If the pointer is currently on (or a button has focus in)
-        // the runs list, skip this rebuild so the DOM stays stable through the
-        // click; the next poll tick re-renders once the user moves away.
+        // renderRunsTab() rebuilds the whole panel via innerHTML. That rebuild
+        // causes two problems while the pointer is over a card:
+        //   1. It destroys/recreates the action buttons, so a click that lands
+        //      mid-rebuild is silently dropped ("Edit/Rescan/Rerun fail").
+        //   2. It destroys/recreates the hovered card, so its :hover box-shadow
+        //      transition replays every tick — a blinking/pulsing glow.
+        // Skip the rebuild whenever the pointer is over a run card (or a button
+        // has keyboard focus). The card body is a superset of its buttons, so
+        // this covers both. Polled data keeps merging into the cache meanwhile;
+        // the next tick repaints once the pointer leaves the card.
         const runsPanel = document.getElementById("runsPanel");
-        if (runsPanel && runsPanel.querySelector(".c-btn:hover, .c-btn:focus")) {
+        if (
+          runsPanel &&
+          runsPanel.querySelector(".c-card-flush:hover, .c-btn:focus")
+        ) {
           return;
         }
 
@@ -8317,6 +8336,21 @@
         return html;
       }
 
+      // Render a single clear message in the risk results area instead of a
+      // wall of "UNKNOWN" cards when the AI analysis can't run.
+      function showRiskUnavailable(msg) {
+        var area = document.getElementById("riskLlmResultsArea");
+        if (area)
+          area.innerHTML =
+            '<div class="c-empty u-p-6" style="text-align:center;">' +
+            '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--text2)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+            '<div class="u-text-md u-text-muted" style="margin-top:8px;line-height:1.6;max-width:520px;">' +
+            esc(msg) +
+            "</div></div>";
+        var progress = document.getElementById("riskLlmProgress");
+        if (progress) progress.textContent = "";
+      }
+
       async function runRiskLlmAnalysis() {
         if (riskAnalyzing || !riskReportData) return;
         riskAnalyzing = true;
@@ -8363,10 +8397,26 @@
             }),
           });
 
+          // Provider couldn't initialize (e.g. no API key) → one clear message.
+          if (!res.ok) {
+            var errData = {};
+            try {
+              errData = await res.json();
+            } catch (e) {}
+            showRiskUnavailable(
+              errData.error || "AI risk analysis failed (" + res.status + ").",
+            );
+            if (btn) btn.textContent = "Retry";
+            riskAnalyzing = false;
+            if (btn) btn.disabled = false;
+            return;
+          }
+
           var reader = res.body.getReader();
           var decoder = new TextDecoder();
           var buffer = "";
           var count = 0;
+          var systemic = false;
 
           while (true) {
             var chunk = await reader.read();
@@ -8377,7 +8427,17 @@
             for (var i = 0; i < lines.length; i++) {
               if (!lines[i].trim()) continue;
               try {
-                riskLlmResults.push(JSON.parse(lines[i]));
+                var parsed = JSON.parse(lines[i]);
+                // Systemic failure signalled by the server — show one message,
+                // not a wall of "UNKNOWN" cards.
+                if (parsed && parsed.error) {
+                  showRiskUnavailable(
+                    parsed.message || "AI risk analysis could not run.",
+                  );
+                  systemic = true;
+                  break;
+                }
+                riskLlmResults.push(parsed);
                 count++;
                 if (progress)
                   progress.innerHTML =
@@ -8390,11 +8450,22 @@
                 if (area) area.innerHTML = buildRiskResultsOnly(riskLlmResults);
               } catch (e) {}
             }
+            if (systemic) break;
           }
-          if (buffer.trim()) {
+          if (!systemic && buffer.trim()) {
             try {
               riskLlmResults.push(JSON.parse(buffer));
             } catch (e) {}
+          }
+
+          if (systemic) {
+            riskLlmResults = [];
+            if (btn) {
+              btn.textContent = "Retry";
+              btn.disabled = false;
+            }
+            riskAnalyzing = false;
+            return;
           }
 
           if (btn) btn.innerHTML = "Re-analyze";
@@ -8548,6 +8619,7 @@
       let complianceSelectedReport = null;
       let complianceResults = [];
       let complianceAnalyzing = false;
+      let complianceMode = "static"; // "static" (rule-based) | "ai" (LLM)
 
       async function renderComplianceTab() {
         const panel = document.getElementById("compliancePanel");
@@ -8637,7 +8709,7 @@
               '<div class="u-text-lg u-font-semibold">Configure & Run</div>' +
               '<div class="u-ml-auto u-flex u-items-center u-gap-3">' +
               '<span id="compProgressText" class="u-text-base u-text-muted"></span>' +
-              '<button id="compRunBtn" class="c-btn c-btn-gradient" onclick="runComplianceInline()">Start Compliance Mapping</button>' +
+              '<button id="compRunBtn" class="c-btn c-btn-gradient" onclick="runComplianceInline()">Run AI deep analysis (optional)</button>' +
               "</div>" +
               "</div>" +
               '<div class="u-p-5">' +
@@ -8683,6 +8755,11 @@
                 '<div class="u-flex u-items-center u-gap-3 u-p-4 u-border-b">' +
                 '<div class="c-step c-step-done"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>' +
                 '<div class="u-text-lg u-font-semibold">Results</div>' +
+                '<span class="u-text-sm u-text-muted" style="margin-left:8px;">' +
+                (complianceMode === "ai"
+                  ? "AI-powered analysis"
+                  : "Rule-based mapping · all frameworks") +
+                "</span>" +
                 '<div class="u-ml-auto u-flex u-gap-2">' +
                 '<button class="c-btn c-btn-ghost c-btn-sm" onclick="downloadComplianceCsv()">Export CSV</button>' +
                 '<button class="c-btn c-btn-ghost c-btn-sm" onclick="downloadComplianceJson()">Export JSON</button>' +
@@ -8720,12 +8797,34 @@
       function selectComplianceReport(filename) {
         complianceSelectedReport = filename;
         complianceResults = [];
+        complianceMode = "static";
         renderComplianceTab();
+        // Show the deterministic (no-LLM) mapping across ALL frameworks right
+        // away; the AI analysis is an optional enrichment layered on top.
+        loadStaticCompliance();
+      }
+
+      async function loadStaticCompliance() {
+        if (!complianceSelectedReport) return;
+        try {
+          var res = await fetch(
+            "/api/compliance-static?file=" +
+              encodeURIComponent(complianceSelectedReport),
+          );
+          if (!res.ok) return;
+          var data = await res.json();
+          // Don't clobber an AI run the user kicked off in the meantime
+          if (complianceAnalyzing || complianceMode === "ai") return;
+          complianceResults = data.results || [];
+          complianceMode = "static";
+          renderComplianceTab();
+        } catch (e) {}
       }
 
       async function runComplianceInline() {
         if (complianceAnalyzing || !complianceSelectedReport) return;
         complianceAnalyzing = true;
+        complianceMode = "ai";
         complianceResults = [];
 
         var btn = document.getElementById("compRunBtn");
@@ -9062,15 +9161,15 @@
                 const time = new Date(e.createdAt).toLocaleString();
                 const actionColors = {
                   "run.start": "var(--accent)",
+                  "run.complete": "var(--green)",
                   "run.cancel": "var(--orange)",
                   "report.view": "var(--green)",
                   "report.export_csv": "var(--green)",
                   "compliance.analyze": "var(--purple)",
                   "audit.view": "var(--text2)",
                 };
-                const meta = e.metadata
-                  ? JSON.stringify(e.metadata).slice(0, 80)
-                  : "";
+                const metaFull = e.metadata ? JSON.stringify(e.metadata) : "";
+                const meta = metaFull.slice(0, 80);
                 return (
                   '<tr style="border-bottom:1px solid var(--border);">' +
                   '<td style="padding:8px;white-space:nowrap;">' +
@@ -9090,7 +9189,9 @@
                   '<td style="padding:8px;color:var(--text2);">' +
                   esc(e.ipAddress || "-") +
                   "</td>" +
-                  '<td style="padding:8px;color:var(--text2);font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+                  '<td style="padding:8px;color:var(--text2);font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help;" title="' +
+                  esc(metaFull) +
+                  '">' +
                   esc(meta) +
                   "</td>" +
                   "</tr>"
@@ -9118,9 +9219,16 @@
         } catch (e) {
           console.warn("initAuth failed:", e);
         }
+        // Only load data once auth is actually ready, or the request goes out
+        // before the token exists, 401s, and the Runs/Reports lists sit empty
+        // until a manual refresh. For OIDC/Clerk the load is driven entirely by
+        // onClerkSignedIn() (both the already-signed-in and the sign-in-listener
+        // paths), so the bootstrap must NOT fire it early here.
         const shouldAutoLoad =
-          authMode !== "simple" ||
-          document.getElementById("authOverlay").style.display === "none";
+          authMode === "none" ||
+          authMode === "dev" ||
+          (authMode === "simple" &&
+            document.getElementById("authOverlay").style.display === "none");
         try {
           if (shouldAutoLoad) await loadReportsMeta();
         } catch (e) {
@@ -9174,6 +9282,8 @@
         if (searchTerm) params.set("search", searchTerm);
 
         const res = await fetch(`/api/reports-meta?${params}`);
+        // Not authenticated yet — keep any existing data instead of blanking.
+        if (!res.ok) return;
         const data = await res.json();
         reportsMeta = data.items || [];
         totalPages = data.totalPages || 1;
@@ -15563,7 +15673,11 @@
       async function refreshActiveRuns() {
         try {
           const resp = await fetch("/api/runs");
+          // Not authenticated yet (or a transient failure) — don't treat it as
+          // "no runs". A later authenticated call (after sign-in) repopulates.
+          if (!resp.ok) return;
           const runs = await resp.json();
+          if (!Array.isArray(runs)) return;
           for (const run of runs) {
             if (run.status === "queued" || run.status === "running") {
               // Only fetch full progress for actively running jobs
@@ -16475,8 +16589,10 @@
         input.value = "";
       }
 
-      // Load active runs on page load
-      refreshActiveRuns();
+      // Initial data load is driven by the bootstrap IIFE (after initAuth) and
+      // by the sign-in handlers (onClerkSignedIn / onSimpleSignedIn) — not here.
+      // A bare call at parse time fires before the auth token exists, 401s, and
+      // leaves the Runs list empty until a manual refresh.
     </script>
   </body>
 </html>

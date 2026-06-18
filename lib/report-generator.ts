@@ -10,7 +10,8 @@ import type {
   StaticAnalysisResult,
   ComplianceResult,
 } from "./types.js";
-import { ALL_FRAMEWORKS } from "./compliance-mappings.js";
+import type { ComplianceFramework } from "./compliance-mappings.js";
+import { loadComplianceFrameworks } from "./compliance-loader.js";
 
 const SEVERITY_WEIGHTS: Record<AttackCategory, number> = {
   auth_bypass: 15,
@@ -254,10 +255,19 @@ export function generateReport(
   return report;
 }
 
-function computeCompliance(allResults: AttackResult[]): ComplianceResult[] {
+/**
+ * Deterministic (no-LLM) mapping of attack results onto compliance frameworks.
+ * Each control lists the attack categories it covers; its status is derived
+ * from the verdicts of the attacks that ran in those categories. Exported so
+ * the dashboard can recompute the same mapping for any report on demand.
+ */
+export function mapResultsToCompliance(
+  allResults: AttackResult[],
+  frameworks: ComplianceFramework[],
+): ComplianceResult[] {
   const results: ComplianceResult[] = [];
 
-  for (const fw of ALL_FRAMEWORKS) {
+  for (const fw of frameworks) {
     for (const item of fw.items) {
       const mapped = allResults.filter((r) =>
         item.categories.includes(r.attack.category),
@@ -296,6 +306,12 @@ function computeCompliance(allResults: AttackResult[]): ComplianceResult[] {
   }
 
   return results;
+}
+
+// Map against every framework in the compliance/ directory (not just OWASP),
+// so saved reports carry NIST, GDPR, EU AI Act, ISO, PDPL, PCI, etc. too.
+function computeCompliance(allResults: AttackResult[]): ComplianceResult[] {
+  return mapResultsToCompliance(allResults, loadComplianceFrameworks());
 }
 
 export function writeReport(report: Report): {

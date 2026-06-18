@@ -26,7 +26,9 @@ import {
   loadComplianceFrameworks,
   listComplianceFrameworks,
 } from "../lib/compliance-loader.js";
+import { mapResultsToCompliance } from "../lib/report-generator.js";
 import type { Config, Report } from "../lib/types.js";
+import type { AttackResult } from "../lib/types.js";
 import { withMiddleware, type RequestContext } from "../lib/middleware.js";
 import { isDbConfigured, runMigrations, query } from "../lib/db.js";
 import { logAudit, queryAuditLog } from "../lib/audit.js";
@@ -770,6 +772,9 @@ async function startJob(job: Job): Promise<void> {
       activeRuns = Math.max(0, activeRuns - 1);
       drainQueue();
     }
+    // Audit the finished run (start/finish/duration/size) — status & finishedAt
+    // are settled by now. Fire-and-forget; best-effort inside the helper.
+    void logRunComplete(job);
   }
 }
 
@@ -782,6 +787,42 @@ function drainQueue(): void {
     if (nextJob && nextJob.status === "queued") {
       startJob(nextJob);
     }
+  }
+}
+
+// Record a run's lifecycle in the audit log when it finishes: start time,
+// completion time, duration, final status, and how many attacks executed.
+// Audit logging is tenant/DB-scoped, so this is a no-op without an enterprise
+// DB + tenant. Best-effort — never let it disrupt job finalization.
+async function logRunComplete(job: Job): Promise<void> {
+  if (!job.tenantId) return;
+  try {
+    const startedMs = Date.parse(job.startedAt);
+    const finishedMs = job.finishedAt ? Date.parse(job.finishedAt) : Date.now();
+    const durationMs =
+      Number.isFinite(startedMs) && Number.isFinite(finishedMs)
+        ? Math.max(0, finishedMs - startedMs)
+        : null;
+    const resultEvents = (job.progress || []).filter((p) => p.result);
+    const summary = job.report?.summary;
+    await logAudit(
+      { tenantId: job.tenantId, userId: job.userId ?? "", ip: "" } as RequestContext,
+      "run.complete",
+      "run",
+      job.id,
+      {
+        status: job.status,
+        startedAt: job.startedAt,
+        finishedAt: job.finishedAt ?? null,
+        durationMs,
+        attacksExecuted: summary?.totalAttacks ?? resultEvents.length,
+        vulnerabilities: summary?.passed ?? null,
+        score: summary?.score ?? null,
+        targetUrl: job.config.target.baseUrl,
+      },
+    );
+  } catch {
+    // best-effort; auditing must never break job completion
   }
 }
 
@@ -994,6 +1035,8 @@ const server = createServer(
         if (ctx) {
           await logAudit(ctx, "run.start", "run", job.id, {
             targetUrl: config.target.baseUrl,
+            startedAt: job.startedAt,
+            estimatedTotal: job.estimatedTotal,
           });
         }
         res.writeHead(202, { "Content-Type": "application/json" });
@@ -1827,6 +1870,60 @@ const server = createServer(
     }
 
     // API: compliance analysis — LLM-powered per-item analysis
+    // Deterministic, no-LLM compliance mapping for a report. Maps the report's
+    // attack results onto EVERY loaded framework (NIST, GDPR, EU AI Act, ISO,
+    // PDPL, PCI, OWASP, ...) using the category→control table. This is what the
+    // Compliance tab shows by default so frameworks appear without needing a
+    // judge-LLM key; the LLM /api/owasp-analyze path is optional enrichment.
+    if (url.pathname === "/api/compliance-static" && req.method === "GET") {
+      const file = url.searchParams.get("file") || "";
+      if (!file || file.includes("..") || file.includes("/")) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid report file" }));
+        return;
+      }
+      const loaded = await loadReportRecord(file, ctx?.tenantId);
+      if (!loaded) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Report not found" }));
+        return;
+      }
+      const reportData = loaded.report as unknown as Report;
+      const allResults: AttackResult[] = (reportData.rounds || []).flatMap(
+        (r) => r.results || [],
+      );
+      const mapping = mapResultsToCompliance(
+        allResults,
+        loadComplianceFrameworks(),
+      );
+      // Shape for buildComplianceResultsHtml (attacksAnalyzed + summary).
+      const results = mapping.map((m) => {
+        let summary: string;
+        if (m.status === "not_tested") {
+          summary =
+            "No attacks were executed for the categories mapped to this control.";
+        } else if (m.status === "vulnerable") {
+          summary = `${m.passed} of ${m.totalAttacks} mapped attack(s) succeeded against this control.`;
+        } else if (m.status === "at_risk") {
+          summary = `${m.partial} of ${m.totalAttacks} mapped attack(s) partially succeeded against this control.`;
+        } else {
+          summary = `All ${m.totalAttacks} mapped attack(s) were blocked.`;
+        }
+        return {
+          framework: m.framework,
+          code: m.code,
+          title: m.title,
+          status: m.status,
+          attacksAnalyzed: m.totalAttacks,
+          summary,
+          findings: m.findings,
+        };
+      });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ results }));
+      return;
+    }
+
     if (url.pathname === "/api/owasp-analyze" && req.method === "POST") {
       const clientIp = req.headers["x-forwarded-for"]?.toString().split(",")[0].trim() || req.socket.remoteAddress || "unknown";
       const { allowed, retryAfterSec } = checkApiRateLimit(clientIp, "owasp-analyze");
@@ -2040,9 +2137,22 @@ const server = createServer(
         const judgeProvider = provider || "anthropic";
         const judgeModel = model || "claude-sonnet-4-20250514";
 
-        const llm = getJudgeProvider({
-          attackConfig: { judgeProvider, llmProvider: judgeProvider },
-        } as Config);
+        // If no judge LLM can be initialized (e.g. missing API key), fail with
+        // one clear message instead of streaming a wall of "UNKNOWN" cards.
+        let llm;
+        try {
+          llm = getJudgeProvider({
+            attackConfig: { judgeProvider, llmProvider: judgeProvider },
+          } as Config);
+        } catch (e) {
+          res.writeHead(503, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: `AI risk analysis is unavailable — no judge LLM is configured for "${judgeProvider}". Set an API key for that provider to enable it.`,
+            }),
+          );
+          return;
+        }
 
         // Stream results as NDJSON
         res.writeHead(200, {
@@ -2050,6 +2160,7 @@ const server = createServer(
           "Transfer-Encoding": "chunked",
         });
 
+        let streamed = 0;
         for (const atk of attacks) {
           try {
             const prompt = `You are a cybersecurity risk analyst. Analyze this specific AI security vulnerability and provide a business risk assessment.
@@ -2105,14 +2216,32 @@ Be specific and factual. Reference real incidents and realistic financial figure
                 ...parsed,
               }) + "\n",
             );
+            streamed++;
           } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            // If the very first call fails, the cause is systemic (bad/missing
+            // key, provider down, rate limit) — every other call will fail the
+            // same way. Emit ONE clear signal instead of a wall of "UNKNOWN"
+            // cards, and stop.
+            if (streamed === 0) {
+              res.write(
+                JSON.stringify({
+                  error: true,
+                  message: `AI risk analysis could not run: ${msg}. Check that "${judgeProvider}" has a valid API key.`,
+                }) + "\n",
+              );
+              res.end();
+              return;
+            }
+            // A later, isolated failure after others succeeded — keep the
+            // per-item fallback card so one transient error doesn't lose the rest.
             res.write(
               JSON.stringify({
                 attack: atk.name,
                 category: atk.category,
                 severity: atk.severity,
                 impactLevel: "UNKNOWN",
-                businessImpact: `Analysis failed: ${err instanceof Error ? err.message : String(err)}`,
+                businessImpact: `Analysis failed: ${msg}`,
                 financialExposure: "Not estimated",
                 relatedIncidents: "Analysis failed",
                 complianceRisk: "Review required",
