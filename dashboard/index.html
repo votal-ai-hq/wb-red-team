@@ -7332,14 +7332,21 @@
         if (currentTab !== "runs") return;
 
         // While a run is active the poll loop calls this every tick, and
-        // renderRunsTab() rebuilds the whole panel via innerHTML — which
-        // destroys and recreates every action button. A click that lands in
-        // that window is silently dropped ("Edit/Rescan/Rerun intermittently
-        // fail"). If the pointer is currently on (or a button has focus in)
-        // the runs list, skip this rebuild so the DOM stays stable through the
-        // click; the next poll tick re-renders once the user moves away.
+        // renderRunsTab() rebuilds the whole panel via innerHTML. That rebuild
+        // causes two problems while the pointer is over a card:
+        //   1. It destroys/recreates the action buttons, so a click that lands
+        //      mid-rebuild is silently dropped ("Edit/Rescan/Rerun fail").
+        //   2. It destroys/recreates the hovered card, so its :hover box-shadow
+        //      transition replays every tick — a blinking/pulsing glow.
+        // Skip the rebuild whenever the pointer is over a run card (or a button
+        // has keyboard focus). The card body is a superset of its buttons, so
+        // this covers both. Polled data keeps merging into the cache meanwhile;
+        // the next tick repaints once the pointer leaves the card.
         const runsPanel = document.getElementById("runsPanel");
-        if (runsPanel && runsPanel.querySelector(".c-btn:hover, .c-btn:focus")) {
+        if (
+          runsPanel &&
+          runsPanel.querySelector(".c-card-flush:hover, .c-btn:focus")
+        ) {
           return;
         }
 
