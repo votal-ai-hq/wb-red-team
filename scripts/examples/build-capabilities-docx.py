@@ -181,8 +181,10 @@ body(
     space_after=4,
 )
 body(
-    "Note: the figures below are illustrative sample data generated through the "
-    "product's real report engine to demonstrate output format — not a live scan.",
+    "Note: the figures below are a representative sample, generated through the "
+    "product's real report engine to show the exact output format. A live scan "
+    "against your own endpoints — producing these same artifacts with real "
+    "responses — can be demonstrated during a Proof of Concept.",
     italic=True, size=9, color=GREY, space_after=6,
 )
 
@@ -208,6 +210,21 @@ body(
     "responses, judge reasoning, confidence, policy used, ideal response) and a "
     "human-readable Markdown report, plus a live dashboard with score and "
     "category breakdown.",
+    space_after=8,
+)
+
+heading("1.5 Validating this live (PoC)", 2)
+body(
+    "The sample above uses the production report engine, so a live scan against "
+    "your real endpoints produces these exact artifacts with genuine model "
+    "responses. During a Proof of Concept we can, in a single session:",
+    space_after=4,
+)
+bullet("point the same config at one or more of your model endpoints (Qwen, GPT, DeepSeek, GLM, or your own gateway);", "Run live — ")
+bullet("share the resulting JSON + Markdown reports and dashboard, with sensitive values redacted, as real test evidence;", "Sanitized evidence — ")
+bullet("rerun any finding on demand to confirm reproducibility and verify a fix.", "Reproduce — ")
+body(
+    "No code changes are required to switch targets — only the configuration file.",
     space_after=10,
 )
 
