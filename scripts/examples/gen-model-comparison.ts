@@ -406,7 +406,7 @@ function buildResults(modelKey: string): AttackResult[] {
   });
 }
 
-const OUT_ROOT = resolve("examples", "model-comparison");
+const OUT_ROOT = resolve("examples", "model-comparison-examples");
 mkdirSync(OUT_ROOT, { recursive: true });
 
 interface ModelSummary {

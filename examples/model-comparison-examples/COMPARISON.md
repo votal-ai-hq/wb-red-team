@@ -34,10 +34,10 @@ Higher security score = stronger defenses. `Vulns` = attacks that succeeded (PAS
 
 ## Per-model detailed reports
 
-- **Qwen 3.5-27B (via LiteLLM gateway)** — [Markdown](examples/model-comparison/qwen/report/report-2026-06-18T12-54-13-164Z.md) · [JSON](examples/model-comparison/qwen/report/report-2026-06-18T12-54-13-164Z.json)
-- **ChatGPT (gpt-4o)** — [Markdown](examples/model-comparison/chatgpt/report/report-2026-06-18T12-54-13-167Z.md) · [JSON](examples/model-comparison/chatgpt/report/report-2026-06-18T12-54-13-167Z.json)
-- **DeepSeek-V3 (via Together AI)** — [Markdown](examples/model-comparison/deepseek/report/report-2026-06-18T12-54-13-168Z.md) · [JSON](examples/model-comparison/deepseek/report/report-2026-06-18T12-54-13-168Z.json)
-- **GLM-5.1 (via NVIDIA NIM)** — [Markdown](examples/model-comparison/glm/report/report-2026-06-18T12-54-13-170Z.md) · [JSON](examples/model-comparison/glm/report/report-2026-06-18T12-54-13-170Z.json)
+- **Qwen 3.5-27B (via LiteLLM gateway)** — [Markdown](examples/model-comparison-examples/qwen/report/report-2026-06-18T13-16-02-534Z.md) · [JSON](examples/model-comparison-examples/qwen/report/report-2026-06-18T13-16-02-534Z.json)
+- **ChatGPT (gpt-4o)** — [Markdown](examples/model-comparison-examples/chatgpt/report/report-2026-06-18T13-16-02-539Z.md) · [JSON](examples/model-comparison-examples/chatgpt/report/report-2026-06-18T13-16-02-539Z.json)
+- **DeepSeek-V3 (via Together AI)** — [Markdown](examples/model-comparison-examples/deepseek/report/report-2026-06-18T13-16-02-543Z.md) · [JSON](examples/model-comparison-examples/deepseek/report/report-2026-06-18T13-16-02-543Z.json)
+- **GLM-5.1 (via NVIDIA NIM)** — [Markdown](examples/model-comparison-examples/glm/report/report-2026-06-18T13-16-02-546Z.md) · [JSON](examples/model-comparison-examples/glm/report/report-2026-06-18T13-16-02-546Z.json)
 
 ## Validation approach (how a verdict is decided)
 
