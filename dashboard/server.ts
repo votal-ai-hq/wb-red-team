@@ -2096,9 +2096,22 @@ const server = createServer(
         const judgeProvider = provider || "anthropic";
         const judgeModel = model || "claude-sonnet-4-20250514";
 
-        const llm = getJudgeProvider({
-          attackConfig: { judgeProvider, llmProvider: judgeProvider },
-        } as Config);
+        // If no judge LLM can be initialized (e.g. missing API key), fail with
+        // one clear message instead of streaming a wall of "UNKNOWN" cards.
+        let llm;
+        try {
+          llm = getJudgeProvider({
+            attackConfig: { judgeProvider, llmProvider: judgeProvider },
+          } as Config);
+        } catch (e) {
+          res.writeHead(503, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: `AI risk analysis is unavailable — no judge LLM is configured for "${judgeProvider}". Set an API key for that provider to enable it.`,
+            }),
+          );
+          return;
+        }
 
         // Stream results as NDJSON
         res.writeHead(200, {
@@ -2106,6 +2119,7 @@ const server = createServer(
           "Transfer-Encoding": "chunked",
         });
 
+        let streamed = 0;
         for (const atk of attacks) {
           try {
             const prompt = `You are a cybersecurity risk analyst. Analyze this specific AI security vulnerability and provide a business risk assessment.
@@ -2161,14 +2175,32 @@ Be specific and factual. Reference real incidents and realistic financial figure
                 ...parsed,
               }) + "\n",
             );
+            streamed++;
           } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            // If the very first call fails, the cause is systemic (bad/missing
+            // key, provider down, rate limit) — every other call will fail the
+            // same way. Emit ONE clear signal instead of a wall of "UNKNOWN"
+            // cards, and stop.
+            if (streamed === 0) {
+              res.write(
+                JSON.stringify({
+                  error: true,
+                  message: `AI risk analysis could not run: ${msg}. Check that "${judgeProvider}" has a valid API key.`,
+                }) + "\n",
+              );
+              res.end();
+              return;
+            }
+            // A later, isolated failure after others succeeded — keep the
+            // per-item fallback card so one transient error doesn't lose the rest.
             res.write(
               JSON.stringify({
                 attack: atk.name,
                 category: atk.category,
                 severity: atk.severity,
                 impactLevel: "UNKNOWN",
-                businessImpact: `Analysis failed: ${err instanceof Error ? err.message : String(err)}`,
+                businessImpact: `Analysis failed: ${msg}`,
                 financialExposure: "Not estimated",
                 relatedIncidents: "Analysis failed",
                 complianceRisk: "Review required",

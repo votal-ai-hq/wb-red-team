@@ -8336,6 +8336,21 @@
         return html;
       }
 
+      // Render a single clear message in the risk results area instead of a
+      // wall of "UNKNOWN" cards when the AI analysis can't run.
+      function showRiskUnavailable(msg) {
+        var area = document.getElementById("riskLlmResultsArea");
+        if (area)
+          area.innerHTML =
+            '<div class="c-empty u-p-6" style="text-align:center;">' +
+            '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--text2)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+            '<div class="u-text-md u-text-muted" style="margin-top:8px;line-height:1.6;max-width:520px;">' +
+            esc(msg) +
+            "</div></div>";
+        var progress = document.getElementById("riskLlmProgress");
+        if (progress) progress.textContent = "";
+      }
+
       async function runRiskLlmAnalysis() {
         if (riskAnalyzing || !riskReportData) return;
         riskAnalyzing = true;
@@ -8382,10 +8397,26 @@
             }),
           });
 
+          // Provider couldn't initialize (e.g. no API key) → one clear message.
+          if (!res.ok) {
+            var errData = {};
+            try {
+              errData = await res.json();
+            } catch (e) {}
+            showRiskUnavailable(
+              errData.error || "AI risk analysis failed (" + res.status + ").",
+            );
+            if (btn) btn.textContent = "Retry";
+            riskAnalyzing = false;
+            if (btn) btn.disabled = false;
+            return;
+          }
+
           var reader = res.body.getReader();
           var decoder = new TextDecoder();
           var buffer = "";
           var count = 0;
+          var systemic = false;
 
           while (true) {
             var chunk = await reader.read();
@@ -8396,7 +8427,17 @@
             for (var i = 0; i < lines.length; i++) {
               if (!lines[i].trim()) continue;
               try {
-                riskLlmResults.push(JSON.parse(lines[i]));
+                var parsed = JSON.parse(lines[i]);
+                // Systemic failure signalled by the server — show one message,
+                // not a wall of "UNKNOWN" cards.
+                if (parsed && parsed.error) {
+                  showRiskUnavailable(
+                    parsed.message || "AI risk analysis could not run.",
+                  );
+                  systemic = true;
+                  break;
+                }
+                riskLlmResults.push(parsed);
                 count++;
                 if (progress)
                   progress.innerHTML =
@@ -8409,11 +8450,22 @@
                 if (area) area.innerHTML = buildRiskResultsOnly(riskLlmResults);
               } catch (e) {}
             }
+            if (systemic) break;
           }
-          if (buffer.trim()) {
+          if (!systemic && buffer.trim()) {
             try {
               riskLlmResults.push(JSON.parse(buffer));
             } catch (e) {}
+          }
+
+          if (systemic) {
+            riskLlmResults = [];
+            if (btn) {
+              btn.textContent = "Retry";
+              btn.disabled = false;
+            }
+            riskAnalyzing = false;
+            return;
           }
 
           if (btn) btn.innerHTML = "Re-analyze";
