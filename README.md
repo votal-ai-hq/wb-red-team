@@ -760,6 +760,10 @@ curl -X POST https://your-host/api/run \
     # Poll until done, fail CI if vulnerabilities found
 ```
 
+Copy-paste templates (GitHub Actions + GitLab CI + a reusable gate script) live
+in [`examples/cicd/`](examples/cicd/); the full end-to-end lifecycle is
+documented in [docs/cicd.md](docs/cicd.md).
+
 ---
 
 ## Choosing the right tool
