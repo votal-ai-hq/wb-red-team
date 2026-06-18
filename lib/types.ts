@@ -732,6 +732,19 @@ export interface IdealResponse {
   remediationHints: string[];
 }
 
+export interface RemediationPlan {
+  rootCause: string;
+  confidence: "high" | "medium" | "low";
+  affectedFiles: string[];
+  suggestedFixes: {
+    type: "code" | "config" | "policy" | "guardrail" | "test";
+    title: string;
+    rationale: string;
+    patchHint?: string;
+  }[];
+  regressionTestPrompt: string;
+}
+
 export interface AttackResult {
   attack: Attack;
   verdict: Verdict;
@@ -763,6 +776,8 @@ export interface AttackResult {
   conversation?: ConversationStep[];
   /** LLM-generated ideal response showing what the endpoint should have returned. */
   idealResponse?: IdealResponse;
+  /** Engineer-ready remediation guidance for PASS/PARTIAL findings. */
+  remediation?: RemediationPlan;
 }
 
 export interface AttackModule {
@@ -838,6 +853,7 @@ export interface Report {
     strategyId?: number;
     strategyName?: string;
     affectedFiles?: AffectedFile[];
+    remediation?: RemediationPlan;
   }[];
   staticAnalysis?: StaticAnalysisResult;
   compliance?: ComplianceResult[];
