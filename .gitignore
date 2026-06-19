@@ -43,3 +43,6 @@ coverage/
 # OpenShift deploy with real secrets
 openshift/deploy-no-db.yaml
 openshift/deploy.yaml
+
+# red-team coverage transcripts (may contain elicited harmful outputs)
+model-coverage/results/
