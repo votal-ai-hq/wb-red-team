@@ -44,6 +44,13 @@ const PERMISSIONS: RoutePermission[] = [
     roles: ["admin", "viewer", "auditor"],
   },
   {
+    // Deterministic, no-LLM framework mapping shown by default in the
+    // Compliance tab. Read-only, so available to every read role.
+    method: "GET",
+    pattern: /^\/api\/compliance-static$/,
+    roles: ["admin", "viewer", "auditor"],
+  },
+  {
     method: "POST",
     pattern: /^\/api\/owasp-analyze$/,
     roles: ["admin", "auditor"],

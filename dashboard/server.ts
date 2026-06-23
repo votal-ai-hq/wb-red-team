@@ -2441,7 +2441,7 @@ async function analyzeOwaspItem(
       title: item.title,
       status: "not_tested",
       summary:
-        "No attacks were executed for the categories mapped to this OWASP item.",
+        "No attacks were executed for the categories mapped to this control.",
       details: "",
       recommendations: [
         "Run attacks in these categories to assess this risk: " +
@@ -2509,12 +2509,50 @@ Provide your analysis as JSON with these exact fields:
 
 Be specific and reference the actual attack results. Do not be generic.`;
 
-  const text = await llm.chat({
-    model,
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.2,
-    maxTokens: 2048,
-  });
+  // Deterministic, rule-based status from the verdicts — used as the fallback
+  // whenever the LLM is unavailable or returns unparseable output, so a control
+  // that WAS tested never shows up as a raw "error" card.
+  const deterministicStatus: OwaspAnalysisResult["status"] =
+    vulns.length > 0 ? "vulnerable" : partials.length > 0 ? "at_risk" : "secure";
+  const relevantFindings = [
+    ...new Set(
+      relevant
+        .filter((r) => r.verdict === "PASS" || r.verdict === "PARTIAL")
+        .flatMap((r) => r.findings),
+    ),
+  ];
+
+  let text: string;
+  try {
+    text = await llm.chat({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      maxTokens: 2048,
+    });
+  } catch (err) {
+    // AI enrichment unavailable (e.g. model/provider 404, rate limit, timeout).
+    // Fall back to the deterministic verdict instead of surfacing "error" — the
+    // framework still shows an accurate, rule-based mapping for this control.
+    return {
+      framework: frameworkName,
+      code: item.code,
+      title: item.title,
+      status: deterministicStatus,
+      summary: `${vulns.length} vulnerable, ${partials.length} partial, ${defended.length} defended across ${relevant.length} mapped attack(s). AI narrative unavailable (${err instanceof Error ? err.message : String(err)}).`,
+      details: "",
+      recommendations:
+        vulns.length + partials.length > 0
+          ? [
+              "Remediate the categories mapped to this control: " +
+                item.categories.join(", "),
+            ]
+          : [],
+      attacksAnalyzed: relevant.length,
+      vulnerabilitiesFound: vulns.length,
+      relevantFindings,
+    };
+  }
 
   // Parse the LLM response — strip markdown code fences first
   let parsed: {
@@ -2529,12 +2567,7 @@ Be specific and reference the actual attack results. Do not be generic.`;
     parsed = JSON.parse(jsonMatch?.[0] ?? "{}");
   } catch {
     parsed = {
-      status:
-        vulns.length > 0
-          ? "vulnerable"
-          : partials.length > 0
-            ? "at_risk"
-            : "secure",
+      status: deterministicStatus,
       summary: text.slice(0, 500),
       details: text,
       recommendations: [],
@@ -2551,13 +2584,7 @@ Be specific and reference the actual attack results. Do not be generic.`;
     recommendations: parsed.recommendations || [],
     attacksAnalyzed: relevant.length,
     vulnerabilitiesFound: vulns.length,
-    relevantFindings: [
-      ...new Set(
-        relevant
-          .filter((r) => r.verdict === "PASS" || r.verdict === "PARTIAL")
-          .flatMap((r) => r.findings),
-      ),
-    ],
+    relevantFindings,
   };
 }
 
