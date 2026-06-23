@@ -5870,12 +5870,18 @@
             await _origFetch("/api/auth/logout", { method: "POST" });
             authChannel?.postMessage({ type: "auth:refresh" });
             authToken = null;
+            // Drop cached runs + reset the load flag so the next login re-fetches
+            // fresh (no stale/other-tenant runs) and shows "Loading…" meanwhile.
+            runDataCache.clear();
+            runsInitialLoadDone = false;
             document.getElementById("userMenu").style.display = "none";
             document.getElementById("authOverlay").style.display = "flex";
           });
         }
 
-        await loadReportsMeta();
+        // Fire both in parallel (independent) so the Runs list isn't gated on
+        // the reports-meta fetch completing first.
+        loadReportsMeta();
         refreshActiveRuns();
       }
 
@@ -5932,13 +5938,18 @@
               clearInterval(clerkTokenRefreshTimer);
               clerkTokenRefreshTimer = null;
             }
+            // Drop cached runs + reset the load flag so the next login re-fetches
+            // fresh (no stale/other-tenant runs) and shows "Loading…" meanwhile.
+            runDataCache.clear();
+            runsInitialLoadDone = false;
             document.getElementById("userMenu").style.display = "none";
             document.getElementById("authOverlay").style.display = "flex";
           });
         }
 
-        // Now load data
-        await loadReportsMeta();
+        // Now load data — both in parallel (independent) so the Runs list isn't
+        // gated on the reports-meta fetch finishing first.
+        loadReportsMeta();
         refreshActiveRuns();
       }
 
@@ -7089,6 +7100,11 @@
       }
 
       var runsSearchTerm = "";
+      // False until the first /api/runs fetch completes. Lets the Runs tab show
+      // a "Loading…" state instead of "No active runs" while the post-login auth
+      // handshake + fetch is still in flight (otherwise the page looks like the
+      // scan history was lost during the 10-15s OIDC token handshake).
+      var runsInitialLoadDone = false;
 
       async function renderRunsTab() {
         const panel = document.getElementById("runsPanel");
@@ -7138,11 +7154,21 @@
           "</div>";
 
         if (allRuns.length === 0) {
-          html +=
-            '<div class="c-card c-empty">' +
-            '<div class="u-text-muted u-mb-2">' + (runsSearchTerm ? 'No runs matching "' + esc(runsSearchTerm) + '"' : 'No active runs') + '</div>' +
-            '<div class="u-text-base u-text-muted">' + (runsSearchTerm ? 'Try a different search term.' : 'Click "+ New Run" to start a red-team security scan, or trigger one via the API.') + '</div>' +
-            "</div>";
+          if (!runsInitialLoadDone && !runsSearchTerm) {
+            // First load hasn't finished (e.g. waiting on the post-login auth
+            // handshake). Show a loading state — NOT "no runs" — so the page
+            // doesn't look like scan history was lost.
+            html +=
+              '<div class="c-card c-empty">' +
+              '<div class="u-flex u-items-center u-justify-center u-gap-2 u-text-muted"><span class="spinner"></span> Loading runs…</div>' +
+              "</div>";
+          } else {
+            html +=
+              '<div class="c-card c-empty">' +
+              '<div class="u-text-muted u-mb-2">' + (runsSearchTerm ? 'No runs matching "' + esc(runsSearchTerm) + '"' : 'No active runs') + '</div>' +
+              '<div class="u-text-base u-text-muted">' + (runsSearchTerm ? 'Try a different search term.' : 'Click "+ New Run" to start a red-team security scan, or trigger one via the API.') + '</div>' +
+              "</div>";
+          }
         } else {
           html += '<div class="u-flex-col u-gap-3">';
           for (const [runId, data] of allRuns) {
@@ -15744,6 +15770,9 @@
           if (!resp.ok) return;
           const runs = await resp.json();
           if (!Array.isArray(runs)) return;
+          // Authenticated fetch succeeded — the list is now authoritative, so
+          // any subsequent empty state means "no runs", not "still loading".
+          runsInitialLoadDone = true;
           for (const run of runs) {
             if (run.status === "queued" || run.status === "running") {
               // Only fetch full progress for actively running jobs
