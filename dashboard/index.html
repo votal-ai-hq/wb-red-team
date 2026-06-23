@@ -5672,24 +5672,46 @@
             clerkInstance = new Clerk(config.clerkPublishableKey);
             await clerkInstance.load();
 
+            // Recover whenever a Clerk session appears — covers late hydration
+            // after a refresh and re-login without a full reload. Registered
+            // unconditionally so it fires regardless of the initial state;
+            // onClerkSignedIn is idempotent.
+            clerkInstance.addListener(({ user }) => {
+              if (user) onClerkSignedIn();
+              else clerkSignedInHandled = false;
+            });
+            // Wire the sign-in button up front (overlay may appear later).
+            document
+              .getElementById("authSignInBtn")
+              .addEventListener("click", () => {
+                clerkInstance.openSignIn({
+                  redirectUrl: window.location.href,
+                });
+              });
+
             if (clerkInstance.user) {
               // Already signed in
               await onClerkSignedIn();
-            } else {
-              // Show sign-in overlay
-              document.getElementById("authOverlay").style.display = "flex";
-              document
-                .getElementById("authSignInBtn")
-                .addEventListener("click", () => {
-                  clerkInstance.openSignIn({
-                    redirectUrl: window.location.href,
-                  });
-                });
+              return;
+            }
 
-              // Listen for sign-in
-              clerkInstance.addListener(({ user }) => {
-                if (user) onClerkSignedIn();
-              });
+            // No session yet. Clerk may still be hydrating after a refresh —
+            // poll briefly before showing the login overlay. Treating a
+            // not-yet-ready state as "signed out" is what bounced users to the
+            // login screen after a few refreshes even though their session was
+            // still valid (the session/cookie is never actually cleared here).
+            const HYDRATE_MS = 2500;
+            const STEP_MS = 250;
+            for (let waited = 0; waited < HYDRATE_MS; waited += STEP_MS) {
+              await new Promise((r) => setTimeout(r, STEP_MS));
+              if (clerkInstance.user) {
+                await onClerkSignedIn();
+                return;
+              }
+            }
+            // Still no session after the grace period — genuinely signed out.
+            if (!clerkSignedInHandled) {
+              document.getElementById("authOverlay").style.display = "flex";
             }
             return;
           }
@@ -5788,16 +5810,39 @@
       }
 
       async function syncSimpleAuthSession() {
-        try {
-          const res = await _origFetch("/api/auth/me");
-          if (!res.ok) throw new Error("Not signed in");
-          const data = await res.json();
-          await onSimpleSignedIn(data.user);
-        } catch {
-          authToken = null;
-          document.getElementById("userMenu").style.display = "none";
-          document.getElementById("authOverlay").style.display = "flex";
+        // Only an explicit 401/403 means the session is actually gone. A
+        // network blip or a cold-start 5xx is transient — retrying instead of
+        // immediately showing the login overlay is what fixes the "logged out
+        // after a few refreshes" bug (the rt_session cookie is still valid).
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const res = await _origFetch("/api/auth/me");
+            if (res.ok) {
+              const data = await res.json();
+              await onSimpleSignedIn(data.user);
+              return;
+            }
+            if (res.status === 401 || res.status === 403) {
+              // Genuinely not signed in.
+              authToken = null;
+              document.getElementById("userMenu").style.display = "none";
+              document.getElementById("authOverlay").style.display = "flex";
+              return;
+            }
+            // Other status (5xx, etc.) — transient; fall through to retry.
+          } catch {
+            // Network error — transient; fall through to retry.
+          }
+          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
         }
+        // Still failing after retries: do NOT force logout. setupSimpleAuthUi
+        // already set the overlay to "flex", so explicitly HIDE it here — the
+        // rt_session cookie may well be valid, and hiding it lets the app
+        // render and the bootstrap auto-load run (requests authenticate via the
+        // cookie). A genuine 401/403 above already showed the overlay; this
+        // path is only reached on transient errors, where bouncing the user to
+        // login is the bug we're fixing.
+        document.getElementById("authOverlay").style.display = "none";
       }
 
       async function onSimpleSignedIn(user) {
@@ -5834,15 +5879,26 @@
         refreshActiveRuns();
       }
 
+      let clerkSignedInHandled = false;
+      let clerkTokenRefreshTimer = null;
       async function onClerkSignedIn() {
+        // Idempotent: the sign-in listener can fire repeatedly (e.g. on token
+        // refresh) and the hydration poll may also call this — initialise the
+        // UI/data and the refresh interval only once per signed-in session, so
+        // we don't stack setIntervals/listeners or reload data on every event.
+        if (clerkSignedInHandled) return;
+        clerkSignedInHandled = true;
+
         document.getElementById("authOverlay").style.display = "none";
 
         // Get session token
         const session = clerkInstance.session;
         if (session) {
           authToken = await session.getToken();
-          // Auto-refresh token before expiry
-          setInterval(async () => {
+          // Auto-refresh token before expiry. Clear any prior timer first so a
+          // logout->login-without-reload cycle doesn't stack 50s intervals.
+          if (clerkTokenRefreshTimer) clearInterval(clerkTokenRefreshTimer);
+          clerkTokenRefreshTimer = setInterval(async () => {
             try {
               authToken = await clerkInstance.session?.getToken();
             } catch {}
@@ -5862,14 +5918,24 @@
           .slice(0, 2)
           .toUpperCase();
         document.getElementById("userMenuAvatar").textContent = initials;
-        document
-          .getElementById("userMenuSignout")
-          .addEventListener("click", async () => {
+        // Bind the sign-out handler once — onClerkSignedIn can run again after a
+        // logout->login-without-reload cycle, and re-adding the listener each
+        // time would stack handlers (firing signOut N times).
+        const signoutBtnC = document.getElementById("userMenuSignout");
+        if (!signoutBtnC.dataset.clerkBound) {
+          signoutBtnC.dataset.clerkBound = "1";
+          signoutBtnC.addEventListener("click", async () => {
             await clerkInstance.signOut();
             authToken = null;
+            clerkSignedInHandled = false;
+            if (clerkTokenRefreshTimer) {
+              clearInterval(clerkTokenRefreshTimer);
+              clerkTokenRefreshTimer = null;
+            }
             document.getElementById("userMenu").style.display = "none";
             document.getElementById("authOverlay").style.display = "flex";
           });
+        }
 
         // Now load data
         await loadReportsMeta();
