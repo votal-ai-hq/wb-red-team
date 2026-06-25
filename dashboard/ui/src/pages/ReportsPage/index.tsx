@@ -4,10 +4,19 @@ import { getReportsMeta, getReport } from "@/api/reports";
 import type { ReportMeta, FullReport, ReportResult, ReportSummary } from "@/api/types";
 import { useDebounce } from "@/hooks/useDebounce";
 import { ScoreRing } from "@/components/shared/ScoreRing";
-import { Badge } from "@/components/shared/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { FileText, ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
+import { FileText, ArrowLeft, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 
 /* ─── helpers ─── */
 
@@ -26,19 +35,18 @@ function fmtDate(iso: string) {
   });
 }
 
-function scoreColor(score: number) {
-  if (score >= 70) return "bg-green-500";
-  if (score >= 40) return "bg-orange-500";
-  return "bg-red-500";
+function scoreTextColor(score: number) {
+  if (score >= 70) return "text-green-600 dark:text-green-400";
+  if (score >= 40) return "text-orange-600 dark:text-orange-400";
+  return "text-red-600 dark:text-red-400";
 }
 
-function severityVariant(s: string): "critical" | "high" | "medium" | "low" | "info" {
+function severityVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   const l = s.toLowerCase();
-  if (l === "critical") return "critical";
-  if (l === "high") return "high";
-  if (l === "medium") return "medium";
-  if (l === "low") return "low";
-  return "info";
+  if (l === "critical" || l === "high") return "destructive";
+  if (l === "medium") return "default";
+  if (l === "low") return "secondary";
+  return "outline";
 }
 
 /** Extract summary stats from a FullReport, handling both top-level and nested summary object */
@@ -82,14 +90,14 @@ function getRoundNumber(round: { round?: number; roundNumber?: number }): number
   return round.round ?? round.roundNumber ?? 0;
 }
 
-function verdictVariant(v: string): "critical" | "success" | "info" {
+function verdictVariant(v: string): "destructive" | "default" | "secondary" {
   const l = v.toLowerCase();
-  if (l === "vulnerable" || l === "fail" || l === "failed") return "critical";
-  if (l === "pass" || l === "passed" || l === "blocked" || l === "safe") return "success";
-  return "info";
+  if (l === "vulnerable" || l === "fail" || l === "failed") return "destructive";
+  if (l === "pass" || l === "passed" || l === "blocked" || l === "safe") return "default";
+  return "secondary";
 }
 
-/* ─── Grid Mode ─── */
+/* ─── Grid Mode (Table-based list) ─── */
 
 function ReportsGrid() {
   const navigate = useNavigate();
@@ -150,56 +158,75 @@ function ReportsGrid() {
         />
       ) : (
         <>
-          {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {reports.map((r) => (
-              <button
-                key={r.filename}
-                onClick={() => navigate(`/reports/${encodeURIComponent(r.filename)}`)}
-                className="text-left bg-card rounded-xl border border-border p-5 transition-all hover:border-primary/30 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30"
-              >
-                {/* Icon + Name */}
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center">
-                    <FileText size={18} className="text-orange-600" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-foreground truncate">
-                      {truncate(r.filename, 40)}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {r.targetUrl}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Date + Score */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs text-muted-foreground">{fmtDate(r.timestamp)}</span>
-                  <span
-                    className={`w-3 h-3 rounded-full ${scoreColor(r.score)}`}
-                    title={`Score: ${r.score}`}
-                  />
-                </div>
-
-                {/* Stats pills */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                    {r.failed} vulnerable
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                    {r.passed} blocked
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                    {r.errors} errors
-                  </span>
-                </div>
-
-                {/* Status */}
-                <Badge variant="success">Completed</Badge>
-              </button>
-            ))}
-          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[70px]">Score</TableHead>
+                    <TableHead>Target URL</TableHead>
+                    <TableHead className="w-[180px]">Date</TableHead>
+                    <TableHead className="w-[90px] text-center">Attacks</TableHead>
+                    <TableHead className="w-[80px] text-center">Passed</TableHead>
+                    <TableHead className="w-[80px] text-center">Failed</TableHead>
+                    <TableHead className="w-[80px] text-center">Errors</TableHead>
+                    <TableHead className="w-[60px]" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reports.map((r) => (
+                    <TableRow
+                      key={r.filename}
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/reports/${encodeURIComponent(r.filename)}`)}
+                    >
+                      <TableCell>
+                        <span className={`text-lg font-bold tabular-nums ${scoreTextColor(r.score)}`}>
+                          {r.score}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate max-w-[400px]">
+                            {r.targetUrl || truncate(r.filename, 50)}
+                          </p>
+                          {r.targetUrl && (
+                            <p className="text-xs text-muted-foreground truncate max-w-[400px] mt-0.5">
+                              {truncate(r.filename, 60)}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {fmtDate(r.timestamp)}
+                      </TableCell>
+                      <TableCell className="text-center text-sm tabular-nums">
+                        {r.totalAttacks}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-sm tabular-nums text-green-600 dark:text-green-400 font-medium">
+                          {r.passed}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-sm tabular-nums text-red-600 dark:text-red-400 font-medium">
+                          {r.failed}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-sm tabular-nums text-orange-600 dark:text-orange-400 font-medium">
+                          {r.errors}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <ExternalLink size={14} className="text-muted-foreground" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -207,7 +234,7 @@ function ReportsGrid() {
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-gray-50"
+                className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-muted"
               >
                 Previous
               </button>
@@ -217,7 +244,7 @@ function ReportsGrid() {
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-gray-50"
+                className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-muted"
               >
                 Next
               </button>
@@ -236,11 +263,11 @@ function FindingRow({ result }: { result: ReportResult }) {
 
   return (
     <>
-      <tr
-        className="border-b border-border hover:bg-gray-50/60 cursor-pointer"
+      <TableRow
+        className="cursor-pointer"
         onClick={() => setExpanded((v) => !v)}
       >
-        <td className="px-4 py-3 text-sm">
+        <TableCell className="text-sm">
           <span className="inline-flex items-center gap-1.5">
             {expanded ? (
               <ChevronDown size={14} className="text-muted-foreground" />
@@ -249,21 +276,21 @@ function FindingRow({ result }: { result: ReportResult }) {
             )}
             {getAttackName(result)}
           </span>
-        </td>
-        <td className="px-4 py-3 text-sm text-muted-foreground">{getCategory(result) || "-"}</td>
-        <td className="px-4 py-3">
+        </TableCell>
+        <TableCell className="text-sm text-muted-foreground">{getCategory(result) || "-"}</TableCell>
+        <TableCell>
           <Badge variant={severityVariant(getSeverity(result) || "unknown")}>{getSeverity(result) || "unknown"}</Badge>
-        </td>
-        <td className="px-4 py-3">
+        </TableCell>
+        <TableCell>
           <Badge variant={verdictVariant(result.verdict)}>{result.verdict}</Badge>
-        </td>
-        <td className="px-4 py-3 text-sm text-muted-foreground max-w-xs truncate">
+        </TableCell>
+        <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
           {result.reasoning || result.llmReasoning || "-"}
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
       {expanded && (
-        <tr className="bg-gray-50/40">
-          <td colSpan={5} className="px-6 py-4">
+        <TableRow className="bg-muted/40">
+          <TableCell colSpan={5} className="px-6 py-4">
             <div className="space-y-3 text-sm">
               {(result.reasoning || result.llmReasoning) && (
                 <div>
@@ -276,7 +303,7 @@ function FindingRow({ result }: { result: ReportResult }) {
               {result.payload && (
                 <div>
                   <span className="font-medium text-foreground">Payload: </span>
-                  <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-muted-foreground break-all">
+                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground break-all">
                     {result.payload}
                   </code>
                 </div>
@@ -302,14 +329,14 @@ function FindingRow({ result }: { result: ReportResult }) {
                         key={i}
                         className={`rounded-lg px-3 py-2 text-xs ${
                           step.role === "user"
-                            ? "bg-blue-50 text-blue-900"
-                            : "bg-gray-100 text-gray-800"
+                            ? "bg-blue-50 text-blue-900 dark:bg-blue-950 dark:text-blue-200"
+                            : "bg-muted text-muted-foreground"
                         }`}
                       >
                         <span className="font-semibold capitalize">{step.role}: </span>
                         <span className="whitespace-pre-wrap break-words">{step.content}</span>
                         {step.statusCode && (
-                          <span className="ml-2 text-[10px] text-gray-400">
+                          <span className="ml-2 text-[10px] text-muted-foreground">
                             [{step.statusCode}]
                           </span>
                         )}
@@ -336,8 +363,8 @@ function FindingRow({ result }: { result: ReportResult }) {
                 </div>
               )}
             </div>
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       )}
     </>
   );
@@ -418,43 +445,49 @@ function ReportDetail({ filename }: { filename: string }) {
       {(() => {
         const stats = getReportStats(report);
         return (
-          <div className="bg-card rounded-xl border border-border p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <ScoreRing score={stats.score} size={90} />
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-bold text-foreground truncate">
-                  {report.filename || filename}
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">{report.targetUrl}</p>
-                <p className="text-xs text-muted-foreground mt-1">{fmtDate(report.timestamp)}</p>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                    {stats.failed} vulnerable
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                    {stats.passed} blocked
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                    {stats.errors} errors
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                    {stats.totalAttacks} total
-                  </span>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                <ScoreRing score={stats.score} size={90} />
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-xl font-bold text-foreground truncate">
+                    {report.filename || filename}
+                  </h1>
+                  <p className="text-sm text-muted-foreground mt-1">{report.targetUrl}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{fmtDate(report.timestamp)}</p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Badge variant="destructive">
+                      {stats.failed} vulnerable
+                    </Badge>
+                    <Badge variant="default">
+                      {stats.passed} blocked
+                    </Badge>
+                    <Badge variant="outline">
+                      {stats.errors} errors
+                    </Badge>
+                    <Badge variant="secondary">
+                      {stats.totalAttacks} total
+                    </Badge>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         );
       })()}
 
       {/* Summary / LLM Analysis */}
       {report.llmAnalysis && (
-        <div className="bg-card rounded-xl border border-border p-6">
-          <h2 className="text-base font-semibold text-foreground mb-2">Analysis</h2>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-            {report.llmAnalysis}
-          </p>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Analysis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+              {report.llmAnalysis}
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Rounds tabs */}
@@ -486,59 +519,59 @@ function ReportDetail({ filename }: { filename: string }) {
           icon={<FileText size={40} />}
         />
       ) : (
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-border bg-gray-50/60">
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/60">
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider">
                     Attack Name
-                  </th>
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider">
                     Category
-                  </th>
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider">
                     Severity
-                  </th>
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider">
                     Verdict
-                  </th>
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider">
                     Reasoning
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {pagedFindings.map((result, i) => (
                   <FindingRow key={`${getAttackName(result)}-${i}`} result={result} />
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
 
-          {/* Findings pagination */}
-          {totalFindingsPages > 1 && (
-            <div className="flex items-center justify-center gap-2 py-3 border-t border-border">
-              <button
-                disabled={findingsPage <= 1}
-                onClick={() => setFindingsPage((p) => p - 1)}
-                className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-gray-50"
-              >
-                Previous
-              </button>
-              <span className="text-sm text-muted-foreground">
-                {findingsPage} / {totalFindingsPages}
-              </span>
-              <button
-                disabled={findingsPage >= totalFindingsPages}
-                onClick={() => setFindingsPage((p) => p + 1)}
-                className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-gray-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </div>
+            {/* Findings pagination */}
+            {totalFindingsPages > 1 && (
+              <div className="flex items-center justify-center gap-2 py-3 border-t border-border">
+                <button
+                  disabled={findingsPage <= 1}
+                  onClick={() => setFindingsPage((p) => p - 1)}
+                  className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-muted"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-muted-foreground">
+                  {findingsPage} / {totalFindingsPages}
+                </span>
+                <button
+                  disabled={findingsPage >= totalFindingsPages}
+                  onClick={() => setFindingsPage((p) => p + 1)}
+                  className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-muted"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -1,101 +1,128 @@
 import { useState, useEffect, useCallback } from "react";
-import { getRuns, getRun } from "@/api/runs";
+import { useNavigate } from "react-router";
+import { getRuns, getRun, deleteRun, createRun } from "@/api/runs";
 import type { RunMeta, RunDetail } from "@/api/types";
 import { usePolling } from "@/hooks/usePolling";
-import { useDebounce } from "@/hooks/useDebounce";
-import { Badge } from "@/components/shared/Badge";
-import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
-import { EmptyState } from "@/components/shared/EmptyState";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Play,
   Clock,
   CheckCircle,
   XCircle,
   AlertCircle,
+  Trash2,
+  RotateCcw,
   ChevronDown,
   ChevronRight,
-  Search,
+  Loader2,
 } from "lucide-react";
 
-const cardClass =
-  "bg-card border border-border rounded-xl shadow-sm";
+/* ─── helpers ─── */
 
 type RunStatus = RunMeta["status"];
 
-const statusConfig: Record<
+const STATUS_CONFIG: Record<
   RunStatus,
-  { label: string; variant: "info" | "success" | "critical" | "medium" | "low"; icon: typeof Play; pulse?: boolean }
+  {
+    label: string;
+    variant: "default" | "secondary" | "destructive" | "outline";
+    borderColor: string;
+    bgColor: string;
+    icon: React.ElementType;
+    pulse?: boolean;
+  }
 > = {
-  running: { label: "Running", variant: "info", icon: Play, pulse: true },
-  done: { label: "Done", variant: "success", icon: CheckCircle },
-  error: { label: "Error", variant: "critical", icon: XCircle },
-  cancelled: { label: "Cancelled", variant: "low", icon: AlertCircle },
-  queued: { label: "Queued", variant: "medium", icon: Clock },
+  running: {
+    label: "RUNNING",
+    variant: "default",
+    borderColor: "border-l-blue-500",
+    bgColor: "bg-blue-50/50 dark:bg-blue-950/20",
+    icon: Loader2,
+    pulse: true,
+  },
+  queued: {
+    label: "QUEUED",
+    variant: "outline",
+    borderColor: "border-l-amber-500",
+    bgColor: "bg-amber-50/50 dark:bg-amber-950/20",
+    icon: Clock,
+  },
+  done: {
+    label: "DONE",
+    variant: "secondary",
+    borderColor: "border-l-emerald-500",
+    bgColor: "",
+    icon: CheckCircle,
+  },
+  error: {
+    label: "ERROR",
+    variant: "destructive",
+    borderColor: "border-l-red-500",
+    bgColor: "bg-red-50/50 dark:bg-red-950/20",
+    icon: XCircle,
+  },
+  cancelled: {
+    label: "CANCELLED",
+    variant: "destructive",
+    borderColor: "border-l-red-400",
+    bgColor: "bg-red-50/30 dark:bg-red-950/10",
+    icon: AlertCircle,
+  },
 };
 
-function StatusBadge({ status }: { status: RunStatus }) {
-  const cfg = statusConfig[status] ?? statusConfig.queued;
-  const Icon = cfg.icon;
-  return (
-    <span className={`inline-flex items-center gap-1.5 ${cfg.pulse ? "animate-pulse" : ""}`}>
-      <Badge variant={cfg.variant}>
-        <Icon className="w-3 h-3 mr-1" />
-        {cfg.label}
-      </Badge>
-    </span>
-  );
-}
-
-function formatTime(iso: string) {
+function fmtDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-US", {
-    month: "short",
+    month: "numeric",
     day: "numeric",
-    hour: "2-digit",
+    year: "numeric",
+    hour: "numeric",
     minute: "2-digit",
+    hour12: true,
   });
 }
 
-function truncateId(id: string) {
-  return id.length > 12 ? id.slice(0, 12) + "..." : id;
-}
-
 function verdictColor(verdict: string) {
-  const v = verdict.toLowerCase();
-  if (v === "pass" || v === "passed") return "text-emerald-600";
-  if (v === "fail" || v === "failed") return "text-red-600";
+  const v = verdict.toUpperCase();
+  if (v === "PASS") return "text-emerald-600 dark:text-emerald-400";
+  if (v === "FAIL") return "text-red-600 dark:text-red-400";
+  if (v === "PARTIAL") return "text-amber-600 dark:text-amber-400";
   return "text-muted-foreground";
 }
 
+/* ─── main component ─── */
+
 export default function RunsPage() {
+  const navigate = useNavigate();
   const [runs, setRuns] = useState<RunMeta[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearch = useDebounce(searchTerm, 300);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [runDetails, setRunDetails] = useState<Record<string, RunDetail>>({});
   const [detailLoading, setDetailLoading] = useState<Record<string, boolean>>({});
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [rerunningIds, setRerunningIds] = useState<Set<string>>(new Set());
 
-  // Fetch runs list
-  useEffect(() => {
+  const refreshRuns = useCallback(() => {
     getRuns()
       .then((data) => setRuns(Array.isArray(data) ? data : []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      .catch(console.error);
   }, []);
 
-  // Determine which runs are active (need polling)
+  useEffect(() => {
+    refreshRuns();
+    setLoading(false);
+  }, [refreshRuns]);
+
+  // Poll active runs
   const activeRunIds = runs
     .filter((r) => r.status === "running" || r.status === "queued")
     .map((r) => r.runId);
 
-  const hasActiveRuns = activeRunIds.length > 0;
-
-  // Poll active runs
   const pollActiveRuns = useCallback(() => {
-    // Refresh the runs list
-    getRuns().then((data) => setRuns(Array.isArray(data) ? data : [])).catch(console.error);
-
-    // If an active run is expanded, refresh its detail
+    refreshRuns();
     if (expandedId && activeRunIds.includes(expandedId)) {
       getRun(expandedId)
         .then((detail) =>
@@ -103,11 +130,11 @@ export default function RunsPage() {
         )
         .catch(console.error);
     }
-  }, [expandedId, activeRunIds]);
+  }, [expandedId, activeRunIds, refreshRuns]);
 
-  usePolling(pollActiveRuns, 2000, hasActiveRuns);
+  usePolling(pollActiveRuns, 3000, activeRunIds.length > 0);
 
-  // Load detail when a card is expanded
+  // Expand/collapse run detail
   const toggleExpand = useCallback(
     (runId: string) => {
       if (expandedId === runId) {
@@ -127,21 +154,83 @@ export default function RunsPage() {
           );
       }
     },
-    [expandedId, runDetails]
+    [expandedId, runDetails],
   );
 
-  // Filter runs by search
-  const filtered = debouncedSearch
-    ? runs.filter((r) =>
-        (r.targetUrl ?? "").toLowerCase().includes(debouncedSearch.toLowerCase())
-      )
-    : runs;
+  // Delete run
+  const handleDelete = useCallback(
+    async (runId: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!confirm("Delete this run? This cannot be undone.")) return;
+      setDeletingIds((prev) => new Set(prev).add(runId));
+      try {
+        await deleteRun(runId, true);
+        setRuns((prev) => prev.filter((r) => r.runId !== runId));
+        if (expandedId === runId) setExpandedId(null);
+      } catch (err) {
+        console.error("Failed to delete run:", err);
+      } finally {
+        setDeletingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(runId);
+          return next;
+        });
+      }
+    },
+    [expandedId],
+  );
+
+  // Edit & Rerun
+  const handleRerun = useCallback(
+    async (runId: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setRerunningIds((prev) => new Set(prev).add(runId));
+      try {
+        // Fetch run detail with config
+        let detail = runDetails[runId];
+        if (!detail?.config) {
+          detail = await getRun(runId, 0, true);
+          setRunDetails((prev) => ({ ...prev, [runId]: detail }));
+        }
+        if (detail.config) {
+          // Navigate to new scan page with the config pre-filled
+          navigate("/new-scan", { state: { config: detail.config } });
+        } else {
+          // No config available — just navigate to new scan
+          navigate("/new-scan");
+        }
+      } catch {
+        navigate("/new-scan");
+      } finally {
+        setRerunningIds((prev) => {
+          const next = new Set(prev);
+          next.delete(runId);
+          return next;
+        });
+      }
+    },
+    [runDetails, navigate],
+  );
+
+  // Cancel run
+  const handleCancel = useCallback(
+    async (runId: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        await deleteRun(runId, false); // cancel, not purge
+        refreshRuns();
+      } catch (err) {
+        console.error("Failed to cancel run:", err);
+      }
+    },
+    [refreshRuns],
+  );
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto flex items-center justify-center py-32">
+      <div className="max-w-5xl mx-auto flex items-center justify-center py-32">
         <div className="flex flex-col items-center gap-3">
-          <LoadingSpinner size="lg" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <span className="text-sm text-muted-foreground">Loading runs...</span>
         </div>
       </div>
@@ -149,138 +238,176 @@ export default function RunsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-2">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Scan Runs</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Active and historical scan activity
+          <h1 className="text-xl font-bold text-foreground">Scan Activity</h1>
+          <p className="text-sm text-muted-foreground">
+            {runs.length} run{runs.length !== 1 ? "s" : ""}
+            {activeRunIds.length > 0 && (
+              <span className="text-primary ml-2 font-medium">
+                ({activeRunIds.length} active)
+              </span>
+            )}
           </p>
         </div>
-        {hasActiveRuns && (
-          <span className="inline-flex items-center gap-2 text-sm text-primary font-medium animate-pulse">
-            <Play className="w-4 h-4" />
-            {activeRunIds.length} active
-          </span>
-        )}
-      </div>
-
-      {/* Search */}
-      <div className={`${cardClass} p-3`}>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Filter by target URL..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-border rounded-lg bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-          />
-        </div>
+        <button
+          onClick={() => navigate("/new-scan")}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          <Play className="w-4 h-4" />
+          New Scan
+        </button>
       </div>
 
       {/* Runs list */}
-      {filtered.length === 0 ? (
-        <div className={cardClass}>
-          <EmptyState
-            title={debouncedSearch ? "No matching runs" : "No scan runs yet"}
-            description={
-              debouncedSearch
-                ? "Try a different search term."
-                : "Start a new scan to see runs here."
-            }
-            icon={<Clock className="w-12 h-12" />}
-          />
-        </div>
+      {runs.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <Clock className="w-10 h-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm font-medium text-muted-foreground">No scan runs yet</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              Start a new scan to see activity here
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-3">
-          {filtered.map((run) => {
+          {runs.map((run) => {
+            const cfg = STATUS_CONFIG[run.status] ?? STATUS_CONFIG.queued;
+            const Icon = cfg.icon;
             const isExpanded = expandedId === run.runId;
             const detail = runDetails[run.runId];
             const isDetailLoading = detailLoading[run.runId];
+            const isDeleting = deletingIds.has(run.runId);
+            const isRerunning = rerunningIds.has(run.runId);
 
             return (
-              <div key={run.runId} className={cardClass}>
-                {/* Run card header */}
-                <button
-                  onClick={() => toggleExpand(run.runId)}
-                  className="w-full flex items-center gap-4 p-4 text-left hover:bg-muted/50 rounded-xl transition-colors"
-                >
-                  <span className="text-muted-foreground">
+              <div
+                key={run.runId}
+                className={`rounded-xl border border-border border-l-4 ${cfg.borderColor} ${cfg.bgColor} overflow-hidden`}
+              >
+                {/* Run row */}
+                <div className="flex items-center gap-4 px-5 py-4">
+                  {/* Expand toggle */}
+                  <button
+                    onClick={() => toggleExpand(run.runId)}
+                    className="text-muted-foreground hover:text-foreground shrink-0"
+                  >
                     {isExpanded ? (
                       <ChevronDown className="w-4 h-4" />
                     ) : (
                       <ChevronRight className="w-4 h-4" />
                     )}
+                  </button>
+
+                  {/* Status badge */}
+                  <Badge variant={cfg.variant} className="shrink-0">
+                    <Icon className={`w-3 h-3 mr-1 ${cfg.pulse ? "animate-spin" : ""}`} />
+                    {cfg.label}
+                  </Badge>
+
+                  {/* Date */}
+                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                    {fmtDateTime(run.startedAt)}
                   </span>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <code className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                        {truncateId(run.runId)}
-                      </code>
-                      <StatusBadge status={run.status} />
-                      {run.progressCount != null && (
-                        <span className="text-xs text-muted-foreground">
-                          {run.progressCount} attacks
-                        </span>
+                  {/* Target URL */}
+                  <span
+                    className="text-sm font-medium text-foreground truncate flex-1 min-w-0"
+                    title={run.targetUrl ?? ""}
+                  >
+                    {run.targetUrl ?? "—"}
+                  </span>
+
+                  {/* Attacks count */}
+                  {run.progressCount != null && run.progressCount > 0 && (
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {run.progressCount} attacks
+                    </span>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {(run.status === "running" || run.status === "queued") && (
+                      <button
+                        onClick={(e) => handleCancel(run.runId, e)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 rounded-lg transition-colors"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        Cancel
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => handleRerun(run.runId, e)}
+                      disabled={isRerunning}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {isRerunning ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <RotateCcw className="w-3.5 h-3.5" />
                       )}
-                    </div>
-                    <div className="flex items-center gap-4 mt-1.5">
-                      {run.targetUrl && (
-                        <span className="text-sm font-medium text-foreground truncate max-w-[400px]">
-                          {run.targetUrl}
-                        </span>
+                      Edit & Rerun
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(run.runId, e)}
+                      disabled={isDeleting}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
                       )}
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatTime(run.startedAt)}
-                      </span>
-                    </div>
+                    </button>
                   </div>
-                </button>
+                </div>
 
                 {/* Expanded detail */}
                 {isExpanded && (
-                  <div className="border-t border-border px-4 pb-4 pt-3">
+                  <div className="border-t border-border px-5 pb-4 pt-3 bg-card">
                     {isDetailLoading ? (
-                      <div className="py-8">
-                        <LoadingSpinner size="sm" />
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                       </div>
                     ) : detail ? (
                       <div className="space-y-4">
-                        {/* Summary */}
-                        {detail.summary && (
-                          <p className="text-sm text-muted-foreground italic">
-                            {detail.summary}
-                          </p>
-                        )}
-
                         {/* Error message */}
                         {detail.error && (
-                          <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <XCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
-                            <p className="text-sm text-red-600">{detail.error}</p>
+                          <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg">
+                            <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                                Run failed: Cancelled by user
+                              </p>
+                              <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-0.5">
+                                {detail.error}
+                              </p>
+                            </div>
                           </div>
                         )}
 
+                        {/* Summary */}
+                        {detail.summary && typeof detail.summary === "string" && (
+                          <p className="text-sm text-muted-foreground">{detail.summary}</p>
+                        )}
+
                         {/* Progress list */}
-                        {detail.progress?.length > 0 && (
+                        {(detail.progress?.length ?? 0) > 0 && (
                           <div>
                             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                               Progress ({detail.progress?.length ?? 0}
-                              {detail.progressTotal
-                                ? ` / ${detail.progressTotal}`
-                                : ""}
-                              )
+                              {detail.progressTotal ? ` / ${detail.progressTotal}` : ""})
                             </h4>
-                            <div className="max-h-64 overflow-y-auto space-y-1">
+                            <div className="max-h-64 overflow-y-auto border border-border rounded-lg divide-y divide-border">
                               {(detail.progress ?? []).map((p) => (
                                 <div
                                   key={p.index}
-                                  className="flex items-center gap-3 text-sm py-1.5 px-2 rounded hover:bg-muted/50"
+                                  className="flex items-center gap-3 text-sm py-2 px-3 hover:bg-muted/30"
                                 >
-                                  <span className="text-xs text-muted-foreground w-6 text-right shrink-0">
+                                  <span className="text-xs text-muted-foreground w-6 text-right tabular-nums shrink-0">
                                     {p.index + 1}
                                   </span>
                                   <span className="font-medium text-foreground truncate flex-1">
@@ -289,11 +416,7 @@ export default function RunsPage() {
                                   <span className="text-xs text-muted-foreground shrink-0">
                                     {p.category}
                                   </span>
-                                  <span
-                                    className={`text-xs font-semibold shrink-0 ${verdictColor(
-                                      p.verdict
-                                    )}`}
-                                  >
+                                  <span className={`text-xs font-semibold shrink-0 ${verdictColor(p.verdict)}`}>
                                     {p.verdict}
                                   </span>
                                 </div>
@@ -302,15 +425,15 @@ export default function RunsPage() {
                           </div>
                         )}
 
-                        {/* Link to report */}
+                        {/* Report link */}
                         {run.status === "done" && detail.reportFile && (
-                          <a
-                            href={`/reports`}
+                          <button
+                            onClick={() => navigate(`/reports/${detail.reportFile}`)}
                             className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                           >
                             <CheckCircle className="w-4 h-4" />
                             View Report
-                          </a>
+                          </button>
                         )}
                       </div>
                     ) : (

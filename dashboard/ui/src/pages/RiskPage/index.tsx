@@ -1,24 +1,38 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getReportsMeta, getReport } from "@/api/reports";
 import { analyzeRisk } from "@/api/risk";
 import { useNDJSONStream } from "@/hooks/useNDJSONStream";
-import type { ReportMeta, FullReport, RiskAnalysisResult, ReportSummary } from "@/api/types";
+import type {
+  ReportMeta,
+  FullReport,
+  RiskAnalysisResult,
+  ReportSummary,
+} from "@/api/types";
 import { ScoreRing } from "@/components/shared/ScoreRing";
-import { Badge } from "@/components/shared/Badge";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { Shield, AlertTriangle, Play, ChevronDown } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Shield, AlertTriangle, Play } from "lucide-react";
 
-const cardClass =
-  "bg-card border border-border rounded-xl p-5 shadow-sm";
+/* ---------- helpers (unchanged logic) ---------- */
 
-function severityBadgeVariant(severity: string): "critical" | "high" | "medium" | "low" | "info" {
+function severityBadgeVariant(
+  severity: string
+): "default" | "secondary" | "destructive" | "outline" {
   const s = severity.toLowerCase();
-  if (s === "critical") return "critical";
-  if (s === "high") return "high";
-  if (s === "medium") return "medium";
-  if (s === "low") return "low";
-  return "info";
+  if (s === "critical" || s === "high") return "destructive";
+  if (s === "medium") return "default";
+  if (s === "low") return "secondary";
+  return "outline";
 }
 
 function severityPriority(severity: string): number {
@@ -31,7 +45,10 @@ function severityPriority(severity: string): number {
 }
 
 function getReportStats(report: FullReport) {
-  const s = typeof report.summary === "object" && report.summary ? report.summary as ReportSummary : null;
+  const s =
+    typeof report.summary === "object" && report.summary
+      ? (report.summary as ReportSummary)
+      : null;
   return {
     score: s?.score ?? report.score ?? 0,
     passed: s?.passed ?? report.passed ?? 0,
@@ -41,26 +58,81 @@ function getReportStats(report: FullReport) {
   };
 }
 
-function getAttackName(result: { attack?: string | Record<string, unknown>; attackName?: string }): string {
+function getAttackName(result: {
+  attack?: string | Record<string, unknown>;
+  attackName?: string;
+}): string {
   const atk = result.attack;
-  if (typeof atk === "object" && atk !== null) return (atk as Record<string, unknown>).name as string ?? "Unknown";
+  if (typeof atk === "object" && atk !== null)
+    return ((atk as Record<string, unknown>).name as string) ?? "Unknown";
   if (typeof atk === "string") return atk;
   return result.attackName ?? "Unknown";
 }
 
-function getCategory(result: { attack?: string | Record<string, unknown>; category?: string }): string {
+function getCategory(result: {
+  attack?: string | Record<string, unknown>;
+  category?: string;
+}): string {
   if (result.category) return result.category;
   const atk = result.attack;
-  if (typeof atk === "object" && atk !== null) return (atk as Record<string, unknown>).category as string ?? "";
+  if (typeof atk === "object" && atk !== null)
+    return ((atk as Record<string, unknown>).category as string) ?? "";
   return "";
 }
 
-function getSeverity(result: { attack?: string | Record<string, unknown>; severity?: string }): string {
+function getSeverity(result: {
+  attack?: string | Record<string, unknown>;
+  severity?: string;
+}): string {
   if (result.severity) return result.severity;
   const atk = result.attack;
-  if (typeof atk === "object" && atk !== null) return (atk as Record<string, unknown>).severity as string ?? "";
+  if (typeof atk === "object" && atk !== null)
+    return ((atk as Record<string, unknown>).severity as string) ?? "";
   return "";
 }
+
+/* ---------- score badge color for report cards ---------- */
+
+function scoreBadgeClasses(score: number): string {
+  if (score >= 80)
+    return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300";
+  if (score >= 60)
+    return "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300";
+  return "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300";
+}
+
+function truncateUrl(url: string, max = 32): string {
+  if (url.length <= max) return url;
+  try {
+    const u = new URL(url);
+    const host = u.hostname;
+    const path = u.pathname;
+    const short = host + path;
+    return short.length > max ? short.slice(0, max - 1) + "\u2026" : short;
+  } catch {
+    return url.slice(0, max - 1) + "\u2026";
+  }
+}
+
+/* ---------- severity bar colors ---------- */
+
+const severityBarColors: Record<string, string> = {
+  critical: "bg-red-500 dark:bg-red-400",
+  high: "bg-orange-500 dark:bg-orange-400",
+  medium: "bg-amber-500 dark:bg-amber-400",
+  low: "bg-emerald-500 dark:bg-emerald-400",
+  unknown: "bg-gray-400 dark:bg-gray-500",
+};
+
+const severityBorderColors: Record<string, string> = {
+  critical: "border-l-red-500 dark:border-l-red-400",
+  high: "border-l-orange-500 dark:border-l-orange-400",
+  medium: "border-l-yellow-500 dark:border-l-yellow-400",
+  low: "border-l-green-500 dark:border-l-green-400",
+  unknown: "border-l-gray-400 dark:border-l-gray-500",
+};
+
+/* ========== component ========== */
 
 export default function RiskPage() {
   const [reports, setReports] = useState<ReportMeta[]>([]);
@@ -68,20 +140,31 @@ export default function RiskPage() {
   const [selectedFile, setSelectedFile] = useState<string>("");
   const [fullReport, setFullReport] = useState<FullReport | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { data: riskResults, isStreaming, error: streamError, start } =
-    useNDJSONStream<RiskAnalysisResult>();
+  const {
+    data: riskResults,
+    isStreaming,
+    error: streamError,
+    start,
+  } = useNDJSONStream<RiskAnalysisResult>();
 
-  // Fetch reports list
+  /* Fetch reports list */
   useEffect(() => {
     getReportsMeta(1, 200)
-      .then((res) => setReports(res.items))
+      .then((res) => {
+        setReports(res.items);
+        // Auto-select the first report
+        if (res.items.length > 0 && !selectedFile) {
+          setSelectedFile(res.items[0].filename);
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch full report when selected
+  /* Fetch full report when selected */
   useEffect(() => {
     if (!selectedFile) {
       setFullReport(null);
@@ -116,7 +199,7 @@ export default function RiskPage() {
     );
   }
 
-  // ---- Derived data from full report ----
+  /* ---- Derived data from full report ---- */
   const allResults = fullReport
     ? (fullReport.rounds ?? []).flatMap((r) => r.results)
     : [];
@@ -132,7 +215,7 @@ export default function RiskPage() {
 
   const maxSevCount = Math.max(...Object.values(severityDist), 1);
 
-  // Group vulnerabilities by priority for remediation matrix
+  /* Group vulnerabilities by priority for remediation matrix */
   const remediationGroups: Record<string, typeof vulnerabilities> = {};
   vulnerabilities.forEach((v) => {
     const key = getSeverity(v) || "unknown";
@@ -145,72 +228,82 @@ export default function RiskPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-5">
-      {/* Step 1: Report selector */}
-      <div className={cardClass}>
-        <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-primary" />
-          Risk Analysis
-        </h2>
-        <div className="relative">
-          <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="w-full flex items-center justify-between px-4 py-2.5 bg-muted border border-border rounded-lg text-sm text-foreground hover:border-primary transition-colors"
-          >
-            <span>
-              {selectedFile
-                ? reports.find((r) => r.filename === selectedFile)?.targetUrl +
-                  " - " +
-                  new Date(
-                    reports.find((r) => r.filename === selectedFile)?.timestamp ?? ""
-                  ).toLocaleDateString()
-                : "Select a report to analyze..."}
-            </span>
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          </button>
-          {dropdownOpen && (
-            <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
-              {reports.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-muted-foreground">
-                  No reports available
-                </div>
-              ) : (
-                reports.map((r) => (
+      {/* ===== Report selector — horizontal scrollable cards ===== */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Shield className="w-5 h-5 text-primary" />
+            Risk Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {reports.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">
+              No reports available. Run a scan first.
+            </p>
+          ) : (
+            <div
+              ref={scrollRef}
+              className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+            >
+              {reports.map((r) => {
+                const isSelected = selectedFile === r.filename;
+                const date = new Date(r.timestamp);
+                return (
                   <button
                     key={r.filename}
-                    onClick={() => {
-                      setSelectedFile(r.filename);
-                      setDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-center justify-between ${
-                      selectedFile === r.filename ? "bg-muted font-medium" : ""
-                    }`}
+                    onClick={() => setSelectedFile(r.filename)}
+                    className={`
+                      flex-shrink-0 w-56 rounded-lg border-2 p-3 text-left transition-all
+                      hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary
+                      ${
+                        isSelected
+                          ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm"
+                          : "border-border bg-card hover:border-muted-foreground/30 dark:bg-card"
+                      }
+                    `}
                   >
-                    <span className="truncate">
-                      {r.targetUrl} -{" "}
-                      {new Date(r.timestamp).toLocaleDateString("en-US", {
+                    <p
+                      className="text-sm font-medium text-foreground truncate"
+                      title={r.targetUrl}
+                    >
+                      {truncateUrl(r.targetUrl)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {date.toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
                       })}
-                    </span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      Score: {r.score}
-                    </span>
+                    </p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${scoreBadgeClasses(
+                          r.score
+                        )}`}
+                      >
+                        {r.score}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {r.totalAttacks} attacks
+                      </span>
+                    </div>
                   </button>
-                ))
-              )}
+                );
+              })}
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Step 2: Report breakdown */}
+      {/* ===== Loading state ===== */}
       {reportLoading && (
         <div className="flex items-center justify-center py-16">
           <LoadingSpinner />
         </div>
       )}
 
+      {/* ===== Report breakdown ===== */}
       {fullReport && !reportLoading && (
         <>
           {/* Score + Severity Distribution */}
@@ -219,264 +312,289 @@ export default function RiskPage() {
             {(() => {
               const stats = getReportStats(fullReport);
               return (
-                <div className={`${cardClass} flex flex-col items-center justify-center gap-3`}>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Security Score
-                  </span>
-                  <ScoreRing score={stats.score} size={140} />
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">
-                      {stats.passed} passed / {stats.failed} failed / {stats.errors} errors
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {stats.totalAttacks} total attacks
-                    </p>
-                  </div>
-                </div>
+                <Card className="flex flex-col items-center justify-center gap-3 py-6">
+                  <CardContent className="flex flex-col items-center gap-3 p-0">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Security Score
+                    </span>
+                    <ScoreRing score={stats.score} size={140} />
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">
+                        {stats.passed} passed / {stats.failed} failed /{" "}
+                        {stats.errors} errors
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {stats.totalAttacks} total attacks
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })()}
 
             {/* Severity Distribution */}
-            <div className={`${cardClass} col-span-1 lg:col-span-2`}>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
-                Severity Distribution
-              </h3>
-              <div className="space-y-3">
-                {["critical", "high", "medium", "low", "unknown"]
-                  .filter((sev) => severityDist[sev])
-                  .map((sev) => {
-                    const count = severityDist[sev] || 0;
-                    const colors: Record<string, string> = {
-                      critical: "bg-red-500",
-                      high: "bg-orange-500",
-                      medium: "bg-amber-500",
-                      low: "bg-emerald-500",
-                      unknown: "bg-gray-400",
-                    };
-                    return (
-                      <div key={sev}>
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="text-muted-foreground capitalize">{sev}</span>
-                          <span className="font-semibold text-foreground">{count}</span>
+            <Card className="col-span-1 lg:col-span-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Severity Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {["critical", "high", "medium", "low", "unknown"]
+                    .filter((sev) => severityDist[sev])
+                    .map((sev) => {
+                      const count = severityDist[sev] || 0;
+                      return (
+                        <div key={sev}>
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-muted-foreground capitalize">
+                              {sev}
+                            </span>
+                            <span className="font-semibold text-foreground">
+                              {count}
+                            </span>
+                          </div>
+                          <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                severityBarColors[sev] || "bg-gray-400"
+                              } transition-all duration-500`}
+                              style={{
+                                width: `${(count / maxSevCount) * 100}%`,
+                              }}
+                            />
+                          </div>
                         </div>
-                        <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${colors[sev] || "bg-gray-400"} transition-all duration-500`}
-                            style={{ width: `${(count / maxSevCount) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
+                      );
+                    })}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Exploitability Section */}
-          <div className={cardClass}>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
-              <span className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-orange-600" />
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                 Exploitable Vulnerabilities ({vulnerabilities.length})
-              </span>
-            </h3>
-            {vulnerabilities.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                No exploitable vulnerabilities found.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
-                        Attack
-                      </th>
-                      <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
-                        Category
-                      </th>
-                      <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
-                        Severity
-                      </th>
-                      <th className="text-left py-2 font-semibold text-muted-foreground">
-                        Verdict
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vulnerabilities.slice(0, 50).map((v, i) => (
-                      <tr
-                        key={`${getAttackName(v)}-${i}`}
-                        className="border-b border-border/50 last:border-0"
-                      >
-                        <td className="py-2.5 pr-4 text-foreground font-medium max-w-[300px] truncate">
-                          {getAttackName(v)}
-                        </td>
-                        <td className="py-2.5 pr-4 text-muted-foreground">{getCategory(v)}</td>
-                        <td className="py-2.5 pr-4">
-                          <Badge variant={severityBadgeVariant(getSeverity(v))}>
-                            {getSeverity(v) || "unknown"}
-                          </Badge>
-                        </td>
-                        <td className="py-2.5">
-                          <Badge variant="critical">{v.verdict}</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {vulnerabilities.length > 50 && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Showing 50 of {vulnerabilities.length} vulnerabilities
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {vulnerabilities.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">
+                  No exploitable vulnerabilities found.
+                </p>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Attack</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Severity</TableHead>
+                          <TableHead>Verdict</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {vulnerabilities.slice(0, 50).map((v, i) => (
+                          <TableRow key={`${getAttackName(v)}-${i}`}>
+                            <TableCell className="font-medium max-w-[300px] truncate">
+                              {getAttackName(v)}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {getCategory(v)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={severityBadgeVariant(getSeverity(v))}
+                              >
+                                {getSeverity(v) || "unknown"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="destructive">{v.verdict}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {vulnerabilities.length > 50 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Showing 50 of {vulnerabilities.length} vulnerabilities
+                    </p>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Remediation Matrix */}
           {sortedRemediationKeys.length > 0 && (
-            <div className={cardClass}>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
-                Remediation Matrix (by priority)
-              </h3>
-              <div className="space-y-4">
-                {sortedRemediationKeys.map((severity) => {
-                  const items = remediationGroups[severity];
-                  const colors: Record<string, string> = {
-                    critical: "border-l-red-500",
-                    high: "border-l-orange-500",
-                    medium: "border-l-yellow-500",
-                    low: "border-l-green-500",
-                    unknown: "border-l-gray-400",
-                  };
-                  return (
-                    <div
-                      key={severity}
-                      className={`border-l-4 ${colors[severity.toLowerCase()] || "border-l-gray-400"} pl-4`}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant={severityBadgeVariant(severity)}>
-                          {severity}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {items.length} finding{items.length !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-                      <ul className="space-y-1">
-                        {items.slice(0, 10).map((item, idx) => (
-                          <li
-                            key={`${getAttackName(item)}-${idx}`}
-                            className="text-sm text-foreground"
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Remediation Matrix (by priority)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {sortedRemediationKeys.map((severity) => {
+                    const items = remediationGroups[severity];
+                    return (
+                      <div
+                        key={severity}
+                        className={`border-l-4 ${
+                          severityBorderColors[severity.toLowerCase()] ||
+                          "border-l-gray-400 dark:border-l-gray-500"
+                        } pl-4`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge
+                            variant={severityBadgeVariant(severity)}
                           >
-                            <span className="font-medium">{getAttackName(item)}</span>
-                            <span className="text-muted-foreground ml-2">({getCategory(item)})</span>
-                          </li>
-                        ))}
-                        {items.length > 10 && (
-                          <li className="text-xs text-muted-foreground">
-                            +{items.length - 10} more
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                            {severity}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">
+                            {items.length} finding
+                            {items.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <ul className="space-y-1">
+                          {items.slice(0, 10).map((item, idx) => (
+                            <li
+                              key={`${getAttackName(item)}-${idx}`}
+                              className="text-sm text-foreground"
+                            >
+                              <span className="font-medium">
+                                {getAttackName(item)}
+                              </span>
+                              <span className="text-muted-foreground ml-2">
+                                ({getCategory(item)})
+                              </span>
+                            </li>
+                          ))}
+                          {items.length > 10 && (
+                            <li className="text-xs text-muted-foreground">
+                              +{items.length - 10} more
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          {/* Step 3: AI Risk Analysis */}
-          <div className={cardClass}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                AI Risk Analysis
-              </h3>
-              <button
-                onClick={handleRunAI}
-                disabled={isStreaming}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
-              >
-                {isStreaming ? (
-                  <>
-                    <LoadingSpinner size="sm" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4" />
-                    Run AI Risk Analysis
-                  </>
-                )}
-              </button>
-            </div>
-
-            {streamError && (
-              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-                {streamError}
+          {/* AI Risk Analysis */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  AI Risk Analysis
+                </CardTitle>
+                <button
+                  onClick={handleRunAI}
+                  disabled={isStreaming}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                >
+                  {isStreaming ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4" />
+                      Run AI Risk Analysis
+                    </>
+                  )}
+                </button>
               </div>
-            )}
+            </CardHeader>
+            <CardContent>
+              {streamError && (
+                <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+                  {streamError}
+                </div>
+              )}
 
-            {riskResults.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {riskResults.map((result, i) => (
-                  <div
-                    key={`${result.attack}-${i}`}
-                    className="border border-border rounded-lg p-4 space-y-2"
-                  >
-                    <h4 className="font-semibold text-foreground text-sm">
-                      {result.attack}
-                    </h4>
-                    <p className="text-xs text-muted-foreground">{result.category}</p>
-                    <div className="grid grid-cols-2 gap-2 pt-2">
-                      <div>
-                        <span className="block text-xs text-muted-foreground">Impact Level</span>
-                        <span className="text-sm font-medium text-foreground">
-                          {result.impactLevel}
-                        </span>
+              {riskResults.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {riskResults.map((result, i) => (
+                    <div
+                      key={`${result.attack}-${i}`}
+                      className="border border-border rounded-lg p-4 space-y-2 bg-muted/30 dark:bg-muted/10"
+                    >
+                      <h4 className="font-semibold text-foreground text-sm">
+                        {result.attack}
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        {result.category}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 pt-2">
+                        <div>
+                          <span className="block text-xs text-muted-foreground">
+                            Impact Level
+                          </span>
+                          <span className="text-sm font-medium text-foreground">
+                            {result.impactLevel}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-xs text-muted-foreground">
+                            Business Impact
+                          </span>
+                          <span className="text-sm font-medium text-foreground">
+                            {result.businessImpact}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-xs text-muted-foreground">
+                            Financial Exposure
+                          </span>
+                          <span className="text-sm font-medium text-foreground">
+                            {result.financialExposure}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-xs text-muted-foreground">
+                            Remediation Estimate
+                          </span>
+                          <span className="text-sm font-medium text-foreground">
+                            {result.remediationEstimate}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="block text-xs text-muted-foreground">Business Impact</span>
-                        <span className="text-sm font-medium text-foreground">
-                          {result.businessImpact}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-xs text-muted-foreground">
-                          Financial Exposure
-                        </span>
-                        <span className="text-sm font-medium text-foreground">
-                          {result.financialExposure}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-xs text-muted-foreground">
-                          Remediation Estimate
-                        </span>
-                        <span className="text-sm font-medium text-foreground">
-                          {result.remediationEstimate}
-                        </span>
-                      </div>
+                      {result.complianceRisk && (
+                        <div className="pt-1">
+                          <span className="block text-xs text-muted-foreground">
+                            Compliance Risk
+                          </span>
+                          <span className="text-sm text-foreground">
+                            {result.complianceRisk}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    {result.complianceRisk && (
-                      <div className="pt-1">
-                        <span className="block text-xs text-muted-foreground">Compliance Risk</span>
-                        <span className="text-sm text-foreground">{result.complianceRisk}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              !isStreaming && (
-                <EmptyState
-                  title="No AI analysis yet"
-                  description="Click 'Run AI Risk Analysis' to get detailed risk insights powered by AI."
-                  icon={<Shield className="w-12 h-12" />}
-                />
-              )
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                !isStreaming && (
+                  <EmptyState
+                    title="No AI analysis yet"
+                    description="Click 'Run AI Risk Analysis' to get detailed risk insights powered by AI."
+                    icon={<Shield className="w-12 h-12" />}
+                  />
+                )
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
 
