@@ -291,16 +291,32 @@ export function mapResultsToCompliance(
         .filter((r) => r.verdict === "PASS" || r.verdict === "PARTIAL")
         .flatMap((r) => r.findings);
 
+      // Keep the full per-attack mapping so the compliance UI can show WHICH
+      // attacks landed on this control and WHY (category ∈ control scope),
+      // instead of only a "N of M succeeded" summary. Worst verdicts first.
+      const verdictRank = { PASS: 0, PARTIAL: 1, FAIL: 2 } as const;
+      const attacks = mapped
+        .map((r) => ({
+          name: r.attack.name,
+          category: r.attack.category,
+          severity: r.attack.severity,
+          verdict: r.verdict as "PASS" | "PARTIAL" | "FAIL",
+          detail: (r.llmReasoning || r.findings[0] || "").slice(0, 280),
+        }))
+        .sort((a, b) => verdictRank[a.verdict] - verdictRank[b.verdict]);
+
       results.push({
         framework: fw.name,
         code: item.code,
         title: item.title,
+        description: item.description,
         totalAttacks: mapped.length,
         passed: passCount,
         partial: partialCount,
         failed: failCount,
         status,
         findings: [...new Set(findings)],
+        attacks,
       });
     }
   }

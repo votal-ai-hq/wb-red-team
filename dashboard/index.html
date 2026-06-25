@@ -9150,6 +9150,61 @@
                   esc(item.summary) +
                   "</div>"
                 : "") +
+              // Mapped attacks — which attacks landed on this control and why
+              (item.attacks && item.attacks.length > 0
+                ? '<div style="margin:14px 0;">' +
+                  '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:4px;">Mapped Attacks (' +
+                  item.attacks.length +
+                  ")</div>" +
+                  (item.description
+                    ? '<div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5;">Attacks map to this control because their category falls under its scope: <span style="color:var(--text);">' +
+                      esc(item.description) +
+                      "</span></div>"
+                    : "") +
+                  '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+                  '<thead><tr style="text-align:left;border-bottom:1px solid var(--border);color:var(--text2);">' +
+                  '<th style="padding:6px 8px;font-weight:500;">Attack</th>' +
+                  '<th style="padding:6px 8px;font-weight:500;">Mapped via category</th>' +
+                  '<th style="padding:6px 8px;font-weight:500;">Severity</th>' +
+                  '<th style="padding:6px 8px;font-weight:500;white-space:nowrap;">Result</th>' +
+                  "</tr></thead><tbody>" +
+                  item.attacks
+                    .map(function (a) {
+                      var vMap = {
+                        PASS: { label: "Succeeded", color: "var(--red)" },
+                        PARTIAL: { label: "Partial", color: "var(--orange)" },
+                        FAIL: { label: "Blocked", color: "var(--green)" },
+                      };
+                      var v = vMap[a.verdict] || {
+                        label: a.verdict,
+                        color: "var(--text2)",
+                      };
+                      return (
+                        '<tr style="border-bottom:1px solid var(--border);">' +
+                        '<td style="padding:6px 8px;color:var(--text);"' +
+                        (a.detail
+                          ? ' title="' + esc(a.detail) + '"'
+                          : "") +
+                        ">" +
+                        esc(a.name) +
+                        "</td>" +
+                        '<td style="padding:6px 8px;color:var(--text2);font-family:monospace;font-size:11px;">' +
+                        esc(a.category) +
+                        "</td>" +
+                        '<td style="padding:6px 8px;color:var(--text2);text-transform:capitalize;">' +
+                        esc(a.severity || "") +
+                        "</td>" +
+                        '<td style="padding:6px 8px;font-weight:600;white-space:nowrap;color:' +
+                        v.color +
+                        ';">' +
+                        v.label +
+                        "</td></tr>"
+                      );
+                    })
+                    .join("") +
+                  "</tbody></table></div>" +
+                  "</div>"
+                : "") +
               // Details
               (item.details
                 ? '<details style="margin-bottom:10px;"><summary style="font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;margin-bottom:6px;">Detailed Analysis</summary>' +

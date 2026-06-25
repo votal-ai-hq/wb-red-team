@@ -884,14 +884,28 @@ export interface Report {
   };
 }
 
+/** One mapped attack, with the reason it falls under a given control. */
+export interface ComplianceMappedAttack {
+  name: string;
+  category: AttackCategory;
+  severity: "critical" | "high" | "medium" | "low";
+  verdict: "PASS" | "PARTIAL" | "FAIL";
+  /** Short finding / judge reasoning — why the attack succeeded or was blocked. */
+  detail?: string;
+}
+
 export interface ComplianceResult {
   framework: string;
   code: string;
   title: string;
+  /** What this control covers — the basis for why attacks map to it. */
+  description?: string;
   totalAttacks: number;
   passed: number;
   partial: number;
   failed: number;
   status: "vulnerable" | "at_risk" | "secure" | "not_tested";
   findings: string[];
+  /** Every attack mapped to this control (reason = category ∈ control scope). */
+  attacks: ComplianceMappedAttack[];
 }

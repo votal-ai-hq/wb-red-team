@@ -1937,10 +1937,15 @@ const server = createServer(
           framework: m.framework,
           code: m.code,
           title: m.title,
+          description: m.description,
           status: m.status,
           attacksAnalyzed: m.totalAttacks,
+          passed: m.passed,
+          partial: m.partial,
+          failed: m.failed,
           summary,
           findings: m.findings,
+          attacks: m.attacks,
         };
       });
       res.writeHead(200, { "Content-Type": "application/json" });
