@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { createRun } from "@/api/runs";
 import { getReference } from "@/api/reference";
+import { apiFetch } from "@/api/client";
 import type { ReferenceData, StrategyInfo } from "@/api/types";
 import {
   Card,
@@ -35,6 +36,8 @@ import {
   Lock,
   MessageSquare,
   Braces,
+  Upload,
+  Loader2,
 } from "lucide-react";
 
 /* ─── constants ─── */
@@ -260,6 +263,9 @@ export default function NewScanPage() {
 
   // ── Policy ──
   const [policyFile, setPolicyFile] = useState("policies/default.json");
+  const [availablePolicies, setAvailablePolicies] = useState<{ path: string; name: string; description: string }[]>([]);
+  const [uploadingPolicy, setUploadingPolicy] = useState(false);
+  const [policyUploadError, setPolicyUploadError] = useState<string | null>(null);
 
   // ── UI state ──
   const [submitting, setSubmitting] = useState(false);
@@ -267,8 +273,14 @@ export default function NewScanPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    getReference()
-      .then((data) => setRef(data))
+    Promise.all([
+      getReference(),
+      apiFetch<{ path: string; name: string; description: string }[]>("/api/policies").catch(() => []),
+    ])
+      .then(([data, policies]) => {
+        setRef(data);
+        if (policies.length > 0) setAvailablePolicies(policies);
+      })
       .catch(() => setError("Failed to load reference data."))
       .finally(() => setRefLoading(false));
   }, []);
@@ -1087,37 +1099,92 @@ export default function NewScanPage() {
           </CollapsibleSection>
 
           {/* Policy */}
-          <CollapsibleSection title="Policy File" icon={FileText}>
-            <FieldRow label="Select a policy" hint="Choose a built-in policy or enter a custom path">
-              <div className="flex flex-wrap gap-2 mb-3">
-                {[
-                  { value: "policies/default.json", label: "Default" },
-                  { value: "policies/strict.json", label: "Strict" },
-                  { value: "policies/mcp-strict.json", label: "MCP Strict" },
-                  { value: "policies/safety-classifier.json", label: "Safety Classifier" },
-                ].map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => setPolicyFile(p.value)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                      policyFile === p.value
-                        ? "bg-primary text-white border-primary shadow-sm"
-                        : "bg-card text-muted-foreground border-border hover:border-muted-foreground/30 hover:text-foreground"
+          <CollapsibleSection title="Policy File" icon={FileText} defaultOpen>
+            <div className="space-y-4">
+              {/* Available policies */}
+              <FieldRow label="Select a policy" hint="Choose from available policies or upload your own">
+                <div className="flex flex-wrap gap-2">
+                  {availablePolicies.map((p) => (
+                    <button
+                      key={p.path}
+                      type="button"
+                      onClick={() => setPolicyFile(p.path)}
+                      title={p.description || p.name}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                        policyFile === p.path
+                          ? "bg-primary text-white border-primary shadow-sm"
+                          : "bg-card text-muted-foreground border-border hover:border-muted-foreground/30 hover:text-foreground"
+                      }`}
+                    >
+                      {policyFile === p.path && <CheckCircle className="w-3 h-3" />}
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </FieldRow>
+
+              {/* Upload custom policy */}
+              <FieldRow label="Upload custom policy" hint="Upload a JSON policy file with global and category-specific rules">
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    accept=".json"
+                    id="policy-upload"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setPolicyUploadError(null);
+                      setUploadingPolicy(true);
+                      try {
+                        const text = await file.text();
+                        JSON.parse(text); // validate JSON
+                        const name = file.name.replace(/\.json$/, "");
+                        const res = await apiFetch<{ path: string; filename: string }>("/api/policy-upload", {
+                          method: "POST",
+                          body: JSON.stringify({ name, policy: text }),
+                        });
+                        setPolicyFile(res.path);
+                        // Refresh policy list
+                        const policies = await apiFetch<{ path: string; name: string; description: string }[]>("/api/policies").catch(() => []);
+                        if (policies.length > 0) setAvailablePolicies(policies);
+                      } catch (err) {
+                        setPolicyUploadError(err instanceof Error ? err.message : "Upload failed");
+                      } finally {
+                        setUploadingPolicy(false);
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="policy-upload"
+                    className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-medium border border-dashed border-border rounded-lg cursor-pointer transition-colors ${
+                      uploadingPolicy ? "opacity-50 pointer-events-none" : "hover:border-primary hover:text-primary text-muted-foreground"
                     }`}
                   >
-                    {policyFile === p.value && <CheckCircle className="w-3 h-3" />}
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-              <input
-                value={policyFile}
-                onChange={(e) => setPolicyFile(e.target.value)}
-                placeholder="policies/custom.json"
-                className={inputCls}
-              />
-            </FieldRow>
+                    {uploadingPolicy ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    {uploadingPolicy ? "Uploading..." : "Upload JSON policy file"}
+                  </label>
+                </div>
+                {policyUploadError && (
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">{policyUploadError}</p>
+                )}
+              </FieldRow>
+
+              {/* Current selection */}
+              <FieldRow label="Selected policy path">
+                <input
+                  value={policyFile}
+                  onChange={(e) => setPolicyFile(e.target.value)}
+                  placeholder="policies/custom.json"
+                  className={inputCls}
+                />
+              </FieldRow>
+            </div>
           </CollapsibleSection>
         </div>
 

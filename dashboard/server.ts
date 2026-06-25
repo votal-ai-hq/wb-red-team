@@ -2297,6 +2297,70 @@ Be specific and factual. Reference real incidents and realistic financial figure
     }
 
     // API: list attack categories and strategies (for config reference)
+    // API: list available policy files
+    if (url.pathname === "/api/policies" && req.method === "GET") {
+      try {
+        const policyDir = resolvePath("policies");
+        const files = existsSync(policyDir)
+          ? readdirSync(policyDir)
+              .filter((f) => f.endsWith(".json"))
+              .sort()
+          : [];
+        const policies = files.map((f) => {
+          try {
+            const raw = readFileSync(join(policyDir, f), "utf-8");
+            const data = JSON.parse(raw);
+            return {
+              filename: f,
+              path: `policies/${f}`,
+              name: data.name || f.replace(/\.json$/, ""),
+              description: data.description || "",
+              version: data.version || "",
+            };
+          } catch {
+            return { filename: f, path: `policies/${f}`, name: f.replace(/\.json$/, ""), description: "", version: "" };
+          }
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(policies));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(err) }));
+      }
+      return;
+    }
+
+    // API: upload a custom policy file
+    if (url.pathname === "/api/policy-upload" && req.method === "POST") {
+      try {
+        const body = JSON.parse(await readBody(req));
+        if (!body.name || !body.policy) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "name and policy fields are required" }));
+          return;
+        }
+        // Validate the policy JSON structure
+        const policy = typeof body.policy === "string" ? JSON.parse(body.policy) : body.policy;
+        if (!policy.global && !policy.categories) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Invalid policy: must have global and/or categories" }));
+          return;
+        }
+        const policyDir = resolvePath("policies");
+        if (!existsSync(policyDir)) mkdirSync(policyDir, { recursive: true });
+        // Sanitize filename
+        const safeName = body.name.replace(/[^a-zA-Z0-9_-]/g, "-").toLowerCase();
+        const filename = `${safeName}.json`;
+        writeFileSync(join(policyDir, filename), JSON.stringify(policy, null, 2));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ filename, path: `policies/${filename}` }));
+      } catch (err) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: `Invalid policy: ${err instanceof Error ? err.message : String(err)}` }));
+      }
+      return;
+    }
+
     if (url.pathname === "/api/reference" && req.method === "GET") {
       try {
         const { ALL_ATTACK_CATEGORIES } = await import("../lib/types.js");
