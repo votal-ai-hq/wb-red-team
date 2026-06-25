@@ -46,7 +46,7 @@ export interface ReportRound {
 
 export interface ReportResult {
   attackName?: string;
-  attack?: string;
+  attack?: string | Record<string, unknown>;
   category: string;
   severity: string;
   verdict: string;

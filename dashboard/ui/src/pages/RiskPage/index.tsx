@@ -41,8 +41,11 @@ function getReportStats(report: FullReport) {
   };
 }
 
-function getAttackName(result: { attack?: string; attackName?: string }): string {
-  return result.attack ?? result.attackName ?? "Unknown";
+function getAttackName(result: { attack?: string | Record<string, unknown>; attackName?: string }): string {
+  const atk = result.attack;
+  if (typeof atk === "object" && atk !== null) return (atk as Record<string, unknown>).name as string ?? "Unknown";
+  if (typeof atk === "string") return atk;
+  return result.attackName ?? "Unknown";
 }
 
 export default function RiskPage() {

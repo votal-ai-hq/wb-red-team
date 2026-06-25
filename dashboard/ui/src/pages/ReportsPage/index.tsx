@@ -55,7 +55,26 @@ function getReportStats(report: FullReport) {
 
 /** Get the display name for a result's attack */
 function getAttackName(result: ReportResult): string {
-  return result.attack ?? result.attackName ?? "Unknown";
+  const atk = result.attack;
+  if (typeof atk === "object" && atk !== null) return (atk as Record<string, unknown>).name as string ?? "Unknown";
+  if (typeof atk === "string") return atk;
+  return result.attackName ?? "Unknown";
+}
+
+/** Get category from result, falling back to attack object */
+function getCategory(result: ReportResult): string {
+  if (result.category) return result.category;
+  const atk = result.attack;
+  if (typeof atk === "object" && atk !== null) return (atk as Record<string, unknown>).category as string ?? "";
+  return "";
+}
+
+/** Get severity from result, falling back to attack object */
+function getSeverity(result: ReportResult): string {
+  if (result.severity) return result.severity;
+  const atk = result.attack;
+  if (typeof atk === "object" && atk !== null) return (atk as Record<string, unknown>).severity as string ?? "";
+  return "";
 }
 
 /** Get the round number from a round object */
@@ -231,9 +250,9 @@ function FindingRow({ result }: { result: ReportResult }) {
             {getAttackName(result)}
           </span>
         </td>
-        <td className="px-4 py-3 text-sm text-muted-foreground">{result.category ?? "-"}</td>
+        <td className="px-4 py-3 text-sm text-muted-foreground">{getCategory(result) || "-"}</td>
         <td className="px-4 py-3">
-          <Badge variant={severityVariant(result.severity ?? "unknown")}>{result.severity ?? "unknown"}</Badge>
+          <Badge variant={severityVariant(getSeverity(result) || "unknown")}>{getSeverity(result) || "unknown"}</Badge>
         </td>
         <td className="px-4 py-3">
           <Badge variant={verdictVariant(result.verdict)}>{result.verdict}</Badge>
