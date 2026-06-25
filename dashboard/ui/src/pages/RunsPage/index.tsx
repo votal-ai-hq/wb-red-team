@@ -78,7 +78,7 @@ export default function RunsPage() {
   // Fetch runs list
   useEffect(() => {
     getRuns()
-      .then(setRuns)
+      .then((data) => setRuns(Array.isArray(data) ? data : []))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -93,7 +93,7 @@ export default function RunsPage() {
   // Poll active runs
   const pollActiveRuns = useCallback(() => {
     // Refresh the runs list
-    getRuns().then(setRuns).catch(console.error);
+    getRuns().then((data) => setRuns(Array.isArray(data) ? data : [])).catch(console.error);
 
     // If an active run is expanded, refresh its detail
     if (expandedId && activeRunIds.includes(expandedId)) {
@@ -265,17 +265,17 @@ export default function RunsPage() {
                         )}
 
                         {/* Progress list */}
-                        {detail.progress.length > 0 && (
+                        {detail.progress?.length > 0 && (
                           <div>
                             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                              Progress ({detail.progress.length}
+                              Progress ({detail.progress?.length ?? 0}
                               {detail.progressTotal
                                 ? ` / ${detail.progressTotal}`
                                 : ""}
                               )
                             </h4>
                             <div className="max-h-64 overflow-y-auto space-y-1">
-                              {detail.progress.map((p) => (
+                              {(detail.progress ?? []).map((p) => (
                                 <div
                                   key={p.index}
                                   className="flex items-center gap-3 text-sm py-1.5 px-2 rounded hover:bg-muted/50"
