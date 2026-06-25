@@ -372,46 +372,74 @@ export default function RunsPage() {
                   </span>
                 </div>
 
-                {/* Live progress bar for active runs (always visible, no expand needed) */}
-                {(run.status === "running" || run.status === "queued") && detail && (
-                  <div className="border-t border-border px-4 py-3">
-                    {/* Progress bar */}
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full transition-all duration-500"
-                          style={{
-                            width: detail.progressTotal
-                              ? `${Math.min(((detail.progress?.length ?? 0) / detail.progressTotal) * 100, 100)}%`
-                              : "0%",
-                          }}
-                        />
+                {/* Live progress for active runs (always visible) */}
+                {(run.status === "running" || run.status === "queued") && detail && (() => {
+                  // The API returns mixed progress: phase/message events AND attack results
+                  const rawProgress = detail.progress as unknown as Record<string, unknown>[] | undefined;
+                  const allEvents = rawProgress ?? [];
+                  const attackResults = allEvents.filter((e) => e.attackName || e.result);
+                  const phaseEvents = allEvents.filter((e) => e.phase || e.message);
+                  const lastPhase = phaseEvents.length > 0 ? phaseEvents[phaseEvents.length - 1] : null;
+                  const attackCount = attackResults.length;
+
+                  return (
+                    <div className="border-t border-border px-4 py-3">
+                      {/* Status message (planning, cloning, analyzing...) */}
+                      {lastPhase && attackCount === 0 && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                          <span className="text-sm text-foreground">
+                            {String(lastPhase.message || lastPhase.phase || "Preparing...")}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Progress bar */}
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all duration-500"
+                            style={{
+                              width: detail.progressTotal
+                                ? `${Math.min((attackCount / detail.progressTotal) * 100, 100)}%`
+                                : attackCount > 0 ? "10%" : "0%",
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                          {attackCount > 0
+                            ? `${attackCount}${detail.progressTotal ? ` / ${detail.progressTotal}` : ""} attacks`
+                            : lastPhase ? "Planning..." : "Starting..."}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                        {detail.progress?.length ?? 0}
-                        {detail.progressTotal ? ` / ${detail.progressTotal}` : ""} attacks
-                      </span>
+
+                      {/* Latest attack results */}
+                      {attackCount > 0 && (
+                        <div className="space-y-0.5 max-h-32 overflow-y-auto">
+                          {attackResults.slice(-5).map((p, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs py-0.5">
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                p.verdict === "PASS" ? "bg-emerald-500" :
+                                p.verdict === "FAIL" ? "bg-red-500" :
+                                p.verdict === "PARTIAL" ? "bg-amber-500" : "bg-gray-400"
+                              }`} />
+                              <span className="text-muted-foreground tabular-nums w-5">
+                                {typeof p.index === "number" ? p.index + 1 : i + 1}
+                              </span>
+                              <span className="text-foreground truncate flex-1">
+                                {String(p.attackName ?? (p.result as Record<string, unknown> | undefined)?.attack ?? "—")}
+                              </span>
+                              <span className="text-muted-foreground shrink-0">{String(p.category ?? "")}</span>
+                              <span className={`font-semibold shrink-0 ${verdictColor(String(p.verdict ?? ""))}`}>
+                                {String(p.verdict ?? "—")}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {/* Latest results */}
-                    {(detail.progress?.length ?? 0) > 0 && (
-                      <div className="space-y-0.5 max-h-32 overflow-y-auto">
-                        {(detail.progress ?? []).slice(-5).map((p) => (
-                          <div key={p.index} className="flex items-center gap-2 text-xs py-0.5">
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                              p.verdict === "PASS" ? "bg-emerald-500" :
-                              p.verdict === "FAIL" ? "bg-red-500" :
-                              p.verdict === "PARTIAL" ? "bg-amber-500" : "bg-gray-400"
-                            }`} />
-                            <span className="text-muted-foreground tabular-nums w-5">{p.index + 1}</span>
-                            <span className="text-foreground truncate flex-1">{p.attackName}</span>
-                            <span className="text-muted-foreground shrink-0">{p.category}</span>
-                            <span className={`font-semibold shrink-0 ${verdictColor(p.verdict)}`}>{p.verdict ?? "—"}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Expanded detail */}
                 {isExpanded && (
