@@ -106,9 +106,25 @@ export default function RunsPage() {
   }, []);
 
   useEffect(() => {
-    refreshRuns();
-    setLoading(false);
-  }, [refreshRuns]);
+    getRuns()
+      .then((data) => {
+        const list = Array.isArray(data) ? data : [];
+        setRuns(list);
+        // Auto-expand the first running/queued run
+        const activeRun = list.find((r) => r.status === "running" || r.status === "queued");
+        if (activeRun && !expandedId) {
+          setExpandedId(activeRun.runId);
+          getRun(activeRun.runId, 0, true)
+            .then((detail) =>
+              setRunDetails((prev) => ({ ...prev, [activeRun.runId]: detail }))
+            )
+            .catch(console.error);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Poll active runs
   const activeRunIds = runs
@@ -117,16 +133,17 @@ export default function RunsPage() {
 
   const pollActiveRuns = useCallback(() => {
     refreshRuns();
-    if (expandedId && activeRunIds.includes(expandedId)) {
-      getRun(expandedId)
+    // Poll ALL active runs for live progress (not just the expanded one)
+    activeRunIds.forEach((id) => {
+      getRun(id)
         .then((detail) =>
-          setRunDetails((prev) => ({ ...prev, [expandedId]: detail }))
+          setRunDetails((prev) => ({ ...prev, [id]: detail }))
         )
         .catch(console.error);
-    }
-  }, [expandedId, activeRunIds, refreshRuns]);
+    });
+  }, [activeRunIds, refreshRuns]);
 
-  usePolling(pollActiveRuns, 3000, activeRunIds.length > 0);
+  usePolling(pollActiveRuns, 2000, activeRunIds.length > 0);
 
   // Expand/collapse run detail
   const toggleExpand = useCallback(
@@ -354,6 +371,51 @@ export default function RunsPage() {
                     {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </span>
                 </div>
+
+                {/* Live progress bar for active runs (always visible, no expand needed) */}
+                {(run.status === "running" || run.status === "queued") && detail && (
+                  <div className="border-t border-border px-4 py-3">
+                    {/* Progress bar */}
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all duration-500"
+                          style={{
+                            width: detail.progressTotal
+                              ? `${Math.min(((detail.progress?.length ?? 0) / detail.progressTotal) * 100, 100)}%`
+                              : "0%",
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                        {detail.progress?.length ?? 0}
+                        {detail.progressTotal ? ` / ${detail.progressTotal}` : ""} attacks
+                      </span>
+                    </div>
+                    {/* Latest results */}
+                    {(detail.progress?.length ?? 0) > 0 && (
+                      <div className="space-y-0.5 max-h-32 overflow-y-auto">
+                        {(detail.progress ?? []).slice(-5).map((p) => (
+                          <div key={p.index} className="flex items-center gap-2 text-xs py-0.5">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              p.verdict === "PASS" ? "bg-emerald-500" :
+                              p.verdict === "FAIL" ? "bg-red-500" :
+                              p.verdict === "PARTIAL" ? "bg-amber-500" : "bg-gray-400"
+                            }`} />
+                            <span className="text-muted-foreground tabular-nums w-5">{p.index + 1}</span>
+                            <span className="text-foreground truncate flex-1">{p.attackName}</span>
+                            <span className="text-muted-foreground shrink-0">{p.category}</span>
+                            <span className={`font-semibold shrink-0 ${
+                              p.verdict === "PASS" ? "text-emerald-600 dark:text-emerald-400" :
+                              p.verdict === "FAIL" ? "text-red-600 dark:text-red-400" :
+                              "text-amber-600 dark:text-amber-400"
+                            }`}>{p.verdict}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Expanded detail */}
                 {isExpanded && (
