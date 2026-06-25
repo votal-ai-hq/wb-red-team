@@ -471,35 +471,48 @@ export default function RunsPage() {
                         )}
 
                         {/* Progress list */}
-                        {(detail.progress?.length ?? 0) > 0 && (
+                        {(() => {
+                          const rawItems = (detail.progress ?? []) as unknown as Record<string, unknown>[];
+                          const attackItems = rawItems.filter((e) => e.attackName || e.result);
+                          if (attackItems.length === 0) return null;
+                          return (
                           <div>
                             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                              Progress ({detail.progress?.length ?? 0}
+                              Progress ({attackItems.length}
                               {detail.progressTotal ? ` / ${detail.progressTotal}` : ""})
                             </h4>
                             <div className="max-h-64 overflow-y-auto border border-border rounded-lg divide-y divide-border">
-                              {(detail.progress ?? []).map((p) => (
+                              {attackItems.map((p, i) => {
+                                const result = p.result as Record<string, unknown> | undefined;
+                                const attack = result?.attack as Record<string, unknown> | undefined;
+                                const name = String(p.attackName ?? attack?.name ?? result?.attackName ?? "—");
+                                const cat = String(p.category ?? attack?.category ?? result?.category ?? "");
+                                const vrd = String(p.verdict ?? result?.verdict ?? "");
+                                const idx = typeof p.index === "number" ? p.index : i;
+                                return (
                                 <div
-                                  key={p.index}
+                                  key={idx}
                                   className="flex items-center gap-3 text-sm py-2 px-3 hover:bg-muted/30"
                                 >
                                   <span className="text-xs text-muted-foreground w-6 text-right tabular-nums shrink-0">
-                                    {p.index + 1}
+                                    {idx + 1}
                                   </span>
                                   <span className="font-medium text-foreground truncate flex-1">
-                                    {p.attackName}
+                                    {name}
                                   </span>
                                   <span className="text-xs text-muted-foreground shrink-0">
-                                    {p.category}
+                                    {cat}
                                   </span>
-                                  <span className={`text-xs font-semibold shrink-0 ${verdictColor(p.verdict)}`}>
-                                    {p.verdict ?? "—"}
+                                  <span className={`text-xs font-semibold shrink-0 ${verdictColor(vrd)}`}>
+                                    {vrd || "—"}
                                   </span>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
-                        )}
+                          );
+                        })()}
 
                         {/* Report link */}
                         {run.status === "done" && detail.reportFile && (
