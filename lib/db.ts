@@ -28,8 +28,36 @@ export function getPool(): pg.Pool {
     pool = new pg.Pool({
       connectionString: connStr,
       max: parseInt(process.env.PG_POOL_MAX || "10", 10),
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
+      // Retire idle connections quickly so a managed pooler (Supabase/PgBouncer)
+      // doesn't silently kill one we still believe is good and hand it back dead.
+      idleTimeoutMillis: parseInt(process.env.PG_IDLE_TIMEOUT_MS || "10000", 10),
+      // Give a momentarily-busy pooler room to return a connection rather than
+      // erroring at 5s (queryWithRetry still covers the rest).
+      connectionTimeoutMillis: parseInt(
+        process.env.PG_CONNECT_TIMEOUT_MS || "10000",
+        10,
+      ),
+      // TCP keepalive surfaces half-open sockets (peer vanished with no FIN/RST)
+      // as errors instead of letting a query hang on a dead connection forever.
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
+      // Hard per-query ceilings. THIS is what stops the wedge that used to need a
+      // manual restart: a query issued on a silently-dead connection would hang
+      // indefinitely, holding its pool slot until every slot was stuck. With a
+      // timeout the query errors out, the client is discarded, and queryWithRetry
+      // opens a fresh one. (statement_timeout = server-side cancel; query_timeout
+      // = client-side abort that also evicts the bad connection.)
+      statement_timeout: parseInt(
+        process.env.PG_STATEMENT_TIMEOUT_MS || "30000",
+        10,
+      ),
+      query_timeout: parseInt(process.env.PG_QUERY_TIMEOUT_MS || "30000", 10),
+      // Proactively recycle connections so none lingers long enough to go stale
+      // on the pooler side — keeps a steady, self-refreshing set of live sockets.
+      maxLifetimeSeconds: parseInt(
+        process.env.PG_MAX_LIFETIME_SEC || "1800",
+        10,
+      ),
       ...(needsSsl ? { ssl: { rejectUnauthorized: false } } : {}),
     });
 
