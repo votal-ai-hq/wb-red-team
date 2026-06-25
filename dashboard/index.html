@@ -6,13 +6,10 @@
     <title>Red Team Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       :root {
         /* ═══ LIGHT THEME — clean, professional with warm & cool accents ═══ */
-        --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-        --font-heading: "Source Serif 4", Georgia, "Times New Roman", serif;
-
         --bg: #f2f5fa;
         --bg2: #ffffff;
         --surface: #ffffff;
@@ -127,11 +124,19 @@
       body {
         background: var(--bg);
         color: var(--text);
-        font-family: var(--font-body);
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Helvetica,
+          Arial,
+          sans-serif;
         font-size: 14px;
         line-height: 1.55;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
         text-rendering: optimizeLegibility;
         letter-spacing: -0.01em;
       }
@@ -539,7 +544,6 @@
         border-color: var(--border-hover);
       }
       .c-stat-val {
-        font-family: var(--font-heading);
         font-size: var(--fs-5xl);
         font-weight: 700;
         letter-spacing: -0.03em;
@@ -608,7 +612,6 @@
         height: 19px;
       }
       .c-metric-val {
-        font-family: var(--font-heading);
         font-size: var(--fs-4xl);
         font-weight: 700;
         letter-spacing: -0.03em;
@@ -1261,11 +1264,10 @@
         transform: scale(1.04);
       }
       .nav-rail-brand-text {
-        font-family: var(--font-heading);
-        font-size: 17px;
-        font-weight: 700;
+        font-size: 16px;
+        font-weight: 600;
         color: var(--text);
-        letter-spacing: -0.02em;
+        letter-spacing: -0.03em;
         transition: opacity 0.18s ease;
       }
       .nav-rail-brand-text span {
@@ -1538,11 +1540,10 @@
         height: 18px;
       }
       .app-topbar-title {
-        font-family: var(--font-heading);
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 600;
         color: var(--text);
-        letter-spacing: -0.02em;
+        letter-spacing: -0.025em;
       }
       .app-topbar-spacer {
         flex: 1;
@@ -3310,12 +3311,13 @@
       .fw-chip {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 16px;
-        border-radius: 10px;
-        font-size: 13px;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        line-height: 1.4;
         cursor: pointer;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: background 0.15s, border-color 0.15s;
         border: 1px solid var(--border);
         background: var(--surface);
         user-select: none;
@@ -3324,23 +3326,18 @@
       .fw-chip:hover {
         border-color: var(--border-hover);
         background: var(--surface2);
-        transform: translateY(-1px);
       }
       .fw-chip:has(input:checked) {
-        background: rgba(37, 99, 235, 0.12);
+        background: rgba(37, 99, 235, 0.1);
         border-color: var(--accent);
         color: var(--accent);
-        box-shadow: var(--shadow-glow-accent);
       }
       .fw-chip:has(input:checked):hover {
-        background: rgba(37, 99, 235, 0.18);
+        background: rgba(37, 99, 235, 0.15);
       }
       .fw-chip:has(input:checked) .fw-count {
-        background: rgba(37, 99, 235, 0.2);
+        background: rgba(37, 99, 235, 0.18);
         color: var(--accent);
-      }
-      .fw-chip:active {
-        transform: scale(0.97);
       }
       .fw-chip input {
         display: none;
@@ -3351,7 +3348,6 @@
         padding: 1px 6px;
         border-radius: 10px;
         color: var(--text2);
-        transition: all 0.2s ease;
       }
       .compliance-actions {
         display: flex;
@@ -3866,7 +3862,7 @@
       .auth-overlay {
         position: fixed;
         inset: 0;
-        background: #f0f2f5;
+        background: var(--bg);
         z-index: 9999;
         display: flex;
         align-items: center;
@@ -3875,12 +3871,14 @@
         gap: 28px;
       }
       .auth-card {
-        width: min(400px, calc(100vw - 40px));
-        background: #fff;
-        border: 1px solid #e2e6ed;
-        border-radius: 12px;
-        padding: 40px 36px 36px;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+        width: min(420px, calc(100vw - 32px));
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 36px 40px 40px;
+        box-shadow:
+          0 8px 40px rgba(20, 35, 60, 0.1),
+          0 1px 3px rgba(20, 35, 60, 0.06);
         animation: authFadeIn 0.3s ease-out;
       }
       @keyframes authFadeIn {
@@ -3894,68 +3892,72 @@
         }
       }
       .auth-overlay h1 {
-        font-family: var(--font-heading);
-        font-size: 28px;
+        font-size: 26px;
         font-weight: 700;
-        letter-spacing: -0.03em;
+        letter-spacing: -0.04em;
         color: var(--text);
-        line-height: 1.2;
       }
       .auth-overlay p {
         color: var(--text2);
-        font-size: 15px;
+        font-size: 14.5px;
         line-height: 1.5;
-        margin-top: 6px;
+        margin-top: 4px;
       }
       .auth-form {
         display: flex;
         flex-direction: column;
-        gap: 16px;
-        margin-top: 28px;
+        gap: 14px;
+        margin-top: 22px;
       }
       .auth-field {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 7px;
       }
       .auth-field label {
         font-size: 13px;
         font-weight: 500;
-        color: var(--text2);
-        letter-spacing: 0.01em;
+        color: var(--text);
+        letter-spacing: 0;
       }
       .auth-field input {
         width: 100%;
-        background: #fff;
+        background: var(--surface2);
         color: var(--text);
-        border: 1.5px solid #d1d9e6;
-        border-radius: 8px;
-        padding: 11px 14px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 16px;
         font-size: 15px;
         font-family: inherit;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        transition:
+          border-color 0.3s ease,
+          box-shadow 0.3s ease,
+          background 0.3s ease;
       }
       .auth-field input:focus {
         outline: none;
         border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        background: var(--bg);
       }
       .auth-sign-in-btn {
-        background: #1a2433;
+        background: var(--accent);
         color: #fff;
         border: none;
-        border-radius: 8px;
-        padding: 12px 36px;
-        font-size: 14px;
+        border-radius: 10px;
+        padding: 13px 36px;
+        font-size: 14.5px;
         font-weight: 600;
         cursor: pointer;
         width: 100%;
-        transition: background 0.2s ease;
-        letter-spacing: 0;
-        margin-top: 8px;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
+        letter-spacing: -0.01em;
+        margin-top: 4px;
       }
       .auth-sign-in-btn:hover {
-        background: #0f1720;
+        background: #1d4ed8;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
       }
       .auth-sign-in-btn:active {
         transform: translateY(0);
@@ -4324,10 +4326,9 @@
         min-width: 0;
       }
       .report-card-name {
-        font-family: var(--font-heading);
-        font-size: 14.5px;
+        font-size: 14px;
         font-weight: 600;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.02em;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -6273,8 +6274,8 @@
           buildAttackCardSkeleton("Attack Severity Distribution") +
           "</div>" +
           "</div>" +
-          // Row 2: Scan Score Distribution + Top Targets + Top Vulnerable Endpoints
-          '<div class="u-grid-3 u-gap-4 u-mb-4">' +
+          // Row 2: Scan Score Distribution + Top Targets
+          '<div class="u-grid-2 u-gap-4 u-mb-4">' +
           // Score Distribution
           '<div class="c-card">' +
           '<div class="u-flex u-items-center u-mb-2" style="justify-content:space-between;">' +
@@ -6322,38 +6323,6 @@
                 })
                 .join("")
             : '<div class="c-empty u-p-5">No vulnerabilities found</div>') +
-          "</div>" +
-          // Top Vulnerable Endpoints
-          '<div class="c-card">' +
-          '<div class="u-text-md u-font-semibold u-mb-4">Top Vulnerable Endpoints</div>' +
-          (topEndpoints.length > 0
-            ? topEndpoints
-                .map(function (entry) {
-                  var ep = entry[0],
-                    count = entry[1];
-                  var maxCount = topEndpoints[0][1];
-                  var pct = (count / maxCount) * 100;
-                  return (
-                    '<div class="u-mb-3">' +
-                    '<div class="u-flex u-text-sm u-mb-1" style="justify-content:space-between;gap:8px;">' +
-                    '<span class="u-truncate" style="max-width:170px;" title="' +
-                    esc(ep) +
-                    '">' +
-                    esc(ep) +
-                    "</span>" +
-                    '<span class="u-text-red u-font-semibold">' +
-                    count +
-                    "</span>" +
-                    "</div>" +
-                    '<div class="c-progress" style="height:4px;">' +
-                    '<div style="height:100%;width:' +
-                    pct +
-                    '%;background:var(--red);border-radius:2px;"></div>' +
-                    "</div></div>"
-                  );
-                })
-                .join("")
-            : '<div class="c-empty u-p-5">No endpoint data available</div>') +
           "</div>" +
           "</div>" +
           // Row 3: Recent Scans
@@ -8805,7 +8774,7 @@
               '<button class="c-btn c-btn-xs" style="background:none;border:1px solid var(--border);color:var(--accent);" onclick="document.querySelectorAll(\'.comp-fw-checkbox\').forEach(function(c){c.checked=true;c.dispatchEvent(new Event(\'change\',{bubbles:true}))})">Select All</button>' +
               '<button class="c-btn c-btn-xs" style="background:none;border:1px solid var(--border);color:var(--text2);" onclick="document.querySelectorAll(\'.comp-fw-checkbox\').forEach(function(c){c.checked=false;c.dispatchEvent(new Event(\'change\',{bubbles:true}))})">None</button>' +
               "</div></div>" +
-              '<div class="u-flex u-flex-wrap u-gap-2">';
+              '<div class="u-flex u-flex-wrap u-gap-3">';
             frameworks.forEach(function (fw) {
               html +=
                 '<label class="fw-chip"><input type="checkbox" class="comp-fw-checkbox" value="' +
