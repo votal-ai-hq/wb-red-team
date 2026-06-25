@@ -31,6 +31,7 @@ import {
   Download,
   FileDown,
   Printer,
+  Loader2,
 } from "lucide-react";
 
 /* ─── helpers ─── */
@@ -509,6 +510,7 @@ function ReportDetail({ filename }: { filename: string }) {
   const [findingsPage, setFindingsPage] = useState(1);
   const [verdictFilter, setVerdictFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [preparingPdf, setPreparingPdf] = useState(false);
   const perPage = 25;
 
   useEffect(() => {
@@ -622,11 +624,30 @@ function ReportDetail({ filename }: { filename: string }) {
             CSV
           </a>
           <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors print:hidden"
+            disabled={preparingPdf}
+            onClick={() => {
+              setPreparingPdf(true);
+              // Give browser time to render the full table before opening print
+              requestAnimationFrame(() => {
+                setTimeout(() => {
+                  window.print();
+                  setPreparingPdf(false);
+                }, 100);
+              });
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-70 transition-colors print:hidden"
           >
-            <Printer className="w-3.5 h-3.5" />
-            PDF
+            {preparingPdf ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Preparing...
+              </>
+            ) : (
+              <>
+                <Printer className="w-3.5 h-3.5" />
+                PDF
+              </>
+            )}
           </button>
         </div>
       </div>
