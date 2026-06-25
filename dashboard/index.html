@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Red Team Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       :root {
         /* ═══ LIGHT THEME — clean, professional with warm & cool accents ═══ */
@@ -70,17 +73,17 @@
         --sp-7: 32px;
         --sp-8: 48px;
 
-        /* Font sizes — bumped for readability */
-        --fs-xs: 11px;
-        --fs-sm: 12px;
-        --fs-base: 13px;
-        --fs-md: 14px;
-        --fs-lg: 15px;
+        /* Font sizes — comfortable reading scale */
+        --fs-xs: 11.5px;
+        --fs-sm: 12.5px;
+        --fs-base: 13.5px;
+        --fs-md: 14.5px;
+        --fs-lg: 15.5px;
         --fs-xl: 17px;
         --fs-2xl: 20px;
-        --fs-3xl: 22px;
-        --fs-4xl: 26px;
-        --fs-5xl: 32px;
+        --fs-3xl: 23px;
+        --fs-4xl: 27px;
+        --fs-5xl: 34px;
 
         /* Border radii — rounder, modern */
         --r-sm: 6px;
@@ -130,10 +133,12 @@
           Arial,
           sans-serif;
         font-size: 14px;
-        line-height: 1.6;
+        line-height: 1.55;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        text-rendering: optimizeLegibility;
+        letter-spacing: -0.01em;
       }
       a {
         color: var(--accent);
@@ -527,34 +532,28 @@
       /* Stat & metric cards */
       .c-stat-card {
         background: var(--surface);
-        backdrop-filter: blur(14px) saturate(1.4);
-        -webkit-backdrop-filter: blur(14px) saturate(1.4);
         border: 1px solid var(--border);
         border-radius: var(--r-xl);
         padding: var(--sp-5);
         text-align: center;
-        box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(15, 30, 60, 0.04);
-        transition:
-          transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-          box-shadow 0.25s,
-          border-color 0.25s;
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow 0.2s ease, border-color 0.2s ease;
       }
       .c-stat-card:hover {
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-lg), 0 0 24px rgba(37, 99, 235, 0.1);
+        box-shadow: var(--shadow-md);
         border-color: var(--border-hover);
       }
       .c-stat-val {
         font-size: var(--fs-5xl);
-        font-weight: 800;
-        letter-spacing: -0.5px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
       }
       .c-stat-label {
         font-size: var(--fs-sm);
         color: var(--text2);
         margin-top: var(--sp-2);
         font-weight: 500;
-        letter-spacing: 0.3px;
+        letter-spacing: 0;
       }
       /* 3D card wrapper — perspective lives here */
       .card-3d-wrap {
@@ -564,24 +563,17 @@
 
       .c-metric-card {
         background: var(--surface);
-        backdrop-filter: blur(14px) saturate(1.4);
-        -webkit-backdrop-filter: blur(14px) saturate(1.4);
         border: 1px solid var(--border);
         border-radius: var(--r-xl);
         padding: var(--sp-5);
-        box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(15, 30, 60, 0.04);
-        transition:
-          border-color 0.08s,
-          box-shadow 0.08s,
-          transform 0.08s;
+        box-shadow: var(--shadow-sm);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
         position: relative;
         overflow: hidden;
-        transform-style: preserve-3d;
-        will-change: transform;
       }
       .c-metric-card:hover {
-        border-color: color-mix(in srgb, var(--mc, var(--accent)) 45%, transparent);
-        box-shadow: 0 8px 24px rgba(20, 35, 60, 0.08);
+        border-color: color-mix(in srgb, var(--mc, var(--accent)) 35%, transparent);
+        box-shadow: var(--shadow-md);
       }
 
       .c-metric-icon {
@@ -621,8 +613,8 @@
       }
       .c-metric-val {
         font-size: var(--fs-4xl);
-        font-weight: 800;
-        letter-spacing: -0.5px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
         position: relative;
         z-index: 1;
         color: var(--mc, var(--text));
@@ -1172,19 +1164,14 @@
         align-items: center;
         justify-content: center;
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 600;
         color: #fff;
-        border: 1.5px solid rgba(124, 58, 237, 0.5);
-        box-shadow: 0 0 14px rgba(124, 58, 237, 0.3);
-        transition:
-          border-color 0.2s,
-          box-shadow 0.2s,
-          transform 0.2s;
+        border: 2px solid var(--surface);
+        box-shadow: 0 0 0 1px var(--border);
+        transition: box-shadow 0.2s;
       }
       .top-nav-avatar:hover {
-        border-color: var(--purple);
-        box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
-        transform: scale(1.05);
+        box-shadow: 0 0 0 1px var(--border-hover);
       }
       .top-nav-signout {
         background: none;
@@ -1263,11 +1250,9 @@
         font-weight: 800;
         color: #fff;
         letter-spacing: -0.5px;
-        box-shadow:
-          0 2px 8px rgba(124, 58, 237, 0.25),
-          inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        box-shadow: 0 1px 4px rgba(37, 99, 235, 0.2);
         position: relative;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+        transition: transform 0.2s ease;
       }
       .nav-rail-brand-icon svg {
         width: 20px;
@@ -1276,16 +1261,13 @@
         filter: drop-shadow(0 1px 2px rgba(20, 35, 60, 0.12));
       }
       .nav-rail-brand:hover .nav-rail-brand-icon {
-        transform: scale(1.08) rotate(-3deg);
-        box-shadow:
-          0 3px 12px rgba(124, 58, 237, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        transform: scale(1.04);
       }
       .nav-rail-brand-text {
         font-size: 16px;
-        font-weight: 700;
+        font-weight: 600;
         color: var(--text);
-        letter-spacing: -0.4px;
+        letter-spacing: -0.03em;
         transition: opacity 0.18s ease;
       }
       .nav-rail-brand-text span {
@@ -1294,9 +1276,9 @@
         margin-left: 3px;
       }
       .nav-rail-section {
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
         color: var(--text2);
         padding: 18px 20px 8px;
@@ -1320,7 +1302,7 @@
         padding: 9px 12px;
         border: none;
         background: none;
-        border-radius: var(--r-full);
+        border-radius: var(--r-lg);
         color: var(--text2);
         font-family: inherit;
         font-size: 13.5px;
@@ -1328,7 +1310,8 @@
         cursor: pointer;
         white-space: nowrap;
         position: relative;
-        transition: color 0.18s, background 0.18s, transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s;
+        letter-spacing: -0.01em;
+        transition: color 0.15s, background 0.15s;
       }
       .nav-item svg {
         width: 18px;
@@ -1344,20 +1327,18 @@
       }
       .nav-item:hover {
         color: var(--text);
-        background: rgba(124, 58, 237, 0.08);
-        transform: translateX(2px);
+        background: var(--surface2);
       }
       .nav-item:hover svg {
         opacity: 1;
-        color: var(--purple);
       }
       .nav-item:active {
-        transform: scale(0.98);
+        background: var(--surface3);
       }
       .nav-item.active {
         color: var(--accent);
         background: rgba(37, 99, 235, 0.08);
-        border: 1px solid rgba(37, 99, 235, 0.22);
+        font-weight: 600;
       }
       .nav-item.active svg {
         opacity: 1;
@@ -1370,10 +1351,9 @@
         top: 50%;
         transform: translateY(-50%);
         width: 3px;
-        height: 22px;
-        border-radius: 0 4px 4px 0;
+        height: 20px;
+        border-radius: 0 3px 3px 0;
         background: var(--accent);
-        box-shadow: 0 0 10px rgba(124, 58, 237, 0.8);
       }
       .nav-item .tab-badge {
         background: var(--accent);
@@ -1561,9 +1541,9 @@
       }
       .app-topbar-title {
         font-size: 16px;
-        font-weight: 700;
+        font-weight: 600;
         color: var(--text);
-        letter-spacing: -0.3px;
+        letter-spacing: -0.025em;
       }
       .app-topbar-spacer {
         flex: 1;
@@ -3896,16 +3876,15 @@
         gap: 28px;
       }
       .auth-card {
-        width: min(440px, calc(100vw - 32px));
+        width: min(420px, calc(100vw - 32px));
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 40px;
+        border-radius: 16px;
+        padding: 36px 40px 40px;
         box-shadow:
-          0 24px 80px rgba(20, 35, 60, 0.18),
-          0 0 0 1px rgba(37, 99, 235, 0.08),
-          0 0 60px rgba(37, 99, 235, 0.05);
-        animation: authFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          0 8px 40px rgba(20, 35, 60, 0.1),
+          0 1px 3px rgba(20, 35, 60, 0.06);
+        animation: authFadeIn 0.3s ease-out;
       }
       @keyframes authFadeIn {
         from {
@@ -3918,27 +3897,33 @@
         }
       }
       .auth-overlay h1 {
-        font-size: 24px;
+        font-size: 26px;
         font-weight: 700;
+        letter-spacing: -0.04em;
+        color: var(--text);
       }
       .auth-overlay p {
         color: var(--text2);
-        font-size: 14px;
+        font-size: 14.5px;
+        line-height: 1.5;
+        margin-top: 4px;
       }
       .auth-form {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        margin-top: 18px;
+        gap: 14px;
+        margin-top: 22px;
       }
       .auth-field {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 7px;
       }
       .auth-field label {
-        font-size: 12px;
-        color: var(--text2);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+        letter-spacing: 0;
       }
       .auth-field input {
         width: 100%;
@@ -3964,18 +3949,20 @@
         background: var(--accent);
         color: #fff;
         border: none;
-        border-radius: 12px;
-        padding: 14px 36px;
-        font-size: 15px;
+        border-radius: 10px;
+        padding: 13px 36px;
+        font-size: 14.5px;
         font-weight: 600;
         cursor: pointer;
         width: 100%;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 16px rgba(37, 99, 235, 0.25);
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
+        letter-spacing: -0.01em;
+        margin-top: 4px;
       }
       .auth-sign-in-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 24px rgba(37, 99, 235, 0.35);
+        background: #1d4ed8;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
       }
       .auth-sign-in-btn:active {
         transform: translateY(0);
@@ -4315,9 +4302,8 @@
           box-shadow 0.2s ease, background 0.2s ease;
       }
       .report-card:hover {
-        border-color: var(--orange);
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
+        border-color: var(--border-hover);
+        box-shadow: var(--shadow-md);
       }
       .report-card-top {
         display: flex;
@@ -4346,8 +4332,8 @@
       }
       .report-card-name {
         font-size: 14px;
-        font-weight: 700;
-        letter-spacing: -0.2px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -4365,8 +4351,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 17px;
-        font-weight: 800;
+        font-size: 16px;
+        font-weight: 700;
         border: 1px solid var(--border);
       }
       .report-card-pills {
@@ -5035,7 +5021,7 @@
         <button class="auth-sign-in-btn" id="authSignInBtn">Sign In</button>
         <p
           id="authFooter"
-          style="font-size: 11px; color: var(--text2); margin-top: 8px"
+          style="font-size: 12px; color: var(--text2); margin-top: 12px; text-align: center"
         >
           Powered by your organization's SSO
         </p>
@@ -5054,14 +5040,14 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             <span class="nav-item-label">Dashboard</span>
           </button>
-          <button class="nav-item" data-tab="runs" data-label="Runs" onclick="switchTab('runs')">
+          <button class="nav-item" data-tab="runs" data-label="Scan Activity" onclick="switchTab('runs')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            <span class="nav-item-label">Runs</span>
+            <span class="nav-item-label">Scan Activity</span>
             <span class="tab-badge" id="runsBadge" style="display: none">0</span>
           </button>
-          <button class="nav-item" data-tab="newscan" data-label="New Scan" onclick="switchTab('newscan')">
+          <button class="nav-item" data-tab="newscan" data-label="Launch Scan" onclick="switchTab('newscan')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-            <span class="nav-item-label">New Scan</span>
+            <span class="nav-item-label">Launch Scan</span>
           </button>
           <button class="nav-item" data-tab="reports" data-label="Reports" onclick="switchTab('reports')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -5075,13 +5061,13 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             <span class="nav-item-label">Compliance</span>
           </button>
-          <button class="nav-item" data-tab="audit" data-label="Audit Log" onclick="switchTab('audit')">
+          <button class="nav-item" data-tab="audit" data-label="Activity Log" onclick="switchTab('audit')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span class="nav-item-label">Audit Log</span>
+            <span class="nav-item-label">Activity Log</span>
           </button>
-          <button class="nav-item" data-tab="guardrails" data-label="Guardrails" onclick="switchTab('guardrails')">
+          <button class="nav-item" data-tab="guardrails" data-label="Policies" onclick="switchTab('guardrails')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-3V4c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zM9 4h6v3H9V4z"/></svg>
-            <span class="nav-item-label">Guardrails</span>
+            <span class="nav-item-label">Policies</span>
           </button>
         </nav>
         <div class="nav-rail-footer">
@@ -5737,7 +5723,7 @@
         const passwordInput = document.getElementById("authPassword");
         const usernameInput = document.getElementById("authUsername");
 
-        subtitle.textContent = "Sign in with an env-configured account";
+        subtitle.textContent = "Sign in with your credentials";
         footer.textContent =
           "Session is shared across tabs with a secure cookie";
         form.style.display = "flex";
@@ -6003,13 +5989,13 @@
 
       const TAB_TITLES = {
         dashboard: "Dashboard",
-        runs: "Runs",
-        newscan: "New Scan",
+        runs: "Scan Activity",
+        newscan: "Launch Scan",
         reports: "Reports",
         risk: "Risk Analysis",
         compliance: "Compliance",
-        audit: "Audit Log",
-        guardrails: "Guardrails",
+        audit: "Activity Log",
+        guardrails: "Policies",
       };
 
       function switchTab(tab) {
