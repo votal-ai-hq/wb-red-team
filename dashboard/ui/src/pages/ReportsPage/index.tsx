@@ -106,8 +106,8 @@ function getRoundNumber(round: { round?: number; roundNumber?: number }): number
   return round.round ?? round.roundNumber ?? 0;
 }
 
-function verdictVariant(v: string): "destructive" | "default" | "secondary" {
-  const l = v.toUpperCase();
+function verdictVariant(v: string | undefined | null): "destructive" | "default" | "secondary" {
+  const l = (v ?? "").toUpperCase();
   if (l === "FAIL") return "destructive";
   if (l === "PASS") return "default";
   return "secondary";
@@ -117,8 +117,8 @@ function prettyCat(cat: string) {
   return cat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function verdictDotColor(v: string) {
-  const l = v.toUpperCase();
+function verdictDotColor(v: string | undefined | null) {
+  const l = (v ?? "").toUpperCase();
   if (l === "PASS") return "bg-emerald-500";
   if (l === "FAIL") return "bg-red-500";
   if (l === "PARTIAL") return "bg-amber-500";

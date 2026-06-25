@@ -180,7 +180,7 @@ export default function RiskPage() {
   const handleRunAI = useCallback(async () => {
     if (!fullReport) return;
     const attacks = (fullReport.rounds ?? []).flatMap((r) =>
-      r.results.map((res) => ({
+      (r.results ?? []).map((res) => ({
         name: getAttackName(res),
         category: getCategory(res),
         severity: getSeverity(res),
@@ -201,7 +201,7 @@ export default function RiskPage() {
 
   /* ---- Derived data from full report ---- */
   const allResults = fullReport
-    ? (fullReport.rounds ?? []).flatMap((r) => r.results)
+    ? (fullReport.rounds ?? []).flatMap((r) => r.results ?? [])
     : [];
 
   const severityDist: Record<string, number> = {};

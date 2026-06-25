@@ -238,7 +238,7 @@ export default function GuardrailsPage() {
                         {(report.guardrails ?? []).length > 0 && (
                           <>
                             {" · "}Guardrails:{" "}
-                            {report.guardrails!.map((g) => (
+                            {(report.guardrails ?? []).map((g) => (
                               <Badge key={g} variant="secondary" className="mr-1">{g}</Badge>
                             ))}
                           </>
