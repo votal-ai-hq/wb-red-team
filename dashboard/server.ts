@@ -66,7 +66,7 @@ const LITELLM_REPORT_DIR = join(
   "reports",
   "litellm-guardrails",
 );
-const DASHBOARD_DIR = import.meta.dirname;
+const DASHBOARD_DIR = join(import.meta.dirname, "ui", "dist");
 
 // ── Login rate limiter ──
 interface RateLimitEntry {
@@ -145,6 +145,12 @@ const MIME: Record<string, string> = {
   ".js": "application/javascript",
   ".json": "application/json",
   ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+  ".map": "application/json",
 };
 
 // ── Report metadata cache ──
@@ -2418,8 +2424,16 @@ Be specific and factual. Reference real incidents and realistic financial figure
       res.writeHead(200, { "Content-Type": mime });
       res.end(data);
     } catch {
-      res.writeHead(404);
-      res.end("Not found");
+      // SPA fallback: serve index.html for non-API routes
+      try {
+        const indexPath = join(DASHBOARD_DIR, "index.html");
+        const data = readFileSync(indexPath);
+        res.writeHead(200, { "Content-Type": "text/html" });
+        res.end(data);
+      } catch {
+        res.writeHead(404);
+        res.end("Not found");
+      }
     }
   }),
 );

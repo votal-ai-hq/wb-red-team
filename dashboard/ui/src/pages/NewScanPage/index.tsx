@@ -1,0 +1,361 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
+import { createRun } from "@/api/runs";
+import { getReference } from "@/api/reference";
+import type { ReferenceData } from "@/api/types";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import { Play, Zap, Shield, Settings, Rocket } from "lucide-react";
+
+const cardClass =
+  "bg-white border border-[rgba(20,45,90,0.14)] rounded-xl shadow-sm";
+
+const TEMPLATES: {
+  key: string;
+  label: string;
+  icon: typeof Zap;
+  description: string;
+  categories: string[];
+  strategy: string;
+} [] = [
+  {
+    key: "quick",
+    label: "Quick Scan",
+    icon: Zap,
+    description: "Fast scan with core attack categories",
+    categories: ["prompt_injection", "jailbreak"],
+    strategy: "single-shot",
+  },
+  {
+    key: "full",
+    label: "Full Scan",
+    icon: Shield,
+    description: "Comprehensive scan across all categories",
+    categories: [], // means all
+    strategy: "multi-round",
+  },
+  {
+    key: "custom",
+    label: "Custom Agent",
+    icon: Settings,
+    description: "Advanced config with custom JSON",
+    categories: [],
+    strategy: "agentic",
+  },
+];
+
+export default function NewScanPage() {
+  const navigate = useNavigate();
+  const [ref, setRef] = useState<ReferenceData | null>(null);
+  const [refLoading, setRefLoading] = useState(true);
+
+  // Form state
+  const [targetUrl, setTargetUrl] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [strategy, setStrategy] = useState("");
+  const [jsonConfig, setJsonConfig] = useState("");
+
+  // Submission state
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    getReference()
+      .then((data) => {
+        setRef(data);
+        if (data.ALL_STRATEGIES.length > 0) {
+          setStrategy(data.ALL_STRATEGIES[0].slug);
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        setError("Failed to load reference data.");
+      })
+      .finally(() => setRefLoading(false));
+  }, []);
+
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const applyTemplate = (key: string) => {
+    const tpl = TEMPLATES.find((t) => t.key === key);
+    if (!tpl || !ref) return;
+
+    if (tpl.categories.length > 0) {
+      // Only select categories that exist in reference data
+      setSelectedCategories(
+        tpl.categories.filter((c) => ref.ALL_ATTACK_CATEGORIES.includes(c))
+      );
+    } else {
+      // "all" means select every category
+      setSelectedCategories([...ref.ALL_ATTACK_CATEGORIES]);
+    }
+
+    // Match strategy by slug
+    const matchedStrategy = ref.ALL_STRATEGIES.find((s) => s.slug === tpl.strategy);
+    if (matchedStrategy) {
+      setStrategy(matchedStrategy.slug);
+    }
+
+    if (tpl.key === "custom") {
+      setJsonConfig(
+        JSON.stringify(
+          {
+            targetUrl: targetUrl || "https://example.com",
+            attackCategories: ref.ALL_ATTACK_CATEGORIES,
+            strategies: [tpl.strategy],
+          },
+          null,
+          2
+        )
+      );
+    } else {
+      setJsonConfig("");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!targetUrl.trim()) {
+      setError("Target URL is required.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      let config: Record<string, unknown>;
+
+      if (jsonConfig.trim()) {
+        try {
+          config = JSON.parse(jsonConfig);
+        } catch {
+          setError("Invalid JSON configuration.");
+          setSubmitting(false);
+          return;
+        }
+        // Ensure target URL is set
+        config.targetUrl = targetUrl;
+      } else {
+        config = {
+          targetUrl,
+          attackCategories:
+            selectedCategories.length > 0 ? selectedCategories : undefined,
+          strategies: strategy ? [strategy] : undefined,
+        };
+      }
+
+      const result = await createRun(config);
+      setSuccess(`Scan started! Run ID: ${result.runId}`);
+      setTimeout(() => navigate("/scans"), 1200);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to start scan.";
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (refLoading) {
+    return (
+      <div className="max-w-7xl mx-auto flex items-center justify-center py-32">
+        <div className="flex flex-col items-center gap-3">
+          <LoadingSpinner size="lg" />
+          <span className="text-sm text-text-secondary">
+            Loading scan configuration...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-5">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
+          <Rocket className="w-6 h-6 text-accent" />
+          Launch Scan
+        </h1>
+        <p className="text-sm text-text-secondary mt-1">
+          Configure and start a new security scan
+        </p>
+      </div>
+
+      {/* Alerts */}
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-critical">
+          <span className="font-medium">Error:</span> {error}
+        </div>
+      )}
+      {success && (
+        <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-success">
+          <span className="font-medium">Success:</span> {success}
+        </div>
+      )}
+
+      {/* Templates */}
+      <div className={`${cardClass} p-5`}>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">
+          Templates
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {TEMPLATES.map((tpl) => {
+            const Icon = tpl.icon;
+            return (
+              <button
+                key={tpl.key}
+                type="button"
+                onClick={() => applyTemplate(tpl.key)}
+                className="flex flex-col items-center gap-2 p-4 border border-border rounded-lg hover:border-accent hover:bg-accent/5 transition-colors text-center"
+              >
+                <Icon className="w-5 h-5 text-accent" />
+                <span className="text-sm font-semibold text-text-primary">
+                  {tpl.label}
+                </span>
+                <span className="text-xs text-text-secondary">
+                  {tpl.description}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Target URL */}
+        <div className={`${cardClass} p-5`}>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">
+            Target URL <span className="text-critical">*</span>
+          </label>
+          <input
+            type="text"
+            value={targetUrl}
+            onChange={(e) => setTargetUrl(e.target.value)}
+            placeholder="https://api.example.com"
+            required
+            className="w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-surface2 text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+          />
+        </div>
+
+        {/* Attack Categories */}
+        {ref && ref.ALL_ATTACK_CATEGORIES.length > 0 && (
+          <div className={`${cardClass} p-5`}>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                Attack Categories
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedCategories([...ref.ALL_ATTACK_CATEGORIES])
+                  }
+                  className="text-xs text-accent hover:text-accent/80"
+                >
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategories([])}
+                  className="text-xs text-text-secondary hover:text-text-primary"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {ref.ALL_ATTACK_CATEGORIES.map((cat) => {
+                const selected = selectedCategories.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => toggleCategory(cat)}
+                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      selected
+                        ? "bg-accent text-white border-accent"
+                        : "bg-surface2 text-text-secondary border-border hover:border-accent hover:text-text-primary"
+                    }`}
+                  >
+                    {cat.replace(/_/g, " ")}
+                  </button>
+                );
+              })}
+            </div>
+            {selectedCategories.length > 0 && (
+              <p className="text-xs text-text-secondary mt-2">
+                {selectedCategories.length} of {ref.ALL_ATTACK_CATEGORIES.length}{" "}
+                selected
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Strategy */}
+        {ref && ref.ALL_STRATEGIES.length > 0 && (
+          <div className={`${cardClass} p-5`}>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">
+              Strategy
+            </label>
+            <select
+              value={strategy}
+              onChange={(e) => setStrategy(e.target.value)}
+              className="w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-surface2 text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+            >
+              {ref.ALL_STRATEGIES.map((s) => (
+                <option key={s.slug} value={s.slug}>
+                  {s.name} ({s.level})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* JSON Config Editor */}
+        <div className={`${cardClass} p-5`}>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">
+            Advanced JSON Config
+          </label>
+          <textarea
+            value={jsonConfig}
+            onChange={(e) => setJsonConfig(e.target.value)}
+            placeholder='{"targetUrl": "...", "attackCategories": [...], ...}'
+            rows={6}
+            className="w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-surface2 text-text-primary placeholder:text-text-secondary font-mono focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y"
+          />
+          <p className="text-xs text-text-secondary mt-1">
+            Optional. Overrides form fields when provided.
+          </p>
+        </div>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={submitting || !targetUrl.trim()}
+          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white font-semibold rounded-xl hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {submitting ? (
+            <>
+              <LoadingSpinner size="sm" />
+              Starting Scan...
+            </>
+          ) : (
+            <>
+              <Play className="w-5 h-5" />
+              Start Scan
+            </>
+          )}
+        </button>
+      </form>
+    </div>
+  );
+}

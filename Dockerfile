@@ -3,6 +3,14 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 
+# Build React frontend
+FROM node:20-slim AS ui-build
+WORKDIR /app/dashboard/ui
+COPY dashboard/ui/package.json dashboard/ui/package-lock.json* ./
+RUN npm ci
+COPY dashboard/ui/ ./
+RUN npm run build
+
 FROM node:20-slim
 WORKDIR /app
 
@@ -29,6 +37,9 @@ COPY examples/ ./examples/
 COPY data/ ./data/
 
 COPY scripts/ ./scripts/
+
+# Copy React build output
+COPY --from=ui-build /app/dashboard/ui/dist ./dashboard/ui/dist
 
 # Create report directories
 RUN mkdir -p report reports/litellm-guardrails
