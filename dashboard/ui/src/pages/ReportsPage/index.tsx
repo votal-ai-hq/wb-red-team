@@ -770,8 +770,8 @@ function ReportDetail({ filename }: { filename: string }) {
         </Card>
       )}
 
-      {/* ── Results section ── */}
-      <Card>
+      {/* ── Results section (hidden during print — print table below replaces it) ── */}
+      <Card className="print:hidden">
         <CardHeader className="pb-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -933,44 +933,48 @@ function ReportDetail({ filename }: { filename: string }) {
         </Card>
       )}
 
-      {/* ── Print-only: ALL attacks from all rounds ── */}
-      {printMode && (
-        <div className="print-only-full-report">
-          <div className="text-xs text-muted-foreground mb-2 mt-4">
-            Full Attack Report — {allRoundsResults.length} total findings across {rounds.length} round{rounds.length !== 1 ? "s" : ""}
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-[10px] w-8">#</TableHead>
-                <TableHead className="text-[10px]">Attack Name</TableHead>
-                <TableHead className="text-[10px]">Category</TableHead>
-                <TableHead className="text-[10px]">Severity</TableHead>
-                <TableHead className="text-[10px]">Verdict</TableHead>
-                <TableHead className="text-[10px]">Reasoning</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {allRoundsResults.map((result, i) => (
-                <TableRow key={i}>
-                  <TableCell className="text-[10px] tabular-nums text-muted-foreground">{i + 1}</TableCell>
-                  <TableCell className="text-[10px] font-medium">{getAttackName(result)}</TableCell>
-                  <TableCell className="text-[10px] text-muted-foreground">{prettyCat(getCategory(result))}</TableCell>
-                  <TableCell className="text-[10px]">
-                    <Badge variant={severityVariant(getSeverity(result))}>{getSeverity(result)}</Badge>
-                  </TableCell>
-                  <TableCell className="text-[10px]">
-                    <Badge variant={verdictVariant(result.verdict)}>{result.verdict}</Badge>
-                  </TableCell>
-                  <TableCell className="text-[10px] text-muted-foreground max-w-[300px]">
-                    {result.llmReasoning || result.reasoning || "-"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      {/* ── Print-only: ALL attacks from all rounds (hidden on screen) ── */}
+      <div className="hidden print:block">
+        <div className="text-sm font-semibold text-foreground mb-2 mt-4">
+          All Findings — {allRoundsResults.length} attacks across {rounds.length} round{rounds.length !== 1 ? "s" : ""}
         </div>
-      )}
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b-2 border-foreground/20">
+              <th className="text-[9px] font-semibold py-1.5 pr-2 w-6">#</th>
+              <th className="text-[9px] font-semibold py-1.5 pr-2">ATTACK NAME</th>
+              <th className="text-[9px] font-semibold py-1.5 pr-2">CATEGORY</th>
+              <th className="text-[9px] font-semibold py-1.5 pr-2 w-16">SEVERITY</th>
+              <th className="text-[9px] font-semibold py-1.5 pr-2 w-14">VERDICT</th>
+              <th className="text-[9px] font-semibold py-1.5">REASONING</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allRoundsResults.map((result, i) => (
+              <tr key={i} className="border-b border-foreground/10" style={{ pageBreakInside: "avoid" }}>
+                <td className="text-[9px] py-1 pr-2 text-muted-foreground tabular-nums align-top">{i + 1}</td>
+                <td className="text-[9px] py-1 pr-2 font-medium align-top">{getAttackName(result)}</td>
+                <td className="text-[9px] py-1 pr-2 text-muted-foreground align-top">{prettyCat(getCategory(result))}</td>
+                <td className="text-[9px] py-1 pr-2 align-top">
+                  <span className={`font-semibold ${
+                    (getSeverity(result) || "").toLowerCase() === "critical" || (getSeverity(result) || "").toLowerCase() === "high"
+                      ? "text-red-700" : "text-foreground"
+                  }`}>{getSeverity(result) || "-"}</span>
+                </td>
+                <td className="text-[9px] py-1 pr-2 align-top">
+                  <span className={`font-bold ${
+                    result.verdict === "FAIL" ? "text-red-700"
+                      : result.verdict === "PASS" ? "text-emerald-700"
+                      : result.verdict === "PARTIAL" ? "text-amber-700"
+                      : "text-muted-foreground"
+                  }`}>{result.verdict}</span>
+                </td>
+                <td className="text-[9px] py-1 text-muted-foreground align-top">{result.llmReasoning || result.reasoning || "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

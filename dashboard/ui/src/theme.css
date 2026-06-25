@@ -135,20 +135,30 @@
   /* Hide non-content elements */
   aside, header, nav,
   [data-slot="topbar"],
-  button:not([data-print-keep]),
-  a[download],
-  input, select {
+  button, a[download],
+  input, select,
+  .print\:hidden {
     display: none !important;
+  }
+  /* Show print-only elements */
+  .print\:block {
+    display: block !important;
   }
   /* Full width content */
   main, [data-slot="main-content"] {
     margin: 0 !important;
     padding: 0 !important;
     max-width: 100% !important;
+    width: 100% !important;
+  }
+  /* Remove layout constraints */
+  .max-w-7xl {
+    max-width: 100% !important;
   }
   /* Clean card borders for print */
   [data-slot="card"] {
     box-shadow: none !important;
+    border-color: #ddd !important;
     break-inside: avoid;
   }
   /* Ensure all text is visible */
@@ -163,23 +173,10 @@
     background: white !important;
     color: black !important;
   }
-  /* Ensure print report table is fully visible */
-  .print-only-full-report {
-    display: block !important;
-  }
-  .print-only-full-report table {
-    font-size: 9px;
-  }
-  .print-only-full-report tr {
-    break-inside: avoid;
-  }
   /* Page margins */
   @page {
-    margin: 1.5cm;
+    margin: 1.2cm;
     size: A4;
-  }
-  @page :first {
-    margin-top: 1cm;
   }
 }
 
