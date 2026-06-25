@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { query, isDbConfigured } from "./db.js";
+import { queryWithRetry, isDbConfigured } from "./db.js";
 import { generateTenantKey } from "./encryption.js";
 import type { AuthContext } from "./auth.js";
 import type { Role } from "./rbac.js";
@@ -181,7 +181,7 @@ async function ensureSimpleAuthContext(
 
   const tenantName = process.env.SIMPLE_AUTH_TENANT || "default";
   let tenantId: string;
-  const existingTenant = await query<{ id: string }>(
+  const existingTenant = await queryWithRetry<{ id: string }>(
     "SELECT id FROM tenants WHERE name = $1",
     [tenantName],
   );
@@ -189,9 +189,10 @@ async function ensureSimpleAuthContext(
     tenantId = existingTenant.rows[0].id;
   } else {
     const encKey = generateTenantKey();
-    const createdTenant = await query<{ id: string }>(
+    const createdTenant = await queryWithRetry<{ id: string }>(
       `INSERT INTO tenants (name, oidc_issuer, encryption_key_enc)
        VALUES ($1, $2, $3)
+       ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
        RETURNING id`,
       [tenantName, `simple-auth:${tenantName}`, encKey],
     );
@@ -200,7 +201,7 @@ async function ensureSimpleAuthContext(
 
   const sub = `simple:${user.username}`;
   const email = user.email || `${user.username}@local`;
-  const userResult = await query<{ id: string; role: string }>(
+  const userResult = await queryWithRetry<{ id: string; role: string }>(
     `INSERT INTO users (tenant_id, sub, email, role)
      VALUES ($1, $2, $3, $4)
      ON CONFLICT (tenant_id, sub) DO UPDATE
@@ -349,17 +350,46 @@ export async function validateSimpleSession(
   return ensureSimpleAuthContext(user);
 }
 
+/**
+ * Resolve the signed-in user for /api/auth/me WITHOUT touching the database.
+ *
+ * The session token is a self-contained, HMAC-signed JWT: verifying its
+ * signature and expiry fully proves the session is valid, and everything
+ * /api/auth/me reports (username, role, email, name) comes from the token
+ * payload + the env-configured user list. The DB was only ever consulted here to
+ * resolve tenant/user rows, which this endpoint does not need.
+ *
+ * Coupling this hot path to Postgres was the root cause of the "logged out after
+ * a refresh" bug: a transient DB hiccup made validateSimpleSession throw, the
+ * handler swallowed it into a 401, and the frontend treated that 401 as a real
+ * logout. Keeping validation DB-free means a momentary DB blip can never sign a
+ * valid user out. (validateSimpleSession is still used by the API middleware,
+ * where a real tenantId is genuinely required.)
+ */
 export async function getSimpleSessionUser(
   cookieHeader: string | undefined,
 ): Promise<SimpleAuthUserInfo> {
-  const auth = await validateSimpleSession(cookieHeader);
-  const user = findSimpleAuthUser(auth.sub.replace(/^simple:/, ""));
+  const cookies = parseCookies(cookieHeader);
+  const token =
+    cookies[getSessionCookieName()] ||
+    cookies["rt_session"] ||
+    cookies["__Host-rt_session"];
+  if (!token) {
+    throw new Error("Missing session cookie");
+  }
+
+  const payload = deserializeSession(token); // verifies signature + expiry, no DB
+  const user = findSimpleAuthUser(payload.username);
   if (!user) {
     throw new Error("User no longer exists");
   }
+  if (user.role !== payload.role) {
+    throw new Error("Session role mismatch — please log in again");
+  }
+
   return {
     username: user.username,
-    role: auth.role,
+    role: user.role,
     email: user.email,
     name: user.name || user.username,
   };

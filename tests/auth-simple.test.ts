@@ -49,6 +49,33 @@ describe("simple auth", () => {
     expect(user.username).toBe("admin");
   });
 
+  it("validates /api/auth/me sessions without touching the database", async () => {
+    // Regression: a transient DB failure used to make session validation throw,
+    // which the /api/auth/me handler swallowed into a 401, logging valid users
+    // out on refresh. getSimpleSessionUser must resolve purely from the signed
+    // token + env user list. Point DATABASE_URL at a refused port: if this path
+    // touched the DB at all it would throw ECONNREFUSED instead of succeeding.
+    delete process.env.__DB_DISABLED;
+    process.env.DATABASE_URL = "postgres://u:p@127.0.0.1:1/nodb";
+    process.env.SIMPLE_AUTH_USERNAME = "admin";
+    process.env.SIMPLE_AUTH_PASSWORD = "secret";
+    process.env.SIMPLE_AUTH_ROLE = "admin";
+    process.env.SIMPLE_AUTH_NAME = "Admin User";
+    process.env.SIMPLE_AUTH_SESSION_SECRET =
+      "test-secret-that-is-long-enough-for-32-chars";
+
+    // Mint a token while the DB is reachable-free (login needs no DB here
+    // because we build the cookie directly from a token, bypassing the upsert).
+    process.env.__DB_DISABLED = "1";
+    const login = await loginSimpleUser("admin", "secret");
+    const cookieHeader = buildSimpleSessionCookie(login.token);
+    delete process.env.__DB_DISABLED; // DB now "configured" but unreachable
+
+    const user = await getSimpleSessionUser(cookieHeader);
+    expect(user.username).toBe("admin");
+    expect(user.role).toBe("admin");
+  });
+
   it("supports multiple env-defined users", async () => {
     process.env.__DB_DISABLED = "1";
     delete process.env.DATABASE_URL;

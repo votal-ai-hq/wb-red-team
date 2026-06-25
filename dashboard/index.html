@@ -7323,7 +7323,7 @@
                         " attacks (" +
                         pct +
                         "%)") +
-                    ' <span style="cursor:help;opacity:0.5;" aria-hidden="true">&#9432;</span>'
+                    ' <span style="cursor:help;color:var(--accent);font-weight:700;font-size:1.15em;vertical-align:middle;line-height:1;" title="Attack count is live and can rise during the run: attempts that come back PARTIAL are refined with follow-up attacks, and extra rounds may be planned. The starting number is an estimate." aria-label="Why this number can go up" tabindex="0">&#9432;</span>'
                   : "Starting...") +
                 "</div>" +
                 '<div class="u-text-sm u-flex u-gap-3">' +
@@ -8348,7 +8348,7 @@
           '<select id="riskProvider" class="c-input">' +
           '<option value="anthropic">Anthropic</option><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option></select></div>' +
           '<div class="u-flex-1" style="min-width:200px;"><div class="u-text-xs u-text-muted u-font-medium u-mb-1">Model</div>' +
-          '<input id="riskModel" type="text" value="claude-sonnet-4-20250514" class="c-input u-w-full" /></div>' +
+          '<input id="riskModel" type="text" value="claude-sonnet-4-6" class="c-input u-w-full" /></div>' +
           '<div class="u-flex u-gap-2">' +
           (riskLlmResults && riskLlmResults.length > 0
             ? '<button class="c-btn c-btn-ghost c-btn-sm" onclick="toggleAllRiskCards()" id="riskToggleAllBtn">Collapse All</button>' +
@@ -8476,7 +8476,7 @@
         var providerEl = document.getElementById("riskProvider");
         var modelEl = document.getElementById("riskModel");
         var provider = providerEl ? providerEl.value : "anthropic";
-        var model = modelEl ? modelEl.value : "claude-sonnet-4-20250514";
+        var model = modelEl ? modelEl.value : "claude-sonnet-4-6";
 
         try {
           var res = await fetch("/api/risk-analyze", {
@@ -8813,7 +8813,7 @@
               '<select id="compProvider" class="c-input">' +
               '<option value="anthropic">Anthropic</option><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option></select></div>' +
               '<div class="u-flex-1"><div class="u-text-xs u-text-muted u-font-medium u-mb-1">Model</div>' +
-              '<input id="compModel" type="text" value="claude-sonnet-4-20250514" class="c-input u-w-full" /></div>' +
+              '<input id="compModel" type="text" value="claude-sonnet-4-6" class="c-input u-w-full" /></div>' +
               "</div></div>" +
               // Frameworks — with select all/none
               '<div class="c-card-bg">' +
@@ -8944,7 +8944,7 @@
             body: JSON.stringify({
               reportFile: complianceSelectedReport,
               provider: providerEl ? providerEl.value : "anthropic",
-              model: modelEl ? modelEl.value : "claude-sonnet-4-20250514",
+              model: modelEl ? modelEl.value : "claude-sonnet-4-6",
               frameworkIds: selectedFw.length > 0 ? selectedFw : undefined,
             }),
           });
@@ -9148,6 +9148,61 @@
                   (bgMap[item.status] || "var(--bg)") +
                   ';border-radius:8px;">' +
                   esc(item.summary) +
+                  "</div>"
+                : "") +
+              // Mapped attacks — which attacks landed on this control and why
+              (item.attacks && item.attacks.length > 0
+                ? '<div style="margin:14px 0;">' +
+                  '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:4px;">Mapped Attacks (' +
+                  item.attacks.length +
+                  ")</div>" +
+                  (item.description
+                    ? '<div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5;">Attacks map to this control because their category falls under its scope: <span style="color:var(--text);">' +
+                      esc(item.description) +
+                      "</span></div>"
+                    : "") +
+                  '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+                  '<thead><tr style="text-align:left;border-bottom:1px solid var(--border);color:var(--text2);">' +
+                  '<th style="padding:6px 8px;font-weight:500;">Attack</th>' +
+                  '<th style="padding:6px 8px;font-weight:500;">Mapped via category</th>' +
+                  '<th style="padding:6px 8px;font-weight:500;">Severity</th>' +
+                  '<th style="padding:6px 8px;font-weight:500;white-space:nowrap;">Result</th>' +
+                  "</tr></thead><tbody>" +
+                  item.attacks
+                    .map(function (a) {
+                      var vMap = {
+                        PASS: { label: "Succeeded", color: "var(--red)" },
+                        PARTIAL: { label: "Partial", color: "var(--orange)" },
+                        FAIL: { label: "Blocked", color: "var(--green)" },
+                      };
+                      var v = vMap[a.verdict] || {
+                        label: a.verdict,
+                        color: "var(--text2)",
+                      };
+                      return (
+                        '<tr style="border-bottom:1px solid var(--border);">' +
+                        '<td style="padding:6px 8px;color:var(--text);"' +
+                        (a.detail
+                          ? ' title="' + esc(a.detail) + '"'
+                          : "") +
+                        ">" +
+                        esc(a.name) +
+                        "</td>" +
+                        '<td style="padding:6px 8px;color:var(--text2);font-family:monospace;font-size:11px;">' +
+                        esc(a.category) +
+                        "</td>" +
+                        '<td style="padding:6px 8px;color:var(--text2);text-transform:capitalize;">' +
+                        esc(a.severity || "") +
+                        "</td>" +
+                        '<td style="padding:6px 8px;font-weight:600;white-space:nowrap;color:' +
+                        v.color +
+                        ';">' +
+                        v.label +
+                        "</td></tr>"
+                      );
+                    })
+                    .join("") +
+                  "</tbody></table></div>" +
                   "</div>"
                 : "") +
               // Details
@@ -10068,9 +10123,9 @@
       document.addEventListener("change", (e) => {
         if (e.target && e.target.id === "owaspProvider") {
           const defaults = {
-            anthropic: "claude-sonnet-4-20250514",
+            anthropic: "claude-sonnet-4-6",
             openai: "gpt-4o",
-            openrouter: "anthropic/claude-sonnet-4-20250514",
+            openrouter: "anthropic/claude-sonnet-4.6",
           };
           const modelEl = document.getElementById("owaspModel");
           if (modelEl) modelEl.value = defaults[e.target.value] || "";
@@ -10139,7 +10194,7 @@
             body: JSON.stringify({
               reportFile: reportSelect.value,
               provider: providerEl ? providerEl.value : "anthropic",
-              model: modelEl ? modelEl.value : "claude-sonnet-4-20250514",
+              model: modelEl ? modelEl.value : "claude-sonnet-4-6",
               frameworkIds:
                 selectedFrameworks.length > 0 ? selectedFrameworks : undefined,
             }),
@@ -13926,9 +13981,9 @@
             concurrency: 2,
             delayBetweenRequestsMs: 500,
             llmProvider: "anthropic",
-            llmModel: "claude-sonnet-4-20250514",
+            llmModel: "claude-sonnet-4-6",
             judgeProvider: "anthropic",
-            judgeModel: "claude-sonnet-4-20250514",
+            judgeModel: "claude-sonnet-4-6",
             enableLlmGeneration: true,
             enableMultiTurnGeneration: true,
             enableAdaptiveMultiTurn: true,
@@ -14000,9 +14055,9 @@
             concurrency: 3,
             delayBetweenRequestsMs: 300,
             llmProvider: "anthropic",
-            llmModel: "claude-sonnet-4-20250514",
+            llmModel: "claude-sonnet-4-6",
             judgeProvider: "anthropic",
-            judgeModel: "claude-sonnet-4-20250514",
+            judgeModel: "claude-sonnet-4-6",
             enableLlmGeneration: true,
             enableMultiTurnGeneration: true,
             enableAdaptiveMultiTurn: true,
@@ -14091,9 +14146,9 @@
             concurrency: 3,
             delayBetweenRequestsMs: 300,
             llmProvider: "anthropic",
-            llmModel: "claude-sonnet-4-20250514",
+            llmModel: "claude-sonnet-4-6",
             judgeProvider: "anthropic",
-            judgeModel: "claude-sonnet-4-20250514",
+            judgeModel: "claude-sonnet-4-6",
             enableLlmGeneration: true,
             maxMultiTurnSteps: 8,
             strategiesPerRound: 5,
@@ -14201,9 +14256,9 @@
             adaptiveRounds: 2,
             maxAttacksPerCategory: 3,
             llmProvider: "anthropic",
-            llmModel: "claude-sonnet-4-20250514",
+            llmModel: "claude-sonnet-4-6",
             judgeProvider: "anthropic",
-            judgeModel: "claude-sonnet-4-20250514",
+            judgeModel: "claude-sonnet-4-6",
             enableLlmGeneration: true,
             requireReviewConfirmation: false,
           },
@@ -14336,7 +14391,7 @@
           icon: "⚔️",
           fields: [
             { path: "attackConfig.llmProvider", label: "LLM provider", type: "text", placeholder: "anthropic" },
-            { path: "attackConfig.llmModel", label: "LLM model", type: "text", placeholder: "claude-sonnet-4-20250514" },
+            { path: "attackConfig.llmModel", label: "LLM model", type: "text", placeholder: "claude-sonnet-4-6" },
             { path: "attackConfig.judgeProvider", label: "Judge provider", type: "text", placeholder: "anthropic" },
             { path: "attackConfig.judgeModel", label: "Judge model", type: "text" },
             { path: "attackConfig.adaptiveRounds", label: "Adaptive rounds", type: "number" },
