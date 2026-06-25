@@ -19,7 +19,7 @@ export async function apiFetch<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, headers, credentials: "include" });
 
   if (res.status === 401 || res.status === 403) {
     const { logout } = useAuthStore.getState();
@@ -58,5 +58,5 @@ export function apiStream(
     headers.set("Content-Type", "application/json");
   }
 
-  return fetch(url, { ...options, headers });
+  return fetch(url, { ...options, headers, credentials: "include" });
 }
