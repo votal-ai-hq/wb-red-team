@@ -10,7 +10,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import {
   Table,
@@ -21,13 +20,98 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Shield,
+  Zap,
+  AlertCircle,
+  ShieldCheck,
+  Activity,
+  ArrowRight,
+  ExternalLink,
+} from "lucide-react";
 
-function getRiskLevel(score: number) {
-  if (score >= 70) return { label: "Low", variant: "secondary" as const, dotColor: "bg-emerald-500" };
-  if (score >= 50) return { label: "Medium", variant: "outline" as const, dotColor: "bg-amber-500" };
-  if (score >= 30) return { label: "High", variant: "outline" as const, dotColor: "bg-orange-500" };
-  return { label: "Critical", variant: "destructive" as const, dotColor: "bg-red-500" };
+/* ─── helpers ─── */
+
+type SeverityLevel = "critical" | "high" | "medium" | "low";
+
+const SEVERITY_CONFIG: Record<
+  SeverityLevel,
+  { dot: string; text: string; bg: string; label: string }
+> = {
+  critical: { dot: "bg-red-500", text: "text-red-700 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950/30", label: "Critical" },
+  high: { dot: "bg-orange-500", text: "text-orange-700 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-950/30", label: "High" },
+  medium: { dot: "bg-amber-400", text: "text-amber-700 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30", label: "Medium" },
+  low: { dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30", label: "Low" },
+};
+
+function getSeverity(score: number): SeverityLevel {
+  if (score < 30) return "critical";
+  if (score < 50) return "high";
+  if (score < 70) return "medium";
+  return "low";
 }
+
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/* ─── severity pill component (matches Pepper style) ─── */
+
+function SeverityBadge({ level }: { level: SeverityLevel }) {
+  const cfg = SEVERITY_CONFIG[level];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.bg} ${cfg.text}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  );
+}
+
+/* ─── stat card (Pepper-style: colored dot + number + label) ─── */
+
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  dotColor,
+  subtitle,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ElementType;
+  dotColor?: string;
+  subtitle?: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="pt-5 pb-4 px-5">
+        <div className="flex items-center gap-2 mb-3">
+          {dotColor && <span className={`w-2 h-2 rounded-full ${dotColor}`} />}
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {label}
+          </span>
+        </div>
+        <div className="flex items-end justify-between">
+          <span className="text-3xl font-bold tracking-tight text-foreground">
+            {typeof value === "number" ? value.toLocaleString() : value}
+          </span>
+          <Icon className="w-5 h-5 text-muted-foreground/40" />
+        </div>
+        {subtitle && (
+          <span className="text-[11px] text-muted-foreground mt-1 block">{subtitle}</span>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── main component ─── */
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -35,6 +119,7 @@ export default function DashboardPage() {
   const [trend, setTrend] = useState<ReportTrend[]>([]);
   const [runs, setRuns] = useState<RunMeta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tableFilter, setTableFilter] = useState<"all" | SeverityLevel>("all");
 
   useEffect(() => {
     Promise.all([getReportsMeta(1, 200), getRuns()])
@@ -58,7 +143,7 @@ export default function DashboardPage() {
     );
   }
 
-  // ── Stats ──
+  // ── computed stats ──
   const totalVulns = reportsMeta.reduce((s, r) => s + r.passed, 0);
   const totalBlocked = reportsMeta.reduce((s, r) => s + r.failed, 0);
   const totalAttacks = reportsMeta.reduce((s, r) => s + r.totalAttacks, 0);
@@ -68,35 +153,29 @@ export default function DashboardPage() {
       : 0;
   const latestScore = reportsMeta.length > 0 ? reportsMeta[0].score : 0;
   const scansCompleted = reportsMeta.length;
-  const risk = getRiskLevel(avgScore);
 
-  // ── Active runs ──
+  // ── active runs ──
   const activeRuns = runs.filter((r) => r.status === "running" || r.status === "queued");
 
-  // ── Attack category analysis ──
-  const categoryCounts: Record<string, number> = {};
+  // ── score distribution for severity cards ──
+  const scoreBuckets = { critical: 0, high: 0, medium: 0, low: 0 };
+  reportsMeta.forEach((r) => {
+    scoreBuckets[getSeverity(r.score)]++;
+  });
+
+  // ── attack category analysis ──
   const categoryVulnCounts: Record<string, number> = {};
   reportsMeta.forEach((r) => {
     (r.attackCategories ?? []).forEach((cat) => {
-      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
       categoryVulnCounts[cat] = (categoryVulnCounts[cat] || 0) + r.passed;
     });
   });
   const topCategories = Object.entries(categoryVulnCounts)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+    .slice(0, 6);
   const maxCatVulns = topCategories.length > 0 ? topCategories[0][1] : 1;
 
-  // ── Score distribution ──
-  const scoreBuckets = { critical: 0, high: 0, medium: 0, secure: 0 };
-  reportsMeta.forEach((r) => {
-    if (r.score < 30) scoreBuckets.critical++;
-    else if (r.score < 50) scoreBuckets.high++;
-    else if (r.score < 70) scoreBuckets.medium++;
-    else scoreBuckets.secure++;
-  });
-
-  // ── Top targets by vulnerabilities ──
+  // ── top targets ──
   const targetVulns: Record<string, number> = {};
   reportsMeta.forEach((r) => {
     targetVulns[r.targetUrl] = (targetVulns[r.targetUrl] || 0) + r.passed;
@@ -106,291 +185,201 @@ export default function DashboardPage() {
     .slice(0, 5);
   const maxTargetVulns = topTargets.length > 0 ? topTargets[0][1] : 1;
 
-  // ── Recent scans ──
-  const recentScans = reportsMeta.slice(0, 10);
+  // ── filtered scans for table ──
+  const recentScans = reportsMeta.slice(0, 20);
+  const filteredScans =
+    tableFilter === "all"
+      ? recentScans
+      : recentScans.filter((r) => getSeverity(r.score) === tableFilter);
+
+  const filterTabs: { key: "all" | SeverityLevel; label: string; count: number }[] = [
+    { key: "all", label: "All Scans", count: recentScans.length },
+    { key: "critical", label: "Critical", count: scoreBuckets.critical },
+    { key: "high", label: "High", count: scoreBuckets.high },
+    { key: "medium", label: "Medium", count: scoreBuckets.medium },
+    { key: "low", label: "Low", count: scoreBuckets.low },
+  ];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Row 1: Key metric cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Security Score */}
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center gap-2 pt-5 pb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Security Score
-            </span>
-            <ScoreRing score={latestScore} size={96} />
-            <span className="text-xs text-muted-foreground">Latest scan</span>
-          </CardContent>
-        </Card>
-
-        {/* Total Attacks */}
-        <Card>
-          <CardContent className="flex flex-col gap-2 pt-5 pb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Total Attacks
-            </span>
-            <div className="flex items-center gap-2 mt-auto">
-              <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span className="text-3xl font-bold text-foreground">{totalAttacks.toLocaleString()}</span>
-            </div>
-            <span className="text-xs text-muted-foreground">{scansCompleted} scans completed</span>
-          </CardContent>
-        </Card>
-
-        {/* Vulnerabilities Found */}
-        <Card className="border-red-200 bg-red-50/50 dark:bg-red-950/20 dark:border-red-900/50">
-          <CardContent className="flex flex-col gap-2 pt-5 pb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Vulnerabilities Found
-            </span>
-            <div className="flex items-center gap-2 mt-auto">
-              <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-3xl font-bold text-red-600 dark:text-red-400">{totalVulns.toLocaleString()}</span>
-            </div>
-            <span className="text-xs text-muted-foreground">Across all scans</span>
-          </CardContent>
-        </Card>
-
-        {/* Attacks Blocked */}
-        <Card className="border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-900/50">
-          <CardContent className="flex flex-col gap-2 pt-5 pb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Attacks Blocked
-            </span>
-            <div className="flex items-center gap-2 mt-auto">
-              <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{totalBlocked.toLocaleString()}</span>
-            </div>
-            <span className="text-xs text-muted-foreground">Successfully defended</span>
-          </CardContent>
-        </Card>
-
-        {/* Overall Risk */}
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center gap-2 pt-5 pb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Overall Risk
-            </span>
-            <Badge variant={risk.variant} className="text-lg px-4 py-1.5">
-              {risk.label}
-            </Badge>
-            <span className="text-xs text-muted-foreground">Avg score: {avgScore}</span>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Row 2: Active runs banner (if any) */}
+      {/* ── Active runs banner ── */}
       {activeRuns.length > 0 && (
-        <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-900/50">
-          <CardContent className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-sm font-medium">
-                {activeRuns.length} scan{activeRuns.length > 1 ? "s" : ""} in progress
-              </span>
-              {activeRuns[0]?.targetUrl && (
-                <span className="text-xs text-muted-foreground truncate max-w-[300px]">
-                  {activeRuns[0].targetUrl}
-                </span>
-              )}
-            </div>
-            <button
-              onClick={() => navigate("/runs")}
-              className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              View runs
-            </button>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3 rounded-lg border border-blue-200 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/20 px-4 py-2.5">
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <span className="text-sm font-medium text-foreground">
+            {activeRuns.length} scan{activeRuns.length > 1 ? "s" : ""} running
+          </span>
+          {activeRuns[0]?.targetUrl && (
+            <span className="text-xs text-muted-foreground truncate max-w-[300px]">
+              — {activeRuns[0].targetUrl}
+            </span>
+          )}
+          <button
+            onClick={() => navigate("/scans")}
+            className="ml-auto text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+          >
+            View <ArrowRight className="w-3 h-3" />
+          </button>
+        </div>
       )}
 
-      {/* Row 3: Trend + Score distribution + Severity breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Score Trend */}
+      {/* ── Row 1: Score ring + stat cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+        {/* Security Score — spans 2 cols on mobile */}
+        <Card className="col-span-2 lg:col-span-1">
+          <CardContent className="flex flex-col items-center justify-center pt-5 pb-4">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              Score
+            </span>
+            <ScoreRing score={latestScore} size={88} />
+            <span className="text-[11px] text-muted-foreground mt-1.5">Latest scan</span>
+          </CardContent>
+        </Card>
+
+        <StatCard
+          label="Total Attacks"
+          value={totalAttacks}
+          icon={Zap}
+          subtitle={`${scansCompleted} scans completed`}
+        />
+        <StatCard
+          label="Vulnerabilities"
+          value={totalVulns}
+          icon={AlertCircle}
+          dotColor="bg-red-500"
+          subtitle="Across all scans"
+        />
+        <StatCard
+          label="Blocked"
+          value={totalBlocked}
+          icon={ShieldCheck}
+          dotColor="bg-emerald-500"
+          subtitle="Successfully defended"
+        />
+        <StatCard
+          label="Avg Score"
+          value={avgScore}
+          icon={Activity}
+          subtitle={`Risk: ${SEVERITY_CONFIG[getSeverity(avgScore)].label}`}
+        />
+        {/* Trend sparkline */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Score Trend
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col pt-5 pb-4 px-5">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+              Trend
+            </span>
             {trend.length > 1 ? (
-              <TrendChart data={trend} width={320} height={80} />
+              <TrendChart data={trend} width={140} height={52} />
             ) : (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                Need 2+ scans for trend data
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Scan Score Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Score Distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {([
-              { label: "Critical (<30)", count: scoreBuckets.critical, color: "bg-red-500" },
-              { label: "High (30-49)", count: scoreBuckets.high, color: "bg-orange-500" },
-              { label: "Medium (50-69)", count: scoreBuckets.medium, color: "bg-amber-500" },
-              { label: "Secure (70+)", count: scoreBuckets.secure, color: "bg-emerald-500" },
-            ] as const).map((bucket) => (
-              <div key={bucket.label}>
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="text-muted-foreground">{bucket.label}</span>
-                  <span className="font-semibold text-foreground">{bucket.count}</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${bucket.color} transition-all duration-500`}
-                    style={{
-                      width: scansCompleted > 0 ? `${(bucket.count / scansCompleted) * 100}%` : "0%",
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Top Vulnerable Categories */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Top Vulnerable Categories
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {topCategories.length > 0 ? (
-              <div className="space-y-3">
-                {topCategories.map(([cat, count]) => (
-                  <div key={cat}>
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="text-foreground font-medium truncate max-w-[65%]" title={cat}>
-                        {cat}
-                      </span>
-                      <span className="font-semibold text-red-600 dark:text-red-400">{count}</span>
-                    </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-red-500 transition-all duration-500"
-                        style={{ width: `${(count / maxCatVulns) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground py-4 text-center">No data yet</p>
+              <span className="text-[11px] text-muted-foreground mt-2">Need 2+ scans</span>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Row 4: Top targets */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Top Targets by Vulnerabilities
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {topTargets.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3">
-              {topTargets.map(([url, count]) => (
-                <div key={url}>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-foreground font-medium truncate max-w-[70%]" title={url}>
-                      {url}
-                    </span>
-                    <span className="font-semibold text-red-600 dark:text-red-400">{count}</span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-red-500 transition-all duration-500"
-                      style={{ width: `${(count / maxTargetVulns) * 100}%` }}
-                    />
+      {/* ── Row 2: Severity breakdown (Pepper-style colored dot + number row) ── */}
+      <div className="grid grid-cols-4 gap-4">
+        {(["critical", "high", "medium", "low"] as const).map((level) => {
+          const cfg = SEVERITY_CONFIG[level];
+          return (
+            <Card key={level}>
+              <CardContent className="flex items-center gap-3 py-4 px-5">
+                <span className={`w-3 h-3 rounded-full ${cfg.dot} shrink-0`} />
+                <div className="min-w-0">
+                  <div className="text-xs font-medium text-muted-foreground">{cfg.label}</div>
+                  <div className={`text-2xl font-bold tracking-tight ${cfg.text}`}>
+                    {scoreBuckets[level]}
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-6">No scan data available</p>
-          )}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
 
-      {/* Row 5: Recent scans table */}
+      {/* ── Row 3: Findings table with filter tabs ── */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Recent Scans
-          </CardTitle>
-          <CardDescription>
-            Last {recentScans.length} security scans
-          </CardDescription>
+        <CardHeader className="pb-0">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold">
+              Findings ({filteredScans.length})
+            </CardTitle>
+            <button
+              onClick={() => navigate("/reports")}
+              className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+            >
+              View all reports <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+          {/* Filter tabs */}
+          <div className="flex items-center gap-1 mt-3 border-b border-border -mx-[var(--card-spacing)] px-[var(--card-spacing)]">
+            {filterTabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setTableFilter(tab.key)}
+                className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                  tableFilter === tab.key
+                    ? "border-foreground text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+                <span className="ml-1.5 text-muted-foreground">
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
         </CardHeader>
-        <CardContent>
-          {recentScans.length > 0 ? (
+        <CardContent className="pt-0">
+          {filteredScans.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
+                  <TableHead className="w-12">Risk</TableHead>
+                  <TableHead>Severity</TableHead>
                   <TableHead>Target</TableHead>
                   <TableHead>Score</TableHead>
                   <TableHead>Attacks</TableHead>
-                  <TableHead>Vulnerabilities</TableHead>
-                  <TableHead>Risk</TableHead>
+                  <TableHead>Vulns</TableHead>
+                  <TableHead className="text-right">Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentScans.map((r) => {
-                  const riskInfo = getRiskLevel(r.score);
+                {filteredScans.map((r) => {
+                  const severity = getSeverity(r.score);
+                  const cfg = SEVERITY_CONFIG[severity];
                   return (
                     <TableRow
                       key={r.filename}
-                      className="cursor-pointer"
+                      className="cursor-pointer group"
                       onClick={() => navigate(`/reports/${r.filename}`)}
                     >
-                      <TableCell className="text-muted-foreground">
-                        {new Date(r.timestamp).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </TableCell>
-                      <TableCell className="font-medium max-w-[200px] truncate" title={r.targetUrl}>
-                        {r.targetUrl}
+                      <TableCell>
+                        <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot} inline-block`} />
                       </TableCell>
                       <TableCell>
-                        <span className={`font-semibold ${
-                          r.score >= 70 ? "text-emerald-600 dark:text-emerald-400" :
-                          r.score >= 50 ? "text-amber-600 dark:text-amber-400" :
-                          r.score >= 30 ? "text-orange-600 dark:text-orange-400" :
-                          "text-red-600 dark:text-red-400"
-                        }`}>
-                          {r.score}
+                        <SeverityBadge level={severity} />
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className="font-medium text-foreground group-hover:text-primary transition-colors truncate block max-w-[260px]"
+                          title={r.targetUrl}
+                        >
+                          {r.targetUrl}
                         </span>
                       </TableCell>
-                      <TableCell>{r.totalAttacks}</TableCell>
                       <TableCell>
-                        <span className="text-red-600 dark:text-red-400 font-medium">{r.passed}</span>
+                        <span className={`font-semibold tabular-nums ${cfg.text}`}>{r.score}</span>
                       </TableCell>
+                      <TableCell className="tabular-nums">{r.totalAttacks}</TableCell>
                       <TableCell>
-                        <Badge variant={riskInfo.variant}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${riskInfo.dotColor}`} />
-                          {riskInfo.label}
-                        </Badge>
+                        <span className="font-medium tabular-nums text-red-600 dark:text-red-400">
+                          {r.passed}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {fmtDate(r.timestamp)}
                       </TableCell>
                     </TableRow>
                   );
@@ -398,14 +387,95 @@ export default function DashboardPage() {
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center py-12">
-              <p className="text-sm text-muted-foreground">
-                No scans completed yet. Run your first security scan to see results here.
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Shield className="w-10 h-10 text-muted-foreground/30 mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">No scans found</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Run your first security scan to see results here
               </p>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* ── Row 4: Categories + Targets side-by-side ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Top Vulnerable Categories */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold">Top Vulnerable Categories</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {topCategories.length > 0 ? (
+              <div className="space-y-3">
+                {topCategories.map(([cat, count], i) => (
+                  <div key={cat} className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground w-4 text-right tabular-nums">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-foreground truncate" title={cat}>
+                          {cat}
+                        </span>
+                        <span className="text-xs font-semibold tabular-nums text-muted-foreground ml-2">
+                          {count}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-red-500/80 transition-all duration-500"
+                          style={{ width: `${(count / maxCatVulns) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">No data yet</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top Targets */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold">Top Targets by Vulnerabilities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {topTargets.length > 0 ? (
+              <div className="space-y-3">
+                {topTargets.map(([url, count], i) => (
+                  <div key={url} className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground w-4 text-right tabular-nums">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-foreground truncate" title={url}>
+                          {url}
+                        </span>
+                        <span className="text-xs font-semibold tabular-nums text-muted-foreground ml-2">
+                          {count}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-orange-500/80 transition-all duration-500"
+                          style={{ width: `${(count / maxTargetVulns) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">No scan data</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
