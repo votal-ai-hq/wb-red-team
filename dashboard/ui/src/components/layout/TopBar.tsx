@@ -1,7 +1,7 @@
 import { useLocation } from "react-router";
 import { useUIStore } from "@/stores/uiStore";
 import { useAuthStore } from "@/stores/authStore";
-import { Menu, Search } from "lucide-react";
+import { Menu } from "lucide-react";
 import * as authApi from "@/api/auth";
 
 const TITLES: Record<string, string> = {
@@ -53,14 +53,7 @@ export function TopBar() {
         {getTitle(location.pathname)}
       </h1>
 
-      <div className="hidden sm:flex items-center gap-2 flex-1 max-w-md ml-4 px-3 py-2 rounded-lg bg-muted border border-border text-muted-foreground text-sm">
-        <Search className="w-4 h-4 opacity-50" />
-        <input
-          type="search"
-          placeholder="Search scans, reports, risks..."
-          className="bg-transparent outline-none flex-1 text-foreground placeholder:text-muted-foreground/60"
-        />
-      </div>
+      {/* spacer */}
 
       <div className="flex-1" />
 

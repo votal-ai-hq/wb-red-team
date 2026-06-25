@@ -3,7 +3,8 @@ import { getAuditLog } from "@/api/audit";
 import type { AuditEntry } from "@/api/types";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { FileText, ChevronDown, Clock } from "lucide-react";
+import { FileText, ChevronDown, Clock, Search } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const cardClass =
   "bg-card border border-border rounded-xl p-5 shadow-sm";
@@ -27,6 +28,8 @@ export default function AuditPage() {
   const [actionFilter, setActionFilter] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [noDatabase, setNoDatabase] = useState(false);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 250);
 
   const fetchLog = useCallback(
     (action: string) => {
@@ -121,6 +124,18 @@ export default function AuditPage() {
         </div>
       </div>
 
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Search by action, resource, or user..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        />
+      </div>
+
       {/* Table */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -163,7 +178,16 @@ export default function AuditPage() {
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry) => (
+                {entries.filter((entry) => {
+                  if (!debouncedSearch) return true;
+                  const q = debouncedSearch.toLowerCase();
+                  return (
+                    (entry.action ?? "").toLowerCase().includes(q) ||
+                    (entry.targetType ?? entry.resource_type ?? "").toLowerCase().includes(q) ||
+                    (entry.targetId ?? entry.resource_id ?? "").toLowerCase().includes(q) ||
+                    (entry.userId ?? entry.user_id ?? "").toLowerCase().includes(q)
+                  );
+                }).map((entry) => (
                   <tr
                     key={entry.id}
                     className="border-b border-border/50 last:border-0"

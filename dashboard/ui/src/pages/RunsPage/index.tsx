@@ -19,7 +19,9 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  Search,
 } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 /* ─── helpers ─── */
 
@@ -98,6 +100,8 @@ export default function RunsPage() {
   const [detailLoading, setDetailLoading] = useState<Record<string, boolean>>({});
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [rerunningIds, setRerunningIds] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 250);
 
   const refreshRuns = useCallback(() => {
     getRuns()
@@ -272,6 +276,18 @@ export default function RunsPage() {
         </button>
       </div>
 
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Filter by target URL..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        />
+      </div>
+
       {/* Runs list */}
       {runs.length === 0 ? (
         <Card>
@@ -285,7 +301,7 @@ export default function RunsPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {runs.map((run) => {
+          {runs.filter((r) => !debouncedSearch || (r.targetUrl ?? "").toLowerCase().includes(debouncedSearch.toLowerCase())).map((run) => {
             const cfg = STATUS_CONFIG[run.status] ?? STATUS_CONFIG.queued;
             const Icon = cfg.icon;
             const isExpanded = expandedId === run.runId;
