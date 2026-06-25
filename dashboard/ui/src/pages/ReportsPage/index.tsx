@@ -47,10 +47,10 @@ function fmtDate(iso: string) {
   });
 }
 
-function scoreTextColor(score: number) {
-  if (score >= 70) return "text-green-600 dark:text-green-400";
-  if (score >= 40) return "text-orange-600 dark:text-orange-400";
-  return "text-red-600 dark:text-red-400";
+function scoreBadgeClasses(score: number) {
+  if (score >= 70) return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-800";
+  if (score >= 40) return "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 ring-orange-200 dark:ring-orange-800";
+  return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 ring-red-200 dark:ring-red-800";
 }
 
 function severityVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
@@ -205,7 +205,7 @@ function ReportsGrid() {
                       onClick={() => navigate(`/reports/${encodeURIComponent(r.filename)}`)}
                     >
                       <TableCell>
-                        <span className={`text-lg font-bold tabular-nums ${scoreTextColor(r.score)}`}>
+                        <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold tabular-nums ring-1 ${scoreBadgeClasses(r.score)}`}>
                           {r.score}
                         </span>
                       </TableCell>
