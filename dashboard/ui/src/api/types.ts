@@ -174,12 +174,18 @@ export interface RiskAnalysisResult {
 // ── Audit ──
 export interface AuditEntry {
   id: string;
-  timestamp: string;
+  timestamp?: string;
+  createdAt?: string;
   action: string;
-  resource_type: string;
-  resource_id: string;
+  resource_type?: string;
+  resource_id?: string;
+  targetType?: string | null;
+  targetId?: string | null;
   user_id?: string;
+  userId?: string;
   details?: Record<string, unknown>;
+  metadata?: Record<string, unknown> | null;
+  [key: string]: unknown;
 }
 
 export interface AuditLogResponse {

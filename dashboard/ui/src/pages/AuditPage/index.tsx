@@ -169,7 +169,7 @@ export default function AuditPage() {
                     className="border-b border-border/50 last:border-0"
                   >
                     <td className="py-2.5 pr-4 text-muted-foreground whitespace-nowrap">
-                      {new Date(entry.timestamp).toLocaleString("en-US", {
+                      {new Date(entry.createdAt ?? entry.timestamp).toLocaleString("en-US", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
@@ -183,13 +183,13 @@ export default function AuditPage() {
                       </span>
                     </td>
                     <td className="py-2.5 pr-4 text-foreground">
-                      {entry.resource_type}
+                      {entry.targetType ?? entry.resource_type ?? "-"}
                     </td>
-                    <td className="py-2.5 pr-4 text-foreground font-mono text-xs max-w-[180px] truncate" title={entry.resource_id}>
-                      {entry.resource_id}
+                    <td className="py-2.5 pr-4 text-foreground font-mono text-xs max-w-[180px] truncate" title={entry.targetId ?? entry.resource_id ?? ""}>
+                      {entry.targetId ?? entry.resource_id ?? "-"}
                     </td>
                     <td className="py-2.5 pr-4 text-muted-foreground">
-                      {entry.user_id || "-"}
+                      {entry.userId ?? entry.user_id ?? "-"}
                     </td>
                     <td className="py-2.5 text-muted-foreground text-xs max-w-[200px] truncate">
                       {entry.details
