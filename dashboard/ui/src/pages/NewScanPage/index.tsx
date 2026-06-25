@@ -1087,8 +1087,35 @@ export default function NewScanPage() {
 
           {/* Policy */}
           <CollapsibleSection title="Policy File" icon={FileText}>
-            <FieldRow label="Policy File Path" hint="Path to the judge policy JSON file">
-              <input value={policyFile} onChange={(e) => setPolicyFile(e.target.value)} className={inputCls} />
+            <FieldRow label="Select a policy" hint="Choose a built-in policy or enter a custom path">
+              <div className="flex flex-wrap gap-2 mb-3">
+                {[
+                  { value: "policies/default.json", label: "Default" },
+                  { value: "policies/strict.json", label: "Strict" },
+                  { value: "policies/mcp-strict.json", label: "MCP Strict" },
+                  { value: "policies/safety-classifier.json", label: "Safety Classifier" },
+                ].map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => setPolicyFile(p.value)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      policyFile === p.value
+                        ? "bg-primary text-white border-primary shadow-sm"
+                        : "bg-card text-muted-foreground border-border hover:border-muted-foreground/30 hover:text-foreground"
+                    }`}
+                  >
+                    {policyFile === p.value && <CheckCircle className="w-3 h-3" />}
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <input
+                value={policyFile}
+                onChange={(e) => setPolicyFile(e.target.value)}
+                placeholder="policies/custom.json"
+                className={inputCls}
+              />
             </FieldRow>
           </CollapsibleSection>
         </div>
