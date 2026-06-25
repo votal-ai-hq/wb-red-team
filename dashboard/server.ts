@@ -1986,7 +1986,7 @@ const server = createServer(
 
         // Use provider/model from request body, or fall back to config.json / defaults
         let judgeProvider = body.provider || "anthropic";
-        let judgeModel = body.model || "claude-sonnet-4-20250514";
+        let judgeModel = body.model || "claude-sonnet-4-6";
         if (!body.provider || !body.model) {
           try {
             const config = loadConfig();
@@ -2159,7 +2159,7 @@ const server = createServer(
         }
 
         const judgeProvider = provider || "anthropic";
-        const judgeModel = model || "claude-sonnet-4-20250514";
+        const judgeModel = model || "claude-sonnet-4-6";
 
         // If no judge LLM can be initialized (e.g. missing API key), fail with
         // one clear message instead of streaming a wall of "UNKNOWN" cards.

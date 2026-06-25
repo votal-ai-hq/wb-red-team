@@ -8348,7 +8348,7 @@
           '<select id="riskProvider" class="c-input">' +
           '<option value="anthropic">Anthropic</option><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option></select></div>' +
           '<div class="u-flex-1" style="min-width:200px;"><div class="u-text-xs u-text-muted u-font-medium u-mb-1">Model</div>' +
-          '<input id="riskModel" type="text" value="claude-sonnet-4-20250514" class="c-input u-w-full" /></div>' +
+          '<input id="riskModel" type="text" value="claude-sonnet-4-6" class="c-input u-w-full" /></div>' +
           '<div class="u-flex u-gap-2">' +
           (riskLlmResults && riskLlmResults.length > 0
             ? '<button class="c-btn c-btn-ghost c-btn-sm" onclick="toggleAllRiskCards()" id="riskToggleAllBtn">Collapse All</button>' +
@@ -8476,7 +8476,7 @@
         var providerEl = document.getElementById("riskProvider");
         var modelEl = document.getElementById("riskModel");
         var provider = providerEl ? providerEl.value : "anthropic";
-        var model = modelEl ? modelEl.value : "claude-sonnet-4-20250514";
+        var model = modelEl ? modelEl.value : "claude-sonnet-4-6";
 
         try {
           var res = await fetch("/api/risk-analyze", {
@@ -8813,7 +8813,7 @@
               '<select id="compProvider" class="c-input">' +
               '<option value="anthropic">Anthropic</option><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option></select></div>' +
               '<div class="u-flex-1"><div class="u-text-xs u-text-muted u-font-medium u-mb-1">Model</div>' +
-              '<input id="compModel" type="text" value="claude-sonnet-4-20250514" class="c-input u-w-full" /></div>' +
+              '<input id="compModel" type="text" value="claude-sonnet-4-6" class="c-input u-w-full" /></div>' +
               "</div></div>" +
               // Frameworks — with select all/none
               '<div class="c-card-bg">' +
@@ -8944,7 +8944,7 @@
             body: JSON.stringify({
               reportFile: complianceSelectedReport,
               provider: providerEl ? providerEl.value : "anthropic",
-              model: modelEl ? modelEl.value : "claude-sonnet-4-20250514",
+              model: modelEl ? modelEl.value : "claude-sonnet-4-6",
               frameworkIds: selectedFw.length > 0 ? selectedFw : undefined,
             }),
           });
@@ -10068,9 +10068,9 @@
       document.addEventListener("change", (e) => {
         if (e.target && e.target.id === "owaspProvider") {
           const defaults = {
-            anthropic: "claude-sonnet-4-20250514",
+            anthropic: "claude-sonnet-4-6",
             openai: "gpt-4o",
-            openrouter: "anthropic/claude-sonnet-4-20250514",
+            openrouter: "anthropic/claude-sonnet-4.6",
           };
           const modelEl = document.getElementById("owaspModel");
           if (modelEl) modelEl.value = defaults[e.target.value] || "";
@@ -10139,7 +10139,7 @@
             body: JSON.stringify({
               reportFile: reportSelect.value,
               provider: providerEl ? providerEl.value : "anthropic",
-              model: modelEl ? modelEl.value : "claude-sonnet-4-20250514",
+              model: modelEl ? modelEl.value : "claude-sonnet-4-6",
               frameworkIds:
                 selectedFrameworks.length > 0 ? selectedFrameworks : undefined,
             }),
@@ -13926,9 +13926,9 @@
             concurrency: 2,
             delayBetweenRequestsMs: 500,
             llmProvider: "anthropic",
-            llmModel: "claude-sonnet-4-20250514",
+            llmModel: "claude-sonnet-4-6",
             judgeProvider: "anthropic",
-            judgeModel: "claude-sonnet-4-20250514",
+            judgeModel: "claude-sonnet-4-6",
             enableLlmGeneration: true,
             enableMultiTurnGeneration: true,
             enableAdaptiveMultiTurn: true,
@@ -14000,9 +14000,9 @@
             concurrency: 3,
             delayBetweenRequestsMs: 300,
             llmProvider: "anthropic",
-            llmModel: "claude-sonnet-4-20250514",
+            llmModel: "claude-sonnet-4-6",
             judgeProvider: "anthropic",
-            judgeModel: "claude-sonnet-4-20250514",
+            judgeModel: "claude-sonnet-4-6",
             enableLlmGeneration: true,
             enableMultiTurnGeneration: true,
             enableAdaptiveMultiTurn: true,
@@ -14091,9 +14091,9 @@
             concurrency: 3,
             delayBetweenRequestsMs: 300,
             llmProvider: "anthropic",
-            llmModel: "claude-sonnet-4-20250514",
+            llmModel: "claude-sonnet-4-6",
             judgeProvider: "anthropic",
-            judgeModel: "claude-sonnet-4-20250514",
+            judgeModel: "claude-sonnet-4-6",
             enableLlmGeneration: true,
             maxMultiTurnSteps: 8,
             strategiesPerRound: 5,
@@ -14201,9 +14201,9 @@
             adaptiveRounds: 2,
             maxAttacksPerCategory: 3,
             llmProvider: "anthropic",
-            llmModel: "claude-sonnet-4-20250514",
+            llmModel: "claude-sonnet-4-6",
             judgeProvider: "anthropic",
-            judgeModel: "claude-sonnet-4-20250514",
+            judgeModel: "claude-sonnet-4-6",
             enableLlmGeneration: true,
             requireReviewConfirmation: false,
           },
@@ -14336,7 +14336,7 @@
           icon: "⚔️",
           fields: [
             { path: "attackConfig.llmProvider", label: "LLM provider", type: "text", placeholder: "anthropic" },
-            { path: "attackConfig.llmModel", label: "LLM model", type: "text", placeholder: "claude-sonnet-4-20250514" },
+            { path: "attackConfig.llmModel", label: "LLM model", type: "text", placeholder: "claude-sonnet-4-6" },
             { path: "attackConfig.judgeProvider", label: "Judge provider", type: "text", placeholder: "anthropic" },
             { path: "attackConfig.judgeModel", label: "Judge model", type: "text" },
             { path: "attackConfig.adaptiveRounds", label: "Adaptive rounds", type: "number" },
