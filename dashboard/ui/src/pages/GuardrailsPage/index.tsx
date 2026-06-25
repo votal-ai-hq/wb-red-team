@@ -178,13 +178,13 @@ export default function GuardrailsPage() {
                 {(() => {
                   const totalResults = report.results.length;
                   const blockedCount = report.results.filter(
-                    (r) => r.blocked
+                    (r) => r.assessment?.blocked ?? r.blocked ?? false
                   ).length;
                   const goodCount = report.results.filter(
-                    (r) => r.verdict === "good" || r.verdict === "pass"
+                    (r) => (r.without_guardrails?.category ?? r.verdict) === "good"
                   ).length;
                   const badCount = report.results.filter(
-                    (r) => r.verdict === "bad" || r.verdict === "fail"
+                    (r) => (r.without_guardrails?.category ?? r.verdict) === "bad"
                   ).length;
                   return (
                     <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-border">
@@ -249,52 +249,59 @@ export default function GuardrailsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {report.results.map((r, i) => (
-                          <tr
-                            key={i}
-                            className="border-b border-border/50 last:border-0 align-top"
-                          >
-                            <td className="py-2.5 pr-4 text-foreground max-w-[250px]">
-                              <p className="truncate" title={r.prompt}>
-                                {r.prompt}
-                              </p>
-                            </td>
-                            <td className="py-2.5 pr-4 text-muted-foreground max-w-[250px]">
-                              <p className="truncate" title={r.response}>
-                                {r.response}
-                              </p>
-                            </td>
-                            <td className="py-2.5 pr-4">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                {r.guardrail}
-                              </span>
-                            </td>
-                            <td className="py-2.5 pr-4">
-                              <Badge
-                                variant={
-                                  r.verdict === "good" || r.verdict === "pass"
-                                    ? "success"
-                                    : r.verdict === "bad" || r.verdict === "fail"
-                                      ? "critical"
-                                      : "info"
-                                }
-                              >
-                                {r.verdict}
-                              </Badge>
-                            </td>
-                            <td className="py-2.5">
-                              {r.blocked ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                  Blocked
+                        {report.results.map((r, i) => {
+                          const prompt = r.without_guardrails?.message ?? r.prompt ?? "-";
+                          const response = r.with_guardrails?.response_text ?? r.response ?? "-";
+                          const guardrailName = r.guardrail ?? (report.guardrails?.join(", ") || "N/A");
+                          const verdict = r.assessment?.guardrail_effect ?? r.with_guardrails?.guardrail_verdict ?? r.verdict ?? "-";
+                          const isBlocked = r.assessment?.blocked ?? r.blocked ?? false;
+                          return (
+                            <tr
+                              key={i}
+                              className="border-b border-border/50 last:border-0 align-top"
+                            >
+                              <td className="py-2.5 pr-4 text-foreground max-w-[250px]">
+                                <p className="truncate" title={prompt}>
+                                  {prompt}
+                                </p>
+                              </td>
+                              <td className="py-2.5 pr-4 text-muted-foreground max-w-[250px]">
+                                <p className="truncate" title={response}>
+                                  {response}
+                                </p>
+                              </td>
+                              <td className="py-2.5 pr-4">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                  {guardrailName}
                                 </span>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  -
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                              <td className="py-2.5 pr-4">
+                                <Badge
+                                  variant={
+                                    verdict === "good" || verdict === "pass" || verdict === "allowed" || verdict === "no_change"
+                                      ? "success"
+                                      : verdict === "bad" || verdict === "fail" || verdict === "blocked"
+                                        ? "critical"
+                                        : "info"
+                                  }
+                                >
+                                  {verdict}
+                                </Badge>
+                              </td>
+                              <td className="py-2.5">
+                                {isBlocked ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                    Blocked
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    -
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

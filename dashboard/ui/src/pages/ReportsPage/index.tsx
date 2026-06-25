@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
 import { getReportsMeta, getReport } from "@/api/reports";
-import type { ReportMeta, FullReport, ReportResult } from "@/api/types";
+import type { ReportMeta, FullReport, ReportResult, ReportSummary } from "@/api/types";
 import { useDebounce } from "@/hooks/useDebounce";
 import { ScoreRing } from "@/components/shared/ScoreRing";
 import { Badge } from "@/components/shared/Badge";
@@ -39,6 +39,28 @@ function severityVariant(s: string): "critical" | "high" | "medium" | "low" | "i
   if (l === "medium") return "medium";
   if (l === "low") return "low";
   return "info";
+}
+
+/** Extract summary stats from a FullReport, handling both top-level and nested summary object */
+function getReportStats(report: FullReport) {
+  const s = typeof report.summary === "object" && report.summary ? report.summary as ReportSummary : null;
+  return {
+    score: s?.score ?? report.score ?? 0,
+    passed: s?.passed ?? report.passed ?? 0,
+    failed: s?.failed ?? report.failed ?? 0,
+    errors: s?.errors ?? report.errors ?? 0,
+    totalAttacks: s?.totalAttacks ?? report.totalAttacks ?? 0,
+  };
+}
+
+/** Get the display name for a result's attack */
+function getAttackName(result: ReportResult): string {
+  return result.attack ?? result.attackName ?? "Unknown";
+}
+
+/** Get the round number from a round object */
+function getRoundNumber(round: { round?: number; roundNumber?: number }): number {
+  return round.round ?? round.roundNumber ?? 0;
 }
 
 function verdictVariant(v: string): "critical" | "success" | "info" {
@@ -206,12 +228,12 @@ function FindingRow({ result }: { result: ReportResult }) {
             ) : (
               <ChevronRight size={14} className="text-muted-foreground" />
             )}
-            {result.attackName}
+            {getAttackName(result)}
           </span>
         </td>
-        <td className="px-4 py-3 text-sm text-muted-foreground">{result.category}</td>
+        <td className="px-4 py-3 text-sm text-muted-foreground">{result.category ?? "-"}</td>
         <td className="px-4 py-3">
-          <Badge variant={severityVariant(result.severity)}>{result.severity}</Badge>
+          <Badge variant={severityVariant(result.severity ?? "unknown")}>{result.severity ?? "unknown"}</Badge>
         </td>
         <td className="px-4 py-3">
           <Badge variant={verdictVariant(result.verdict)}>{result.verdict}</Badge>
@@ -374,39 +396,44 @@ function ReportDetail({ filename }: { filename: string }) {
       </button>
 
       {/* Header */}
-      <div className="bg-card rounded-xl border border-border p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <ScoreRing score={report.score} size={90} />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-foreground truncate">
-              {report.filename || filename}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">{report.targetUrl}</p>
-            <p className="text-xs text-muted-foreground mt-1">{fmtDate(report.timestamp)}</p>
-            <div className="flex flex-wrap gap-2 mt-3">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                {report.failed} vulnerable
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                {report.passed} blocked
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                {report.errors} errors
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                {report.totalAttacks} total
-              </span>
+      {(() => {
+        const stats = getReportStats(report);
+        return (
+          <div className="bg-card rounded-xl border border-border p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <ScoreRing score={stats.score} size={90} />
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl font-bold text-foreground truncate">
+                  {report.filename || filename}
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">{report.targetUrl}</p>
+                <p className="text-xs text-muted-foreground mt-1">{fmtDate(report.timestamp)}</p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                    {stats.failed} vulnerable
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    {stats.passed} blocked
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                    {stats.errors} errors
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                    {stats.totalAttacks} total
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Summary / LLM Analysis */}
-      {(report.summary || report.llmAnalysis) && (
+      {report.llmAnalysis && (
         <div className="bg-card rounded-xl border border-border p-6">
-          <h2 className="text-base font-semibold text-foreground mb-2">Summary</h2>
+          <h2 className="text-base font-semibold text-foreground mb-2">Analysis</h2>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-            {report.llmAnalysis || report.summary}
+            {report.llmAnalysis}
           </p>
         </div>
       )}
@@ -416,7 +443,7 @@ function ReportDetail({ filename }: { filename: string }) {
         <div className="flex gap-1 border-b border-border">
           {rounds.map((r, idx) => (
             <button
-              key={r.roundNumber}
+              key={getRoundNumber(r)}
               onClick={() => {
                 setActiveRound(idx);
                 setFindingsPage(1);
@@ -427,7 +454,7 @@ function ReportDetail({ filename }: { filename: string }) {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              Round {r.roundNumber}
+              Round {getRoundNumber(r)}
             </button>
           ))}
         </div>
@@ -464,7 +491,7 @@ function ReportDetail({ filename }: { filename: string }) {
               </thead>
               <tbody>
                 {pagedFindings.map((result, i) => (
-                  <FindingRow key={`${result.attackName}-${i}`} result={result} />
+                  <FindingRow key={`${getAttackName(result)}-${i}`} result={result} />
                 ))}
               </tbody>
             </table>

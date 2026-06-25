@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getReportsMeta, getReport } from "@/api/reports";
 import { analyzeRisk } from "@/api/risk";
 import { useNDJSONStream } from "@/hooks/useNDJSONStream";
-import type { ReportMeta, FullReport, RiskAnalysisResult } from "@/api/types";
+import type { ReportMeta, FullReport, RiskAnalysisResult, ReportSummary } from "@/api/types";
 import { ScoreRing } from "@/components/shared/ScoreRing";
 import { Badge } from "@/components/shared/Badge";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
@@ -28,6 +28,21 @@ function severityPriority(severity: string): number {
   if (s === "medium") return 2;
   if (s === "low") return 3;
   return 4;
+}
+
+function getReportStats(report: FullReport) {
+  const s = typeof report.summary === "object" && report.summary ? report.summary as ReportSummary : null;
+  return {
+    score: s?.score ?? report.score ?? 0,
+    passed: s?.passed ?? report.passed ?? 0,
+    failed: s?.failed ?? report.failed ?? 0,
+    errors: s?.errors ?? report.errors ?? 0,
+    totalAttacks: s?.totalAttacks ?? report.totalAttacks ?? 0,
+  };
+}
+
+function getAttackName(result: { attack?: string; attackName?: string }): string {
+  return result.attack ?? result.attackName ?? "Unknown";
 }
 
 export default function RiskPage() {
@@ -66,7 +81,7 @@ export default function RiskPage() {
     if (!fullReport) return;
     const attacks = fullReport.rounds.flatMap((r) =>
       r.results.map((res) => ({
-        attackName: res.attackName,
+        attackName: getAttackName(res),
         category: res.category,
         severity: res.severity,
         verdict: res.verdict,
@@ -92,7 +107,7 @@ export default function RiskPage() {
 
   const severityDist: Record<string, number> = {};
   const vulnerabilities = allResults.filter(
-    (r) => r.verdict === "vulnerable" || r.verdict === "fail"
+    (r) => r.verdict === "vulnerable" || r.verdict === "fail" || r.verdict === "failed"
   );
   allResults.forEach((r) => {
     const sev = r.severity || "unknown";
@@ -185,20 +200,25 @@ export default function RiskPage() {
           {/* Score + Severity Distribution */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Score Ring */}
-            <div className={`${cardClass} flex flex-col items-center justify-center gap-3`}>
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Security Score
-              </span>
-              <ScoreRing score={fullReport.score} size={140} />
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  {fullReport.passed} passed / {fullReport.failed} failed / {fullReport.errors} errors
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {fullReport.totalAttacks} total attacks
-                </p>
-              </div>
-            </div>
+            {(() => {
+              const stats = getReportStats(fullReport);
+              return (
+                <div className={`${cardClass} flex flex-col items-center justify-center gap-3`}>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Security Score
+                  </span>
+                  <ScoreRing score={stats.score} size={140} />
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {stats.passed} passed / {stats.failed} failed / {stats.errors} errors
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stats.totalAttacks} total attacks
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Severity Distribution */}
             <div className={`${cardClass} col-span-1 lg:col-span-2`}>
@@ -270,11 +290,11 @@ export default function RiskPage() {
                   <tbody>
                     {vulnerabilities.slice(0, 50).map((v, i) => (
                       <tr
-                        key={`${v.attackName}-${i}`}
+                        key={`${getAttackName(v)}-${i}`}
                         className="border-b border-border/50 last:border-0"
                       >
                         <td className="py-2.5 pr-4 text-foreground font-medium max-w-[300px] truncate">
-                          {v.attackName}
+                          {getAttackName(v)}
                         </td>
                         <td className="py-2.5 pr-4 text-muted-foreground">{v.category}</td>
                         <td className="py-2.5 pr-4">
@@ -330,10 +350,10 @@ export default function RiskPage() {
                       <ul className="space-y-1">
                         {items.slice(0, 10).map((item, idx) => (
                           <li
-                            key={`${item.attackName}-${idx}`}
+                            key={`${getAttackName(item)}-${idx}`}
                             className="text-sm text-foreground"
                           >
-                            <span className="font-medium">{item.attackName}</span>
+                            <span className="font-medium">{getAttackName(item)}</span>
                             <span className="text-muted-foreground ml-2">({item.category})</span>
                           </li>
                         ))}

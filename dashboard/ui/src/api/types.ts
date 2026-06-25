@@ -39,12 +39,14 @@ export interface ReportsMetaResponse {
 }
 
 export interface ReportRound {
-  roundNumber: number;
+  roundNumber?: number;
+  round?: number;
   results: ReportResult[];
 }
 
 export interface ReportResult {
-  attackName: string;
+  attackName?: string;
+  attack?: string;
   category: string;
   severity: string;
   verdict: string;
@@ -83,20 +85,39 @@ export interface ThreatAssessment {
   description: string;
 }
 
+export interface ReportSummary {
+  totalAttacks: number;
+  passed: number;
+  failed: number;
+  partial: number;
+  errors: number;
+  score: number;
+  byCategory?: Record<string, unknown>;
+}
+
+export interface ReportFinding {
+  severity: string;
+  category: string;
+  description: string;
+  attack: string;
+}
+
 export interface FullReport {
   id?: string;
   filename?: string;
   targetUrl: string;
   timestamp: string;
-  score: number;
-  totalAttacks: number;
-  passed: number;
-  partial: number;
-  failed: number;
-  errors: number;
+  // These may exist at top level (from meta) or inside summary (from full API)
+  score?: number;
+  totalAttacks?: number;
+  passed?: number;
+  partial?: number;
+  failed?: number;
+  errors?: number;
   rounds: ReportRound[];
-  summary?: string;
+  summary?: ReportSummary | string;
   llmAnalysis?: string;
+  findings?: ReportFinding[];
   attackCategories?: string[];
 }
 
@@ -212,13 +233,34 @@ export interface GuardrailReport {
   guardrails?: string[];
 }
 
+export interface GuardrailResultLeg {
+  category?: string;
+  message?: string;
+  use_guardrails?: boolean;
+  status_code?: number;
+  latency_ms?: number;
+  response_text?: string;
+  guardrail_verdict?: string;
+}
+
+export interface GuardrailAssessment {
+  original_category?: string;
+  guardrail_effect?: string;
+  blocked?: boolean;
+}
+
 export interface GuardrailResult {
-  prompt: string;
-  response: string;
-  guardrail: string;
-  verdict: string;
-  blocked: boolean;
+  // Legacy flat fields
+  prompt?: string;
+  response?: string;
+  guardrail?: string;
+  verdict?: string;
+  blocked?: boolean;
   details?: string;
+  // New nested structure
+  without_guardrails?: GuardrailResultLeg;
+  with_guardrails?: GuardrailResultLeg;
+  assessment?: GuardrailAssessment;
 }
 
 // ── Reference ──
