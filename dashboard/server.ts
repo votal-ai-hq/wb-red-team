@@ -1190,6 +1190,20 @@ const server = createServer(
       }
 
       if (!job) {
+        // Job not in memory (server restarted) — try to cancel via DB
+        if (isDbConfigured() && ctx?.tenantId) {
+          const updated = await query(
+            "UPDATE runs SET status='cancelled', finished_at=NOW() WHERE id=$1 AND tenant_id=$2 AND status IN ('queued','running') RETURNING id",
+            [id, ctx.tenantId],
+          ).catch(() => ({ rows: [] }));
+          if (updated.rows.length > 0) {
+            cancelledRunIds.add(id);
+            if (ctx) await logAudit(ctx, "run.cancel", "run", id, { reason: "cancelled after server restart" });
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ runId: id, status: "cancelled" }));
+            return;
+          }
+        }
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Run not found" }));
         return;
