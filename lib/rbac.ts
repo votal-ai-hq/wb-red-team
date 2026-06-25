@@ -80,6 +80,10 @@ const PERMISSIONS: RoutePermission[] = [
 
   // Audit log
   { method: "GET", pattern: /^\/api\/audit-log/, roles: ["admin", "auditor"] },
+
+  // Policy management
+  { method: "GET", pattern: /^\/api\/policies$/, roles: ["admin", "viewer"] },
+  { method: "POST", pattern: /^\/api\/policy-upload$/, roles: ["admin"] },
 ];
 
 /**
