@@ -29,47 +29,41 @@ const STATUS_CONFIG: Record<
   RunStatus,
   {
     label: string;
-    variant: "default" | "secondary" | "destructive" | "outline";
-    borderColor: string;
-    bgColor: string;
+    dot: string;
+    textColor: string;
     icon: React.ElementType;
     pulse?: boolean;
   }
 > = {
   running: {
-    label: "RUNNING",
-    variant: "default",
-    borderColor: "border-l-blue-500",
-    bgColor: "bg-blue-50/50 dark:bg-blue-950/20",
+    label: "Running",
+    dot: "bg-blue-500",
+    textColor: "text-blue-600 dark:text-blue-400",
     icon: Loader2,
     pulse: true,
   },
   queued: {
-    label: "QUEUED",
-    variant: "outline",
-    borderColor: "border-l-amber-500",
-    bgColor: "bg-amber-50/50 dark:bg-amber-950/20",
+    label: "Queued",
+    dot: "bg-amber-500",
+    textColor: "text-amber-600 dark:text-amber-400",
     icon: Clock,
   },
   done: {
-    label: "DONE",
-    variant: "secondary",
-    borderColor: "border-l-emerald-500",
-    bgColor: "",
+    label: "Done",
+    dot: "bg-emerald-500",
+    textColor: "text-emerald-600 dark:text-emerald-400",
     icon: CheckCircle,
   },
   error: {
-    label: "ERROR",
-    variant: "destructive",
-    borderColor: "border-l-red-500",
-    bgColor: "bg-red-50/50 dark:bg-red-950/20",
+    label: "Error",
+    dot: "bg-red-500",
+    textColor: "text-red-600 dark:text-red-400",
     icon: XCircle,
   },
   cancelled: {
-    label: "CANCELLED",
-    variant: "destructive",
-    borderColor: "border-l-red-400",
-    bgColor: "bg-red-50/30 dark:bg-red-950/10",
+    label: "Cancelled",
+    dot: "bg-red-400",
+    textColor: "text-red-500 dark:text-red-400",
     icon: AlertCircle,
   },
 };
@@ -286,27 +280,20 @@ export default function RunsPage() {
             return (
               <div
                 key={run.runId}
-                className={`rounded-xl border border-border border-l-4 ${cfg.borderColor} ${cfg.bgColor} overflow-hidden`}
+                className="rounded-lg border border-border bg-card overflow-hidden hover:border-border/80 transition-colors"
               >
                 {/* Run row — click anywhere to expand */}
                 <div
-                  className="flex items-center gap-4 px-5 py-4 cursor-pointer"
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
                   onClick={() => toggleExpand(run.runId)}
                 >
-                  {/* Expand toggle */}
-                  <span className="text-muted-foreground shrink-0">
-                    {isExpanded ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
-                  </span>
+                  {/* Status dot */}
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot} ${cfg.pulse ? "animate-pulse" : ""}`} />
 
-                  {/* Status badge */}
-                  <Badge variant={cfg.variant} className="shrink-0">
-                    <Icon className={`w-3 h-3 mr-1 ${cfg.pulse ? "animate-spin" : ""}`} />
+                  {/* Status text */}
+                  <span className={`text-xs font-semibold uppercase tracking-wide shrink-0 w-20 ${cfg.textColor}`}>
                     {cfg.label}
-                  </Badge>
+                  </span>
 
                   {/* Date */}
                   <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
@@ -315,7 +302,7 @@ export default function RunsPage() {
 
                   {/* Target URL */}
                   <span
-                    className="text-sm font-medium text-foreground truncate flex-1 min-w-0"
+                    className="text-sm text-foreground truncate flex-1 min-w-0"
                     title={run.targetUrl ?? ""}
                   >
                     {run.targetUrl ?? "—"}
@@ -323,38 +310,36 @@ export default function RunsPage() {
 
                   {/* Attacks count */}
                   {run.progressCount != null && run.progressCount > 0 && (
-                    <span className="text-xs text-muted-foreground shrink-0">
+                    <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
                       {run.progressCount} attacks
                     </span>
                   )}
 
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-1 shrink-0">
+                  {/* Action buttons — subtle, icon-only on small screens */}
+                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                     {(run.status === "running" || run.status === "queued") && (
                       <button
                         onClick={(e) => handleCancel(run.runId, e)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 rounded-lg transition-colors"
+                        className="text-xs text-muted-foreground hover:text-red-600 dark:hover:text-red-400 px-2 py-1 rounded hover:bg-muted transition-colors"
                       >
-                        <XCircle className="w-3.5 h-3.5" />
                         Cancel
                       </button>
                     )}
                     <button
                       onClick={(e) => handleRerun(run.runId, e)}
                       disabled={isRerunning}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
+                      className="text-xs text-muted-foreground hover:text-primary px-2 py-1 rounded hover:bg-muted transition-colors disabled:opacity-50"
                     >
                       {isRerunning ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
-                        <RotateCcw className="w-3.5 h-3.5" />
+                        "Edit & Rerun"
                       )}
-                      Edit & Rerun
                     </button>
                     <button
                       onClick={(e) => handleDelete(run.runId, e)}
                       disabled={isDeleting}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors disabled:opacity-50"
+                      className="text-muted-foreground/50 hover:text-red-600 dark:hover:text-red-400 p-1 rounded hover:bg-muted transition-colors disabled:opacity-50"
                     >
                       {isDeleting ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -363,11 +348,16 @@ export default function RunsPage() {
                       )}
                     </button>
                   </div>
+
+                  {/* Expand chevron */}
+                  <span className="text-muted-foreground/40 shrink-0">
+                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </span>
                 </div>
 
                 {/* Expanded detail */}
                 {isExpanded && (
-                  <div className="border-t border-border px-5 pb-4 pt-3 bg-card">
+                  <div className="border-t border-border px-4 pb-4 pt-3 bg-muted/20">
                     {isDetailLoading ? (
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
