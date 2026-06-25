@@ -115,6 +115,7 @@ async function handleRequest(
       !url.pathname.startsWith("/api/") ||
       url.pathname === "/api/auth-config" ||
       url.pathname === "/api/reference" ||
+      url.pathname === "/api/policies" ||
       url.pathname === "/api/auth/login" ||
       url.pathname === "/api/auth/logout" ||
       url.pathname === "/api/auth/me"
