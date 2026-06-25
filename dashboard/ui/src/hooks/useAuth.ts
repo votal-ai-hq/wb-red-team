@@ -14,16 +14,16 @@ export function useAuthInit() {
         const config = await authApi.getAuthConfig();
         if (cancelled) return;
 
-        setAuthMode(config.authMode);
+        setAuthMode(config.mode);
         if (config.hcaptchaSiteKey) setHcaptchaSiteKey(config.hcaptchaSiteKey);
-        if (config.clerkPublishableKey) setClerkPublishableKey(config.clerkPublishableKey);
+        if (config.clerkPublishableKey) setClerkPublishableKey(config.clerkPublishableKey as string);
 
-        if (config.authMode === "none" || config.authMode === "dev") {
+        if (config.mode === "none" || config.mode === "dev") {
           setInitialized(true);
           return;
         }
 
-        if (config.authMode === "simple") {
+        if (config.mode === "simple") {
           // Try to restore session
           try {
             const { user } = await authApi.getMe();

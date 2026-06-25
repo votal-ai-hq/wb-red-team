@@ -1,8 +1,8 @@
 // ── Auth ──
 export interface AuthConfig {
-  authMode: "none" | "simple" | "dev" | "oidc";
-  clerkPublishableKey?: string;
-  hcaptchaSiteKey?: string;
+  mode: "none" | "simple" | "dev" | "oidc";
+  clerkPublishableKey?: string | null;
+  hcaptchaSiteKey?: string | null;
 }
 
 export interface AuthUser {
