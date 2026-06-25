@@ -1,9 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { createRun } from "@/api/runs";
 import { getReference } from "@/api/reference";
-import type { ReferenceData } from "@/api/types";
-import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import type { ReferenceData, StrategyInfo } from "@/api/types";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Play,
   Zap,
@@ -16,49 +22,179 @@ import {
   CheckCircle,
   AlertCircle,
   X,
+  ChevronDown,
+  ChevronRight,
+  Globe,
+  Key,
+  FileText,
+  Cpu,
+  RotateCcw,
+  Eye,
+  Crosshair,
+  Gauge,
+  Lock,
+  MessageSquare,
+  Braces,
 } from "lucide-react";
+
+/* ─── constants ─── */
+
+const LLM_PROVIDERS = [
+  { value: "openai", label: "OpenAI" },
+  { value: "anthropic", label: "Anthropic" },
+  { value: "openrouter", label: "OpenRouter" },
+  { value: "together", label: "Together" },
+  { value: "azure", label: "Azure" },
+  { value: "custom", label: "Custom" },
+  { value: "nim", label: "NIM" },
+  { value: "huggingface", label: "HuggingFace" },
+] as const;
+
+const ATTACK_MODES = [
+  { value: "balanced", label: "Balanced", desc: "Standard attack generation" },
+  { value: "aggressive", label: "Aggressive", desc: "Maximum exploitation attempts" },
+  { value: "subtle", label: "Subtle", desc: "Stealthy, harder to detect" },
+] as const;
+
+const AUTH_METHODS = [
+  { value: "api_key", label: "API Key" },
+  { value: "body_role", label: "Body Role" },
+  { value: "jwt", label: "JWT" },
+  { value: "bearer", label: "Bearer Token" },
+] as const;
 
 const TEMPLATES = [
   {
     key: "quick",
     label: "Quick Scan",
     icon: Zap,
-    description: "Core attack categories with single-shot strategy. Fast results in minutes.",
-    categories: ["prompt_injection", "jailbreak"],
-    strategy: "single-shot",
-    color: "text-amber-500",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
+    description: "Core attack categories, single-shot strategy. Fast results in minutes.",
+    color: "text-amber-600",
+    bg: "bg-amber-50 dark:bg-amber-950/30",
+    border: "border-amber-300 dark:border-amber-800",
+    defaults: {
+      categories: ["prompt_injection", "jailbreak"],
+      strategySlugs: ["single-shot"],
+      rounds: 1,
+      concurrency: 3,
+      maxAttacksPerCategory: 10,
+    },
   },
   {
     key: "full",
     label: "Full Scan",
     icon: Shield,
-    description: "All attack categories with multi-round strategy. Thorough coverage.",
-    categories: [] as string[],
-    strategy: "multi-round",
-    color: "text-blue-500",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
+    description: "All attack categories, multi-round strategy. Thorough coverage.",
+    color: "text-blue-600",
+    bg: "bg-blue-50 dark:bg-blue-950/30",
+    border: "border-blue-300 dark:border-blue-800",
+    defaults: {
+      categories: [], // empty = all
+      strategySlugs: [], // empty = all
+      rounds: 3,
+      concurrency: 3,
+      maxAttacksPerCategory: 15,
+    },
   },
   {
     key: "custom",
-    label: "Custom Agent",
+    label: "Custom",
     icon: Settings,
-    description: "Agentic strategy with custom JSON config for advanced use cases.",
-    categories: [] as string[],
-    strategy: "agentic",
-    color: "text-violet-500",
-    bg: "bg-violet-50",
-    border: "border-violet-200",
+    description: "Full control over all configuration options.",
+    color: "text-violet-600",
+    bg: "bg-violet-50 dark:bg-violet-950/30",
+    border: "border-violet-300 dark:border-violet-800",
+    defaults: {
+      categories: [],
+      strategySlugs: [],
+      rounds: 3,
+      concurrency: 3,
+      maxAttacksPerCategory: 15,
+    },
   },
 ] as const;
 
-function prettyCategoryName(cat: string) {
-  return cat
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+/* ─── helpers ─── */
+
+function prettyCat(cat: string) {
+  return cat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+function SectionHeader({
+  step,
+  title,
+  icon: Icon,
+}: {
+  step: number;
+  title: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 mb-4">
+      <div className="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0">
+        {step}
+      </div>
+      <Icon className="w-4 h-4 text-muted-foreground" />
+      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+    </div>
+  );
+}
+
+function CollapsibleSection({
+  title,
+  icon: Icon,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  icon: React.ElementType;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-2.5 px-5 py-3.5 text-left hover:bg-muted/50 transition-colors"
+      >
+        {open ? (
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        )}
+        <Icon className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-medium text-foreground">{title}</span>
+      </button>
+      {open && <div className="px-5 pb-5 pt-1 border-t border-border">{children}</div>}
+    </div>
+  );
+}
+
+function FieldRow({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-foreground">{label}</label>
+      {children}
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+const inputCls =
+  "w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
+const selectCls = `${inputCls} appearance-none cursor-pointer`;
+
+/* ─── main component ─── */
 
 export default function NewScanPage() {
   const navigate = useNavigate();
@@ -66,22 +202,73 @@ export default function NewScanPage() {
   const [refLoading, setRefLoading] = useState(true);
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
 
-  const [targetUrl, setTargetUrl] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [strategy, setStrategy] = useState("");
-  const [jsonConfig, setJsonConfig] = useState("");
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  // ── Target ──
+  const [targetType, setTargetType] = useState<"http_agent" | "mcp" | "websocket_agent">("http_agent");
+  const [baseUrl, setBaseUrl] = useState("");
+  const [agentEndpoint, setAgentEndpoint] = useState("/api/agent");
+  const [authEndpoint, setAuthEndpoint] = useState("");
+  const [applicationDetails, setApplicationDetails] = useState("");
 
+  // ── Auth ──
+  const [authMethods, setAuthMethods] = useState<string[]>(["api_key"]);
+  const [apiKeys, setApiKeys] = useState<{ role: string; key: string }[]>([
+    { role: "viewer", key: "" },
+  ]);
+  const [bearerToken, setBearerToken] = useState("");
+  const [jwtSecret, setJwtSecret] = useState("");
+
+  // ── Request / Response Schema ──
+  const [messageField, setMessageField] = useState("message");
+  const [roleField, setRoleField] = useState("role");
+  const [apiKeyField, setApiKeyField] = useState("api_key");
+  const [responsePath, setResponsePath] = useState("response");
+  const [toolCallsPath, setToolCallsPath] = useState("tool_calls");
+
+  // ── Attack config ──
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedStrategies, setSelectedStrategies] = useState<string[]>([]);
+  const [adaptiveRounds, setAdaptiveRounds] = useState(3);
+  const [maxAttacksPerCategory, setMaxAttacksPerCategory] = useState(15);
+  const [concurrency, setConcurrency] = useState(3);
+  const [delayMs, setDelayMs] = useState(200);
+  const [attackMode, setAttackMode] = useState("balanced");
+  const [strategiesPerRound, setStrategiesPerRound] = useState(8);
+  const [attacksPerStrategy, setAttacksPerStrategy] = useState(1);
+
+  // ── LLM ──
+  const [llmProvider, setLlmProvider] = useState("openai");
+  const [llmModel, setLlmModel] = useState("gpt-4o");
+  const [judgeProvider, setJudgeProvider] = useState("");
+  const [judgeModel, setJudgeModel] = useState("");
+
+  // ── Toggles ──
+  const [enableLlmGeneration, setEnableLlmGeneration] = useState(true);
+  const [includeSeedAttacks, setIncludeSeedAttacks] = useState(true);
+  const [enableMultiTurn, setEnableMultiTurn] = useState(true);
+  const [enableAdaptiveMultiTurn, setEnableAdaptiveMultiTurn] = useState(true);
+  const [maxMultiTurnSteps, setMaxMultiTurnSteps] = useState(8);
+  const [enableDiscovery, setEnableDiscovery] = useState(false);
+  const [skipIrrelevant, setSkipIrrelevant] = useState(true);
+  const [requireReview, setRequireReview] = useState(false);
+
+  // ── Sensitive patterns ──
+  const [sensitivePatterns, setSensitivePatterns] = useState("");
+
+  // ── Advanced JSON ──
+  const [showJsonOverride, setShowJsonOverride] = useState(false);
+  const [jsonConfig, setJsonConfig] = useState("");
+
+  // ── Policy ──
+  const [policyFile, setPolicyFile] = useState("policies/default.json");
+
+  // ── UI state ──
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     getReference()
-      .then((data) => {
-        setRef(data);
-        if (data.strategies.length > 0) setStrategy(data.strategies[0].slug);
-      })
+      .then((data) => setRef(data))
       .catch(() => setError("Failed to load reference data."))
       .finally(() => setRefLoading(false));
   }, []);
@@ -92,36 +279,121 @@ export default function NewScanPage() {
     );
   };
 
-  const applyTemplate = (key: string) => {
-    const tpl = TEMPLATES.find((t) => t.key === key);
-    if (!tpl || !ref) return;
-    setActiveTemplate(key);
-    setShowAdvanced(key === "custom");
+  const toggleStrategy = (slug: string) => {
+    setSelectedStrategies((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
+    );
+  };
 
-    if (tpl.categories.length > 0) {
-      setSelectedCategories(tpl.categories.filter((c) => ref.categories.includes(c)));
-    } else {
-      setSelectedCategories([...ref.categories]);
+  const applyTemplate = useCallback(
+    (key: string) => {
+      if (!ref) return;
+      const tpl = TEMPLATES.find((t) => t.key === key);
+      if (!tpl) return;
+
+      setActiveTemplate(key);
+      const d = tpl.defaults;
+
+      if (d.categories.length > 0) {
+        setSelectedCategories(d.categories.filter((c) => ref.categories.includes(c)));
+      } else {
+        setSelectedCategories([...ref.categories]);
+      }
+
+      if (d.strategySlugs.length > 0) {
+        setSelectedStrategies(
+          d.strategySlugs.filter((s) => ref.strategies.some((st) => st.slug === s)),
+        );
+      } else {
+        setSelectedStrategies(ref.strategies.map((s) => s.slug));
+      }
+
+      setAdaptiveRounds(d.rounds);
+      setConcurrency(d.concurrency);
+      setMaxAttacksPerCategory(d.maxAttacksPerCategory);
+    },
+    [ref],
+  );
+
+  const buildConfig = (): Record<string, unknown> => {
+    // If JSON override is provided, use it
+    if (showJsonOverride && jsonConfig.trim()) {
+      const parsed = JSON.parse(jsonConfig);
+      // Ensure target URL is set
+      if (!parsed.target?.baseUrl) {
+        parsed.target = { ...parsed.target, baseUrl };
+      }
+      return parsed;
     }
 
-    const matched = ref.strategies.find((s) => s.slug === tpl.strategy);
-    if (matched) setStrategy(matched.slug);
+    const apiKeysObj: Record<string, string> = {};
+    apiKeys.forEach(({ role, key }) => {
+      if (role && key) apiKeysObj[role] = key;
+    });
 
-    if (key === "custom") {
-      setJsonConfig(
-        JSON.stringify(
-          {
-            targetUrl: targetUrl || "https://api.example.com",
-            attackCategories: ref.categories,
-            strategies: [tpl.strategy],
-          },
-          null,
-          2,
-        ),
-      );
-    } else {
-      setJsonConfig("");
-    }
+    const config: Record<string, unknown> = {
+      target: {
+        type: targetType,
+        baseUrl,
+        agentEndpoint,
+        authEndpoint: authEndpoint || "",
+        applicationDetails: applicationDetails || "",
+      },
+      auth: {
+        methods: authMethods,
+        ...(Object.keys(apiKeysObj).length > 0 ? { apiKeys: apiKeysObj } : {}),
+        ...(bearerToken ? { bearerToken } : {}),
+        ...(jwtSecret ? { jwtSecret } : {}),
+      },
+      requestSchema: {
+        messageField,
+        roleField,
+        apiKeyField,
+        guardrailModeField: "guardrail_mode",
+      },
+      responseSchema: {
+        responsePath,
+        toolCallsPath,
+        userInfoPath: "user",
+        guardrailsPath: "guardrails",
+      },
+      sensitivePatterns: sensitivePatterns
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      policyFile,
+      attackConfig: {
+        adaptiveRounds,
+        maxAttacksPerCategory,
+        concurrency,
+        delayBetweenRequestsMs: delayMs,
+        llmProvider,
+        llmModel,
+        ...(judgeProvider ? { judgeProvider } : {}),
+        ...(judgeModel ? { judgeModel } : {}),
+        enableLlmGeneration,
+        includeSeedAttacks,
+        enableMultiTurnGeneration: enableMultiTurn,
+        enableAdaptiveMultiTurn,
+        maxMultiTurnSteps,
+        enableDiscovery,
+        skipIrrelevantCategories: skipIrrelevant,
+        requireReviewConfirmation: requireReview,
+        strategiesPerRound,
+        attacksPerStrategy,
+        attackMode,
+        enabledCategories:
+          selectedCategories.length > 0 && ref && selectedCategories.length < ref.categories.length
+            ? selectedCategories
+            : undefined,
+        enabledStrategies:
+          selectedStrategies.length > 0 && ref && selectedStrategies.length < ref.strategies.length
+            ? selectedStrategies
+            : undefined,
+      },
+    };
+
+    return config;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,36 +401,23 @@ export default function NewScanPage() {
     setError(null);
     setSuccess(null);
 
-    if (!targetUrl.trim()) {
-      setError("Target URL is required.");
+    if (!baseUrl.trim()) {
+      setError("Target base URL is required.");
       return;
     }
 
     setSubmitting(true);
     try {
-      let config: Record<string, unknown>;
-      if (jsonConfig.trim()) {
-        try {
-          config = JSON.parse(jsonConfig);
-        } catch {
-          setError("Invalid JSON configuration.");
-          setSubmitting(false);
-          return;
-        }
-        config.targetUrl = targetUrl;
-      } else {
-        config = {
-          targetUrl,
-          attackCategories: selectedCategories.length > 0 ? selectedCategories : undefined,
-          strategies: strategy ? [strategy] : undefined,
-        };
-      }
-
+      const config = buildConfig();
       const result = await createRun(config);
       setSuccess(`Scan started! Run ID: ${result.runId}`);
       setTimeout(() => navigate("/scans"), 1500);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to start scan.");
+      if (err instanceof SyntaxError) {
+        setError("Invalid JSON in advanced config override.");
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to start scan.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -168,18 +427,26 @@ export default function NewScanPage() {
     return (
       <div className="flex items-center justify-center py-32">
         <div className="flex flex-col items-center gap-3">
-          <LoadingSpinner size="lg" />
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-muted-foreground">Loading configuration...</span>
         </div>
       </div>
     );
   }
 
-  const allSelected =
-    ref && selectedCategories.length === ref.categories.length;
+  const allCatsSelected = ref && selectedCategories.length === ref.categories.length;
+  const allStratsSelected = ref && selectedStrategies.length === ref.strategies.length;
+
+  // Group strategies by level
+  const strategyGroups: Record<string, StrategyInfo[]> = {};
+  ref?.strategies.forEach((s) => {
+    const group = s.level || "other";
+    if (!strategyGroups[group]) strategyGroups[group] = [];
+    strategyGroups[group].push(s);
+  });
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto pb-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-1">
@@ -187,9 +454,7 @@ export default function NewScanPage() {
             <Rocket className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              Launch Scan
-            </h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Launch Scan</h1>
             <p className="text-sm text-muted-foreground">
               Configure and start a new security scan against your target
             </p>
@@ -199,32 +464,25 @@ export default function NewScanPage() {
 
       {/* Alerts */}
       {error && (
-        <div className="flex items-center gap-3 p-4 mb-6 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+        <div className="flex items-center gap-3 p-4 mb-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-xl text-sm text-red-700 dark:text-red-400">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span className="flex-1">{error}</span>
-          <button onClick={() => setError(null)} className="hover:text-red-900">
+          <button onClick={() => setError(null)} className="hover:text-red-900 dark:hover:text-red-300">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
       {success && (
-        <div className="flex items-center gap-3 p-4 mb-6 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700">
+        <div className="flex items-center gap-3 p-4 mb-6 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded-xl text-sm text-emerald-700 dark:text-emerald-400">
           <CheckCircle className="w-4 h-4 shrink-0" />
           <span className="flex-1">{success}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Step 1: Choose a template */}
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* ═══ Step 1: Template ═══ */}
         <section>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">
-              1
-            </div>
-            <h2 className="text-sm font-semibold text-foreground">
-              Choose a scan template
-            </h2>
-          </div>
+          <SectionHeader step={1} title="Choose a scan template" icon={Layers} />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {TEMPLATES.map((tpl) => {
               const Icon = tpl.icon;
@@ -245,14 +503,10 @@ export default function NewScanPage() {
                       isActive ? tpl.bg : "bg-muted"
                     }`}
                   >
-                    <Icon
-                      className={`w-5 h-5 ${isActive ? tpl.color : "text-muted-foreground"}`}
-                    />
+                    <Icon className={`w-5 h-5 ${isActive ? tpl.color : "text-muted-foreground"}`} />
                   </div>
                   <div>
-                    <span className="text-sm font-semibold text-foreground block">
-                      {tpl.label}
-                    </span>
+                    <span className="text-sm font-semibold text-foreground block">{tpl.label}</span>
                     <span className="text-xs text-muted-foreground leading-relaxed mt-1 block">
                       {tpl.description}
                     </span>
@@ -268,198 +522,631 @@ export default function NewScanPage() {
           </div>
         </section>
 
-        {/* Step 2: Target URL */}
+        {/* ═══ Step 2: Target ═══ */}
         <section>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">
-              2
-            </div>
-            <h2 className="text-sm font-semibold text-foreground">
-              Set your target
-            </h2>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <Target className="w-4 h-4 text-muted-foreground" />
-              <label className="text-sm font-medium text-foreground">
-                Target URL <span className="text-red-500">*</span>
-              </label>
-            </div>
-            <input
-              type="url"
-              value={targetUrl}
-              onChange={(e) => setTargetUrl(e.target.value)}
-              placeholder="https://api.example.com/v1/chat"
-              required
-              className="w-full px-4 py-3 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              The API endpoint or application URL to test
-            </p>
-          </div>
-        </section>
-
-        {/* Step 3: Attack categories */}
-        {ref && ref.categories.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">
-                3
-              </div>
-              <h2 className="text-sm font-semibold text-foreground">
-                Select attack categories
-              </h2>
-              <span className="text-xs text-muted-foreground ml-1">
-                ({selectedCategories.length}/{ref.categories.length})
-              </span>
-            </div>
-            <div className="bg-card border border-border rounded-xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">
-                    Categories
-                  </span>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCategories([...ref.categories])}
-                    className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Select all
-                  </button>
-                  <span className="text-border">|</span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCategories([])}
-                    className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-
-              {/* Progress bar */}
-              {selectedCategories.length > 0 && (
-                <div className="mb-4">
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all duration-300"
-                      style={{
-                        width: `${(selectedCategories.length / ref.categories.length) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-2">
-                {ref.categories.map((cat) => {
-                  const selected = selectedCategories.includes(cat);
-                  return (
+          <SectionHeader step={2} title="Configure target" icon={Target} />
+          <Card>
+            <CardContent className="pt-5 space-y-4">
+              {/* Target Type */}
+              <FieldRow label="Target Type">
+                <div className="flex gap-2">
+                  {(
+                    [
+                      { value: "http_agent", label: "HTTP Agent" },
+                      { value: "mcp", label: "MCP" },
+                      { value: "websocket_agent", label: "WebSocket" },
+                    ] as const
+                  ).map((t) => (
                     <button
-                      key={cat}
+                      key={t.value}
                       type="button"
-                      onClick={() => toggleCategory(cat)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                        selected
-                          ? "bg-primary text-white border-primary shadow-sm"
-                          : "bg-card text-muted-foreground border-border hover:border-muted-foreground/30 hover:text-foreground"
+                      onClick={() => setTargetType(t.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                        targetType === t.value
+                          ? "bg-primary text-white border-primary"
+                          : "bg-card text-muted-foreground border-border hover:border-muted-foreground/30"
                       }`}
                     >
-                      {selected && <CheckCircle className="w-3 h-3" />}
-                      {prettyCategoryName(cat)}
+                      {t.label}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
+              </FieldRow>
+
+              {/* Base URL */}
+              <FieldRow label="Base URL *" hint="The root URL of your target application">
+                <input
+                  type="url"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  placeholder="https://api.example.com"
+                  required
+                  className={inputCls}
+                />
+              </FieldRow>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Agent Endpoint */}
+                <FieldRow label="Agent Endpoint" hint="Path to the agent/chat endpoint">
+                  <input
+                    type="text"
+                    value={agentEndpoint}
+                    onChange={(e) => setAgentEndpoint(e.target.value)}
+                    placeholder="/api/agent"
+                    className={inputCls}
+                  />
+                </FieldRow>
+
+                {/* Auth Endpoint */}
+                <FieldRow label="Auth Endpoint" hint="Login/token endpoint (if any)">
+                  <input
+                    type="text"
+                    value={authEndpoint}
+                    onChange={(e) => setAuthEndpoint(e.target.value)}
+                    placeholder="/api/auth/login"
+                    className={inputCls}
+                  />
+                </FieldRow>
               </div>
 
-              {allSelected && (
-                <p className="text-xs text-emerald-600 mt-3 flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" />
-                  All categories selected — comprehensive coverage
-                </p>
-              )}
-            </div>
+              {/* Application Details */}
+              <FieldRow
+                label="Application Details"
+                hint="Describe your app's features, workflows, tools, and sensitive operations. Better descriptions produce more targeted attacks."
+              >
+                <textarea
+                  value={applicationDetails}
+                  onChange={(e) => setApplicationDetails(e.target.value)}
+                  placeholder="E.g.: Next.js agentic app with JWT auth, RBAC, guardrails, RAG, and tools for files, DB, email, Slack..."
+                  rows={3}
+                  className={`${inputCls} resize-y`}
+                />
+              </FieldRow>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* ═══ Step 3: Attack Categories ═══ */}
+        {ref && ref.categories.length > 0 && (
+          <section>
+            <SectionHeader step={3} title="Select attack categories" icon={Crosshair} />
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs text-muted-foreground">
+                    {selectedCategories.length}/{ref.categories.length} selected
+                  </span>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategories([...ref.categories])}
+                      className="text-xs font-medium text-primary hover:text-primary/80"
+                    >
+                      Select all
+                    </button>
+                    <span className="text-border">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategories([])}
+                      className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                {selectedCategories.length > 0 && (
+                  <div className="mb-4">
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all duration-300"
+                        style={{
+                          width: `${(selectedCategories.length / ref.categories.length) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  {ref.categories.map((cat) => {
+                    const selected = selectedCategories.includes(cat);
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => toggleCategory(cat)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                          selected
+                            ? "bg-primary text-white border-primary shadow-sm"
+                            : "bg-card text-muted-foreground border-border hover:border-muted-foreground/30 hover:text-foreground"
+                        }`}
+                      >
+                        {selected && <CheckCircle className="w-3 h-3" />}
+                        {prettyCat(cat)}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {allCatsSelected && (
+                  <p className="text-xs text-emerald-600 mt-3 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    All categories selected — comprehensive coverage
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </section>
         )}
 
-        {/* Step 4: Strategy */}
+        {/* ═══ Step 4: Strategies (pills, not dropdown) ═══ */}
         {ref && ref.strategies.length > 0 && (
           <section>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">
-                4
-              </div>
-              <h2 className="text-sm font-semibold text-foreground">
-                Choose strategy
-              </h2>
-            </div>
-            <div className="bg-card border border-border rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Play className="w-4 h-4 text-muted-foreground" />
-                <label className="text-sm font-medium text-foreground">
-                  Attack Strategy
-                </label>
-              </div>
-              <select
-                value={strategy}
-                onChange={(e) => setStrategy(e.target.value)}
-                className="w-full px-4 py-3 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none cursor-pointer"
-              >
-                {ref.strategies.map((s) => (
-                  <option key={s.slug} value={s.slug}>
-                    {s.name} — {s.level}
-                  </option>
+            <SectionHeader step={4} title="Choose strategies" icon={Play} />
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs text-muted-foreground">
+                    {selectedStrategies.length}/{ref.strategies.length} selected
+                  </span>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStrategies(ref.strategies.map((s) => s.slug))}
+                      className="text-xs font-medium text-primary hover:text-primary/80"
+                    >
+                      Select all
+                    </button>
+                    <span className="text-border">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStrategies([])}
+                      className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                {Object.entries(strategyGroups).map(([level, strategies]) => (
+                  <div key={level} className="mb-4 last:mb-0">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                      {level}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {strategies.map((s) => {
+                        const selected = selectedStrategies.includes(s.slug);
+                        return (
+                          <button
+                            key={s.slug}
+                            type="button"
+                            onClick={() => toggleStrategy(s.slug)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                              selected
+                                ? "bg-primary text-white border-primary shadow-sm"
+                                : "bg-card text-muted-foreground border-border hover:border-muted-foreground/30 hover:text-foreground"
+                            }`}
+                          >
+                            {selected && <CheckCircle className="w-3 h-3" />}
+                            {s.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 ))}
-              </select>
-            </div>
+
+                {allStratsSelected && (
+                  <p className="text-xs text-emerald-600 mt-3 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    All strategies selected
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </section>
         )}
 
-        {/* Advanced config toggle */}
+        {/* ═══ Step 5: Attack Configuration ═══ */}
+        <section>
+          <SectionHeader step={5} title="Attack configuration" icon={Gauge} />
+          <Card>
+            <CardContent className="pt-5 space-y-5">
+              {/* Attack Mode */}
+              <FieldRow label="Attack Mode">
+                <div className="grid grid-cols-3 gap-3">
+                  {ATTACK_MODES.map((mode) => (
+                    <button
+                      key={mode.value}
+                      type="button"
+                      onClick={() => setAttackMode(mode.value)}
+                      className={`p-3 rounded-lg border-2 text-left transition-all ${
+                        attackMode === mode.value
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-muted-foreground/20"
+                      }`}
+                    >
+                      <div className="text-xs font-semibold text-foreground">{mode.label}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">{mode.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </FieldRow>
+
+              {/* Numeric params grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <FieldRow label="Adaptive Rounds" hint="Number of attack rounds">
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={adaptiveRounds}
+                    onChange={(e) => setAdaptiveRounds(Number(e.target.value))}
+                    className={inputCls}
+                  />
+                </FieldRow>
+                <FieldRow label="Max Attacks/Category" hint="Per category limit">
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={maxAttacksPerCategory}
+                    onChange={(e) => setMaxAttacksPerCategory(Number(e.target.value))}
+                    className={inputCls}
+                  />
+                </FieldRow>
+                <FieldRow label="Concurrency" hint="Parallel attack threads">
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={concurrency}
+                    onChange={(e) => setConcurrency(Number(e.target.value))}
+                    className={inputCls}
+                  />
+                </FieldRow>
+                <FieldRow label="Delay (ms)" hint="Between requests">
+                  <input
+                    type="number"
+                    min={0}
+                    max={5000}
+                    step={50}
+                    value={delayMs}
+                    onChange={(e) => setDelayMs(Number(e.target.value))}
+                    className={inputCls}
+                  />
+                </FieldRow>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FieldRow label="Strategies per Round" hint="Sampled per category">
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={strategiesPerRound}
+                    onChange={(e) => setStrategiesPerRound(Number(e.target.value))}
+                    className={inputCls}
+                  />
+                </FieldRow>
+                <FieldRow label="Attacks per Strategy" hint="Per strategy per category">
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={attacksPerStrategy}
+                    onChange={(e) => setAttacksPerStrategy(Number(e.target.value))}
+                    className={inputCls}
+                  />
+                </FieldRow>
+              </div>
+
+              {/* Toggles */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                  { label: "LLM Generation", value: enableLlmGeneration, set: setEnableLlmGeneration },
+                  { label: "Seed Attacks", value: includeSeedAttacks, set: setIncludeSeedAttacks },
+                  { label: "Multi-turn", value: enableMultiTurn, set: setEnableMultiTurn },
+                  { label: "Adaptive Multi-turn", value: enableAdaptiveMultiTurn, set: setEnableAdaptiveMultiTurn },
+                  { label: "Discovery Round", value: enableDiscovery, set: setEnableDiscovery },
+                  { label: "Skip Irrelevant", value: skipIrrelevant, set: setSkipIrrelevant },
+                ].map((toggle) => (
+                  <button
+                    key={toggle.label}
+                    type="button"
+                    onClick={() => toggle.set(!toggle.value)}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-xs font-medium transition-all ${
+                      toggle.value
+                        ? "border-primary/30 bg-primary/5 text-foreground"
+                        : "border-border text-muted-foreground hover:border-muted-foreground/30"
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-4.5 rounded-full relative transition-colors ${
+                        toggle.value ? "bg-primary" : "bg-muted"
+                      }`}
+                    >
+                      <div
+                        className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                          toggle.value ? "translate-x-[14px]" : "translate-x-0.5"
+                        }`}
+                      />
+                    </div>
+                    {toggle.label}
+                  </button>
+                ))}
+              </div>
+
+              {enableMultiTurn && (
+                <FieldRow label="Max Multi-turn Steps">
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={maxMultiTurnSteps}
+                    onChange={(e) => setMaxMultiTurnSteps(Number(e.target.value))}
+                    className={`${inputCls} max-w-[200px]`}
+                  />
+                </FieldRow>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* ═══ Collapsible sections ═══ */}
+        <div className="space-y-3">
+          {/* Auth */}
+          <CollapsibleSection title="Authentication" icon={Key}>
+            <div className="space-y-4">
+              <FieldRow label="Auth Methods">
+                <div className="flex flex-wrap gap-2">
+                  {AUTH_METHODS.map((m) => {
+                    const selected = authMethods.includes(m.value);
+                    return (
+                      <button
+                        key={m.value}
+                        type="button"
+                        onClick={() =>
+                          setAuthMethods((prev) =>
+                            selected ? prev.filter((x) => x !== m.value) : [...prev, m.value],
+                          )
+                        }
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                          selected
+                            ? "bg-primary text-white border-primary"
+                            : "bg-card text-muted-foreground border-border hover:border-muted-foreground/30"
+                        }`}
+                      >
+                        {selected && <CheckCircle className="w-3 h-3" />}
+                        {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </FieldRow>
+
+              {authMethods.includes("api_key") && (
+                <FieldRow label="API Keys" hint="Role → Key mappings">
+                  <div className="space-y-2">
+                    {apiKeys.map((ak, i) => (
+                      <div key={i} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={ak.role}
+                          onChange={(e) => {
+                            const copy = [...apiKeys];
+                            copy[i] = { ...ak, role: e.target.value };
+                            setApiKeys(copy);
+                          }}
+                          placeholder="Role (e.g. viewer)"
+                          className={`${inputCls} w-1/3`}
+                        />
+                        <input
+                          type="text"
+                          value={ak.key}
+                          onChange={(e) => {
+                            const copy = [...apiKeys];
+                            copy[i] = { ...ak, key: e.target.value };
+                            setApiKeys(copy);
+                          }}
+                          placeholder="API key"
+                          className={`${inputCls} flex-1`}
+                        />
+                        {apiKeys.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setApiKeys(apiKeys.filter((_, j) => j !== i))}
+                            className="text-muted-foreground hover:text-red-500 px-1"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setApiKeys([...apiKeys, { role: "", key: "" }])}
+                      className="text-xs font-medium text-primary hover:text-primary/80"
+                    >
+                      + Add API key
+                    </button>
+                  </div>
+                </FieldRow>
+              )}
+
+              {authMethods.includes("bearer") && (
+                <FieldRow label="Bearer Token">
+                  <input
+                    type="text"
+                    value={bearerToken}
+                    onChange={(e) => setBearerToken(e.target.value)}
+                    placeholder="Enter bearer token"
+                    className={inputCls}
+                  />
+                </FieldRow>
+              )}
+
+              {authMethods.includes("jwt") && (
+                <FieldRow label="JWT Secret">
+                  <input
+                    type="text"
+                    value={jwtSecret}
+                    onChange={(e) => setJwtSecret(e.target.value)}
+                    placeholder="Enter JWT secret"
+                    className={inputCls}
+                  />
+                </FieldRow>
+              )}
+            </div>
+          </CollapsibleSection>
+
+          {/* LLM Configuration */}
+          <CollapsibleSection title="LLM Configuration" icon={Cpu}>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FieldRow label="Attack LLM Provider">
+                  <select value={llmProvider} onChange={(e) => setLlmProvider(e.target.value)} className={selectCls}>
+                    {LLM_PROVIDERS.map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
+                </FieldRow>
+                <FieldRow label="Attack LLM Model">
+                  <input
+                    type="text"
+                    value={llmModel}
+                    onChange={(e) => setLlmModel(e.target.value)}
+                    placeholder="gpt-4o"
+                    className={inputCls}
+                  />
+                </FieldRow>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FieldRow label="Judge Provider" hint="Defaults to attack provider if empty">
+                  <select value={judgeProvider} onChange={(e) => setJudgeProvider(e.target.value)} className={selectCls}>
+                    <option value="">Same as attack provider</option>
+                    {LLM_PROVIDERS.map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
+                </FieldRow>
+                <FieldRow label="Judge Model" hint="Defaults to attack model if empty">
+                  <input
+                    type="text"
+                    value={judgeModel}
+                    onChange={(e) => setJudgeModel(e.target.value)}
+                    placeholder="Same as attack model"
+                    className={inputCls}
+                  />
+                </FieldRow>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* Request / Response Schema */}
+          <CollapsibleSection title="Request & Response Schema" icon={Braces}>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <FieldRow label="Message Field" hint="Request body field for message">
+                  <input value={messageField} onChange={(e) => setMessageField(e.target.value)} className={inputCls} />
+                </FieldRow>
+                <FieldRow label="Role Field" hint="Request body field for role">
+                  <input value={roleField} onChange={(e) => setRoleField(e.target.value)} className={inputCls} />
+                </FieldRow>
+                <FieldRow label="API Key Field" hint="Request body field for API key">
+                  <input value={apiKeyField} onChange={(e) => setApiKeyField(e.target.value)} className={inputCls} />
+                </FieldRow>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FieldRow label="Response Path" hint="JSONPath to response text">
+                  <input value={responsePath} onChange={(e) => setResponsePath(e.target.value)} className={inputCls} />
+                </FieldRow>
+                <FieldRow label="Tool Calls Path" hint="JSONPath to tool calls array">
+                  <input value={toolCallsPath} onChange={(e) => setToolCallsPath(e.target.value)} className={inputCls} />
+                </FieldRow>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* Sensitive Patterns */}
+          <CollapsibleSection title="Sensitive Patterns" icon={Eye}>
+            <FieldRow
+              label="Patterns (one per line)"
+              hint="Regex or string patterns to detect sensitive data leakage in responses"
+            >
+              <textarea
+                value={sensitivePatterns}
+                onChange={(e) => setSensitivePatterns(e.target.value)}
+                placeholder={"sk-proj-\nsk_live_\nAKIA\npostgres://"}
+                rows={4}
+                className={`${inputCls} font-mono resize-y`}
+              />
+            </FieldRow>
+          </CollapsibleSection>
+
+          {/* Policy */}
+          <CollapsibleSection title="Policy File" icon={FileText}>
+            <FieldRow label="Policy File Path" hint="Path to the judge policy JSON file">
+              <input value={policyFile} onChange={(e) => setPolicyFile(e.target.value)} className={inputCls} />
+            </FieldRow>
+          </CollapsibleSection>
+        </div>
+
+        {/* ═══ Advanced JSON override ═══ */}
         <div>
           <button
             type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
+            onClick={() => setShowJsonOverride(!showJsonOverride)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <Code className="w-4 h-4" />
-            {showAdvanced ? "Hide" : "Show"} advanced JSON config
+            {showJsonOverride ? "Hide" : "Show"} advanced JSON config
           </button>
         </div>
 
-        {showAdvanced && (
-          <div className="bg-card border border-border rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Code className="w-4 h-4 text-muted-foreground" />
-              <label className="text-sm font-medium text-foreground">
-                JSON Configuration
-              </label>
-            </div>
-            <textarea
-              value={jsonConfig}
-              onChange={(e) => setJsonConfig(e.target.value)}
-              placeholder='{"targetUrl": "...", "attackCategories": [...], ...}'
-              rows={8}
-              className="w-full px-4 py-3 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground/50 font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Overrides form fields above when provided. Use for advanced configurations.
-            </p>
-          </div>
+        {showJsonOverride && (
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium text-foreground">JSON Configuration Override</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      setJsonConfig(JSON.stringify(buildConfig(), null, 2));
+                    } catch {
+                      // ignore
+                    }
+                  }}
+                  className="text-xs font-medium text-primary hover:text-primary/80"
+                >
+                  Populate from form
+                </button>
+              </div>
+              <textarea
+                value={jsonConfig}
+                onChange={(e) => setJsonConfig(e.target.value)}
+                placeholder='{"target": {"baseUrl": "...", ...}, "auth": {...}, ...}'
+                rows={12}
+                className={`${inputCls} font-mono resize-y`}
+              />
+              <p className="text-[11px] text-muted-foreground mt-2">
+                When provided, this JSON is sent directly to the API, overriding all form fields above.
+              </p>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Submit */}
+        {/* ═══ Submit ═══ */}
         <button
           type="submit"
-          disabled={submitting || !targetUrl.trim()}
+          disabled={submitting || !baseUrl.trim()}
           className="w-full flex items-center justify-center gap-2.5 px-6 py-4 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md active:scale-[0.99]"
         >
           {submitting ? (
             <>
-              <LoadingSpinner size="sm" />
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               Starting Scan...
             </>
           ) : (
