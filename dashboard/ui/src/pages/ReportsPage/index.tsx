@@ -509,7 +509,6 @@ function ReportDetail({ filename }: { filename: string }) {
   const [findingsPage, setFindingsPage] = useState(1);
   const [verdictFilter, setVerdictFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [printMode, setPrintMode] = useState(false);
   const perPage = 25;
 
   useEffect(() => {
@@ -583,17 +582,13 @@ function ReportDetail({ filename }: { filename: string }) {
 
   const totalFindings = filteredResults.length;
   const totalFindingsPages = Math.max(1, Math.ceil(totalFindings / perPage));
-  const pagedFindings = printMode
-    ? filteredResults
-    : filteredResults.slice(
-        (findingsPage - 1) * perPage,
-        findingsPage * perPage,
-      );
+  const pagedFindings = filteredResults.slice(
+    (findingsPage - 1) * perPage,
+    findingsPage * perPage,
+  );
 
-  // For print mode: show all results from ALL rounds
-  const allRoundsResults = printMode
-    ? rounds.flatMap((r) => r.results ?? [])
-    : [];
+  // All results from all rounds (used by print table, always computed)
+  const allRoundsResults = rounds.flatMap((r) => r.results ?? []);
 
   // Partial count
   const partialCount = allResults.filter((r) => r.verdict === "PARTIAL").length;
@@ -627,13 +622,7 @@ function ReportDetail({ filename }: { filename: string }) {
             CSV
           </a>
           <button
-            onClick={() => {
-              setPrintMode(true);
-              setTimeout(() => {
-                window.print();
-                setPrintMode(false);
-              }, 300);
-            }}
+            onClick={() => window.print()}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors print:hidden"
           >
             <Printer className="w-3.5 h-3.5" />
