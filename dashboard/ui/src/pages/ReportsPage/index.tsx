@@ -16,7 +16,19 @@ import {
 } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { FileText, ArrowLeft, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import {
+  FileText,
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  Zap,
+  AlertCircle,
+  ShieldCheck,
+  ShieldOff,
+  AlertTriangle,
+  Filter,
+} from "lucide-react";
 
 /* ─── helpers ─── */
 
@@ -91,10 +103,22 @@ function getRoundNumber(round: { round?: number; roundNumber?: number }): number
 }
 
 function verdictVariant(v: string): "destructive" | "default" | "secondary" {
-  const l = v.toLowerCase();
-  if (l === "vulnerable" || l === "fail" || l === "failed") return "destructive";
-  if (l === "pass" || l === "passed" || l === "blocked" || l === "safe") return "default";
+  const l = v.toUpperCase();
+  if (l === "FAIL") return "destructive";
+  if (l === "PASS") return "default";
   return "secondary";
+}
+
+function prettyCat(cat: string) {
+  return cat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function verdictDotColor(v: string) {
+  const l = v.toUpperCase();
+  if (l === "PASS") return "bg-emerald-500";
+  if (l === "FAIL") return "bg-red-500";
+  if (l === "PARTIAL") return "bg-amber-500";
+  return "bg-gray-400";
 }
 
 /* ─── Grid Mode (Table-based list) ─── */
@@ -379,6 +403,8 @@ function ReportDetail({ filename }: { filename: string }) {
   const [error, setError] = useState("");
   const [activeRound, setActiveRound] = useState(0);
   const [findingsPage, setFindingsPage] = useState(1);
+  const [verdictFilter, setVerdictFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const perPage = 25;
 
   useEffect(() => {
@@ -414,162 +440,352 @@ function ReportDetail({ filename }: { filename: string }) {
           onClick={() => navigate("/reports")}
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4"
         >
-          <ArrowLeft size={16} /> Back to reports
+          <ArrowLeft size={16} /> Back to Reports
         </button>
         <EmptyState title={error || "Report not found"} icon={<FileText size={48} />} />
       </div>
     );
   }
 
+  const stats = getReportStats(report);
   const rounds = report.rounds ?? [];
-  const currentResults: ReportResult[] =
+  const allResults: ReportResult[] = rounds.flatMap((r) => r.results ?? []);
+  const currentRoundResults: ReportResult[] =
     rounds.length > 0 ? rounds[activeRound]?.results ?? [] : [];
-  const totalFindings = currentResults.length;
+
+  // Category breakdown from summary.byCategory
+  const byCategory =
+    typeof report.summary === "object" && report.summary
+      ? ((report.summary as ReportSummary).byCategory as Record<string, { total: number; passed: number; findings: string[] }> | undefined) ?? {}
+      : {};
+  const categoryEntries = Object.entries(byCategory)
+    .filter(([, v]) => v.total > 0)
+    .sort((a, b) => b[1].passed - a[1].passed);
+  const maxCatTotal = categoryEntries.length > 0 ? Math.max(...categoryEntries.map(([, v]) => v.total)) : 1;
+
+  // Unique categories & verdicts for filters
+  const uniqueCategories = [...new Set(currentRoundResults.map((r) => getCategory(r)).filter(Boolean))];
+  const uniqueVerdicts = [...new Set(currentRoundResults.map((r) => r.verdict).filter(Boolean))];
+
+  // Apply filters
+  let filteredResults = currentRoundResults;
+  if (verdictFilter !== "all") {
+    filteredResults = filteredResults.filter((r) => r.verdict === verdictFilter);
+  }
+  if (categoryFilter !== "all") {
+    filteredResults = filteredResults.filter((r) => getCategory(r) === categoryFilter);
+  }
+
+  const totalFindings = filteredResults.length;
   const totalFindingsPages = Math.max(1, Math.ceil(totalFindings / perPage));
-  const pagedFindings = currentResults.slice(
+  const pagedFindings = filteredResults.slice(
     (findingsPage - 1) * perPage,
     findingsPage * perPage,
   );
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* Back */}
-      <button
-        onClick={() => navigate("/reports")}
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft size={16} /> Back to reports
-      </button>
+  // Partial count
+  const partialCount = allResults.filter((r) => r.verdict === "PARTIAL").length;
 
-      {/* Header */}
-      {(() => {
-        const stats = getReportStats(report);
-        return (
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                <ScoreRing score={stats.score} size={90} />
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-xl font-bold text-foreground truncate">
-                    {report.filename || filename}
-                  </h1>
-                  <p className="text-sm text-muted-foreground mt-1">{report.targetUrl}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{fmtDate(report.timestamp)}</p>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <Badge variant="destructive">
-                      {stats.failed} vulnerable
-                    </Badge>
-                    <Badge variant="default">
-                      {stats.passed} blocked
-                    </Badge>
-                    <Badge variant="outline">
-                      {stats.errors} errors
-                    </Badge>
-                    <Badge variant="secondary">
-                      {stats.totalAttacks} total
-                    </Badge>
+  return (
+    <div className="max-w-7xl mx-auto space-y-5">
+      {/* Back + Header */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate("/reports")}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft size={16} /> Back to Reports
+        </button>
+        <Badge variant="secondary">Completed</Badge>
+      </div>
+
+      {/* Target URL header */}
+      <div>
+        <h1 className="text-lg font-bold text-foreground">{report.targetUrl}</h1>
+        <p className="text-xs text-muted-foreground mt-0.5">{fmtDate(report.timestamp)}</p>
+      </div>
+
+      {/* ── Score + Stats row ── */}
+      <Card>
+        <CardContent className="py-5">
+          <div className="grid grid-cols-6 gap-4 items-center">
+            {/* Score ring */}
+            <div className="flex flex-col items-center">
+              <ScoreRing score={stats.score} size={80} />
+              <span className="text-[11px] text-muted-foreground mt-1">Security Score</span>
+            </div>
+
+            {/* Stats cards */}
+            {([
+              { label: "TOTAL ATTACKS", value: stats.totalAttacks, icon: Zap, color: "text-foreground" },
+              { label: "VULNERABILITIES", value: stats.failed, icon: AlertCircle, color: "text-red-600 dark:text-red-400" },
+              { label: "PARTIAL", value: partialCount, icon: AlertTriangle, color: "text-amber-600 dark:text-amber-400" },
+              { label: "DEFENDED", value: stats.passed, icon: ShieldCheck, color: "text-emerald-600 dark:text-emerald-400" },
+              { label: "ERRORS", value: stats.errors, icon: ShieldOff, color: "text-muted-foreground" },
+            ] as const).map(({ label, value, icon: Icon, color }) => (
+              <div key={label} className="text-center">
+                <Icon className={`w-5 h-5 mx-auto mb-1 ${color}`} />
+                <div className={`text-2xl font-bold tabular-nums ${color}`}>{value}</div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
+                  {label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Verdict legend ── */}
+      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          <strong>FAIL</strong> = attack succeeded, vulnerability found
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          <strong>PASS</strong> = defense held, attack was blocked
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+          <strong>PARTIAL</strong> = partial leak or incomplete defense
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+          <strong>ERROR</strong> = indeterminate could not complete normally
+        </span>
+      </div>
+
+      {/* ── Category Breakdown ── */}
+      {categoryEntries.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              Category Breakdown
+              <span className="text-xs text-muted-foreground font-normal">
+                {categoryEntries.length} categories
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-6">
+              {/* Donut-style summary */}
+              <div className="flex flex-col items-center justify-center">
+                <ScoreRing score={stats.score} size={100} />
+                <div className="mt-3 space-y-1 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                    <span className="text-muted-foreground">FAIL</span>
+                    <span className="font-semibold text-foreground ml-auto tabular-nums">{stats.failed}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    <span className="text-muted-foreground">PASS</span>
+                    <span className="font-semibold text-foreground ml-auto tabular-nums">{stats.passed}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                    <span className="text-muted-foreground">PARTIAL</span>
+                    <span className="font-semibold text-foreground ml-auto tabular-nums">{partialCount}</span>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
+
+              {/* Category bars */}
+              <div className="space-y-2.5">
+                <div className="grid grid-cols-[1fr_auto_auto] gap-4 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  <span>Category</span>
+                  <span className="text-right w-24">Distribution</span>
+                  <span className="text-right w-10">Hits</span>
+                </div>
+                {categoryEntries.map(([cat, data]) => (
+                  <div key={cat} className="grid grid-cols-[1fr_auto_auto] gap-4 items-center">
+                    <span className="text-sm font-medium text-foreground truncate" title={prettyCat(cat)}>
+                      {prettyCat(cat)}
+                    </span>
+                    <div className="w-48 h-2.5 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full flex">
+                        {data.passed > 0 && (
+                          <div
+                            className="h-full bg-red-500"
+                            style={{ width: `${(data.passed / data.total) * 100}%` }}
+                          />
+                        )}
+                        <div
+                          className="h-full bg-emerald-500"
+                          style={{ width: `${((data.total - data.passed) / data.total) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-sm font-semibold tabular-nums text-foreground w-10 text-right">
+                      {data.total}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Results section ── */}
+      <Card>
+        <CardHeader className="pb-0">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              Results
+              <span className="text-xs text-muted-foreground font-normal">
+                {allResults.length} total
+              </span>
+            </CardTitle>
+          </div>
+
+          {/* Filter tabs */}
+          <div className="flex items-center gap-4 mt-3 border-b border-border -mx-[var(--card-spacing)] px-[var(--card-spacing)] overflow-x-auto">
+            {/* Verdict filter */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => { setVerdictFilter("all"); setFindingsPage(1); }}
+                className={`px-2.5 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  verdictFilter === "all"
+                    ? "border-foreground text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                All
+              </button>
+              {uniqueVerdicts.map((v) => (
+                <button
+                  key={v}
+                  onClick={() => { setVerdictFilter(v); setFindingsPage(1); }}
+                  className={`px-2.5 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap inline-flex items-center gap-1.5 ${
+                    verdictFilter === v
+                      ? "border-foreground text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${verdictDotColor(v)}`} />
+                  {v}
+                </button>
+              ))}
+            </div>
+
+            {/* Category filter */}
+            {uniqueCategories.length > 1 && (
+              <div className="flex items-center gap-1 ml-auto">
+                <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => { setCategoryFilter(e.target.value); setFindingsPage(1); }}
+                  className="text-xs border-none bg-transparent text-muted-foreground focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All Categories</option>
+                  {uniqueCategories.map((c) => (
+                    <option key={c} value={c}>{prettyCat(c)}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          {/* Rounds tabs */}
+          {rounds.length > 1 && (
+            <div className="flex gap-1 px-4 pt-3">
+              {rounds.map((r, idx) => (
+                <button
+                  key={getRoundNumber(r)}
+                  onClick={() => {
+                    setActiveRound(idx);
+                    setFindingsPage(1);
+                    setVerdictFilter("all");
+                    setCategoryFilter("all");
+                  }}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    idx === activeRound
+                      ? "bg-primary text-white"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  Round {getRoundNumber(r)}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {filteredResults.length === 0 ? (
+            <div className="text-center py-12 text-sm text-muted-foreground">
+              No findings match the current filters
+            </div>
+          ) : (
+            <>
+              <div className="px-4 py-2 text-xs text-muted-foreground">
+                Showing {(findingsPage - 1) * perPage + 1}-{Math.min(findingsPage * perPage, totalFindings)} of {totalFindings} findings
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider">
+                      Attack Name
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider">
+                      Category
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider">
+                      Severity
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider">
+                      Verdict
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider">
+                      Reasoning
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pagedFindings.map((result, i) => (
+                    <FindingRow key={`${getAttackName(result)}-${i}`} result={result} />
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Findings pagination */}
+              {totalFindingsPages > 1 && (
+                <div className="flex items-center justify-center gap-2 py-3 border-t border-border">
+                  <button
+                    disabled={findingsPage <= 1}
+                    onClick={() => setFindingsPage((p) => p - 1)}
+                    className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-muted"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-muted-foreground">
+                    {findingsPage} / {totalFindingsPages}
+                  </span>
+                  <button
+                    disabled={findingsPage >= totalFindingsPages}
+                    onClick={() => setFindingsPage((p) => p + 1)}
+                    className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-muted"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Summary / LLM Analysis */}
       {report.llmAnalysis && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Analysis</CardTitle>
+            <CardTitle className="text-sm font-semibold">AI Analysis</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
               {report.llmAnalysis}
             </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Rounds tabs */}
-      {rounds.length > 1 && (
-        <div className="flex gap-1 border-b border-border">
-          {rounds.map((r, idx) => (
-            <button
-              key={getRoundNumber(r)}
-              onClick={() => {
-                setActiveRound(idx);
-                setFindingsPage(1);
-              }}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                idx === activeRound
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Round {getRoundNumber(r)}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Findings table */}
-      {currentResults.length === 0 ? (
-        <EmptyState
-          title="No findings in this round"
-          icon={<FileText size={40} />}
-        />
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/60">
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider">
-                    Attack Name
-                  </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider">
-                    Category
-                  </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider">
-                    Severity
-                  </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider">
-                    Verdict
-                  </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider">
-                    Reasoning
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pagedFindings.map((result, i) => (
-                  <FindingRow key={`${getAttackName(result)}-${i}`} result={result} />
-                ))}
-              </TableBody>
-            </Table>
-
-            {/* Findings pagination */}
-            {totalFindingsPages > 1 && (
-              <div className="flex items-center justify-center gap-2 py-3 border-t border-border">
-                <button
-                  disabled={findingsPage <= 1}
-                  onClick={() => setFindingsPage((p) => p - 1)}
-                  className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-muted"
-                >
-                  Previous
-                </button>
-                <span className="text-sm text-muted-foreground">
-                  {findingsPage} / {totalFindingsPages}
-                </span>
-                <button
-                  disabled={findingsPage >= totalFindingsPages}
-                  onClick={() => setFindingsPage((p) => p + 1)}
-                  className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card disabled:opacity-40 hover:bg-muted"
-                >
-                  Next
-                </button>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
