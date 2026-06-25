@@ -3311,12 +3311,13 @@
       .fw-chip {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 16px;
-        border-radius: 10px;
-        font-size: 13px;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        line-height: 1.4;
         cursor: pointer;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: background 0.15s, border-color 0.15s;
         border: 1px solid var(--border);
         background: var(--surface);
         user-select: none;
@@ -3325,23 +3326,18 @@
       .fw-chip:hover {
         border-color: var(--border-hover);
         background: var(--surface2);
-        transform: translateY(-1px);
       }
       .fw-chip:has(input:checked) {
-        background: rgba(37, 99, 235, 0.12);
+        background: rgba(37, 99, 235, 0.1);
         border-color: var(--accent);
         color: var(--accent);
-        box-shadow: var(--shadow-glow-accent);
       }
       .fw-chip:has(input:checked):hover {
-        background: rgba(37, 99, 235, 0.18);
+        background: rgba(37, 99, 235, 0.15);
       }
       .fw-chip:has(input:checked) .fw-count {
-        background: rgba(37, 99, 235, 0.2);
+        background: rgba(37, 99, 235, 0.18);
         color: var(--accent);
-      }
-      .fw-chip:active {
-        transform: scale(0.97);
       }
       .fw-chip input {
         display: none;
@@ -3352,7 +3348,6 @@
         padding: 1px 6px;
         border-radius: 10px;
         color: var(--text2);
-        transition: all 0.2s ease;
       }
       .compliance-actions {
         display: flex;
@@ -8779,7 +8774,7 @@
               '<button class="c-btn c-btn-xs" style="background:none;border:1px solid var(--border);color:var(--accent);" onclick="document.querySelectorAll(\'.comp-fw-checkbox\').forEach(function(c){c.checked=true;c.dispatchEvent(new Event(\'change\',{bubbles:true}))})">Select All</button>' +
               '<button class="c-btn c-btn-xs" style="background:none;border:1px solid var(--border);color:var(--text2);" onclick="document.querySelectorAll(\'.comp-fw-checkbox\').forEach(function(c){c.checked=false;c.dispatchEvent(new Event(\'change\',{bubbles:true}))})">None</button>' +
               "</div></div>" +
-              '<div class="u-flex u-flex-wrap u-gap-2">';
+              '<div class="u-flex u-flex-wrap u-gap-3">';
             frameworks.forEach(function (fw) {
               html +=
                 '<label class="fw-chip"><input type="checkbox" class="comp-fw-checkbox" value="' +
