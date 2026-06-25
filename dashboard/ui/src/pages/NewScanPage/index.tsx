@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { createRun } from "@/api/runs";
 import { getReference } from "@/api/reference";
 import { apiFetch } from "@/api/client";
@@ -201,6 +201,8 @@ const selectCls = `${inputCls} appearance-none cursor-pointer`;
 
 export default function NewScanPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefillConfig = (location.state as { config?: Record<string, unknown> } | null)?.config;
   const [ref, setRef] = useState<ReferenceData | null>(null);
   const [refLoading, setRefLoading] = useState(true);
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
@@ -284,6 +286,74 @@ export default function NewScanPage() {
       .catch(() => setError("Failed to load reference data."))
       .finally(() => setRefLoading(false));
   }, []);
+
+  // Pre-fill form from "Edit & Rerun" config passed via router state
+  useEffect(() => {
+    if (!prefillConfig) return;
+    const c = prefillConfig;
+    const target = c.target as Record<string, unknown> | undefined;
+    const auth = c.auth as Record<string, unknown> | undefined;
+    const atk = c.attackConfig as Record<string, unknown> | undefined;
+    const reqSchema = c.requestSchema as Record<string, unknown> | undefined;
+    const resSchema = c.responseSchema as Record<string, unknown> | undefined;
+
+    // Target
+    if (target?.baseUrl) setBaseUrl(String(target.baseUrl));
+    if (target?.agentEndpoint) setAgentEndpoint(String(target.agentEndpoint));
+    if (target?.authEndpoint) setAuthEndpoint(String(target.authEndpoint));
+    if (target?.applicationDetails) setApplicationDetails(String(target.applicationDetails));
+    if (target?.type) setTargetType(target.type as "http_agent" | "mcp" | "websocket_agent");
+
+    // Auth
+    if (auth?.methods && Array.isArray(auth.methods)) setAuthMethods(auth.methods as string[]);
+    if (auth?.apiKeys && typeof auth.apiKeys === "object") {
+      setApiKeys(Object.entries(auth.apiKeys as Record<string, string>).map(([role, key]) => ({ role, key })));
+    }
+    if (auth?.bearerToken) setBearerToken(String(auth.bearerToken));
+    if (auth?.jwtSecret) setJwtSecret(String(auth.jwtSecret));
+
+    // Attack config
+    if (atk?.adaptiveRounds) setAdaptiveRounds(Number(atk.adaptiveRounds));
+    if (atk?.maxAttacksPerCategory) setMaxAttacksPerCategory(Number(atk.maxAttacksPerCategory));
+    if (atk?.concurrency) setConcurrency(Number(atk.concurrency));
+    if (atk?.delayBetweenRequestsMs) setDelayMs(Number(atk.delayBetweenRequestsMs));
+    if (atk?.llmProvider) setLlmProvider(String(atk.llmProvider));
+    if (atk?.llmModel) setLlmModel(String(atk.llmModel));
+    if (atk?.judgeProvider) setJudgeProvider(String(atk.judgeProvider));
+    if (atk?.judgeModel) setJudgeModel(String(atk.judgeModel));
+    if (atk?.attackMode) setAttackMode(String(atk.attackMode));
+    if (atk?.strategiesPerRound) setStrategiesPerRound(Number(atk.strategiesPerRound));
+    if (atk?.attacksPerStrategy) setAttacksPerStrategy(Number(atk.attacksPerStrategy));
+    if (atk?.enableLlmGeneration !== undefined) setEnableLlmGeneration(!!atk.enableLlmGeneration);
+    if (atk?.includeSeedAttacks !== undefined) setIncludeSeedAttacks(!!atk.includeSeedAttacks);
+    if (atk?.enableMultiTurnGeneration !== undefined) setEnableMultiTurn(!!atk.enableMultiTurnGeneration);
+    if (atk?.enableAdaptiveMultiTurn !== undefined) setEnableAdaptiveMultiTurn(!!atk.enableAdaptiveMultiTurn);
+    if (atk?.maxMultiTurnSteps) setMaxMultiTurnSteps(Number(atk.maxMultiTurnSteps));
+    if (atk?.enableDiscovery !== undefined) setEnableDiscovery(!!atk.enableDiscovery);
+    if (atk?.skipIrrelevantCategories !== undefined) setSkipIrrelevant(!!atk.skipIrrelevantCategories);
+    if (atk?.requireReviewConfirmation !== undefined) setRequireReview(!!atk.requireReviewConfirmation);
+    if (atk?.enabledCategories && Array.isArray(atk.enabledCategories)) setSelectedCategories(atk.enabledCategories as string[]);
+    if (atk?.enabledStrategies && Array.isArray(atk.enabledStrategies)) setSelectedStrategies(atk.enabledStrategies as string[]);
+
+    // Request/Response schema
+    if (reqSchema?.messageField) setMessageField(String(reqSchema.messageField));
+    if (reqSchema?.roleField) setRoleField(String(reqSchema.roleField));
+    if (reqSchema?.apiKeyField) setApiKeyField(String(reqSchema.apiKeyField));
+    if (resSchema?.responsePath) setResponsePath(String(resSchema.responsePath));
+    if (resSchema?.toolCallsPath) setToolCallsPath(String(resSchema.toolCallsPath));
+
+    // Sensitive patterns
+    if (c.sensitivePatterns && Array.isArray(c.sensitivePatterns)) {
+      setSensitivePatterns((c.sensitivePatterns as string[]).join("\n"));
+    }
+
+    // Policy
+    if (c.policyFile) setPolicyFile(String(c.policyFile));
+
+    // Also populate the JSON config for reference
+    setJsonConfig(JSON.stringify(c, null, 2));
+    setShowJsonOverride(false);
+  }, [prefillConfig]);
 
   const toggleCategory = (cat: string) => {
     setSelectedCategories((prev) =>
