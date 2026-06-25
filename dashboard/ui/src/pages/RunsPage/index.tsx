@@ -79,8 +79,8 @@ function fmtDateTime(iso: string) {
   });
 }
 
-function verdictColor(verdict: string) {
-  const v = verdict.toUpperCase();
+function verdictColor(verdict: string | undefined) {
+  const v = (verdict ?? "").toUpperCase();
   if (v === "PASS") return "text-emerald-600 dark:text-emerald-400";
   if (v === "FAIL") return "text-red-600 dark:text-red-400";
   if (v === "PARTIAL") return "text-amber-600 dark:text-amber-400";
@@ -405,11 +405,7 @@ export default function RunsPage() {
                             <span className="text-muted-foreground tabular-nums w-5">{p.index + 1}</span>
                             <span className="text-foreground truncate flex-1">{p.attackName}</span>
                             <span className="text-muted-foreground shrink-0">{p.category}</span>
-                            <span className={`font-semibold shrink-0 ${
-                              p.verdict === "PASS" ? "text-emerald-600 dark:text-emerald-400" :
-                              p.verdict === "FAIL" ? "text-red-600 dark:text-red-400" :
-                              "text-amber-600 dark:text-amber-400"
-                            }`}>{p.verdict}</span>
+                            <span className={`font-semibold shrink-0 ${verdictColor(p.verdict)}`}>{p.verdict ?? "—"}</span>
                           </div>
                         ))}
                       </div>
@@ -469,7 +465,7 @@ export default function RunsPage() {
                                     {p.category}
                                   </span>
                                   <span className={`text-xs font-semibold shrink-0 ${verdictColor(p.verdict)}`}>
-                                    {p.verdict}
+                                    {p.verdict ?? "—"}
                                   </span>
                                 </div>
                               ))}
