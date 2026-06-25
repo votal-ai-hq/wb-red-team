@@ -16,8 +16,9 @@ export interface ReportMeta {
   timestamp: string;
   targetUrl: string;
   score: number;
-  total: number;
+  totalAttacks: number;
   passed: number;
+  partial: number;
   failed: number;
   errors: number;
   attackCategories?: string[];
@@ -88,8 +89,9 @@ export interface FullReport {
   targetUrl: string;
   timestamp: string;
   score: number;
-  total: number;
+  totalAttacks: number;
   passed: number;
+  partial: number;
   failed: number;
   errors: number;
   rounds: ReportRound[];

@@ -394,7 +394,7 @@ function ReportDetail({ filename }: { filename: string }) {
                 {report.errors} errors
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                {report.total} total
+                {report.totalAttacks} total
               </span>
             </div>
           </div>

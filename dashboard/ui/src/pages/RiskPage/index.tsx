@@ -195,7 +195,7 @@ export default function RiskPage() {
                   {fullReport.passed} passed / {fullReport.failed} failed / {fullReport.errors} errors
                 </p>
                 <p className="text-xs text-text-secondary mt-1">
-                  {fullReport.total} total attacks
+                  {fullReport.totalAttacks} total attacks
                 </p>
               </div>
             </div>

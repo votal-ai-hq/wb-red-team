@@ -43,7 +43,7 @@ export default function DashboardPage() {
   // ── Stats ──
   const totalVulns = reportsMeta.reduce((s, r) => s + r.passed, 0);
   const totalBlocked = reportsMeta.reduce((s, r) => s + r.failed, 0);
-  const totalAttacks = reportsMeta.reduce((s, r) => s + r.total, 0);
+  const totalAttacks = reportsMeta.reduce((s, r) => s + r.totalAttacks, 0);
   const avgScore =
     reportsMeta.length > 0
       ? Math.round(reportsMeta.reduce((s, r) => s + r.score, 0) / reportsMeta.length)
@@ -321,7 +321,7 @@ export default function DashboardPage() {
                       <td className="py-2.5 pr-4">
                         <span className={`font-semibold ${riskInfo.color}`}>{r.score}</span>
                       </td>
-                      <td className="py-2.5 pr-4 text-text-primary">{r.total}</td>
+                      <td className="py-2.5 pr-4 text-text-primary">{r.totalAttacks}</td>
                       <td className="py-2.5 pr-4">
                         <span className="text-critical font-medium">{r.passed}</span>
                       </td>
