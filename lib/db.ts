@@ -32,6 +32,18 @@ export function getPool(): pg.Pool {
       connectionTimeoutMillis: 5000,
       ...(needsSsl ? { ssl: { rejectUnauthorized: false } } : {}),
     });
+
+    // CRITICAL: a managed Postgres (Railway/Neon/Supabase) terminating an idle
+    // pooled connection makes pg emit an 'error' event on that client. With no
+    // listener, Node treats it as an unhandled error and CRASHES THE PROCESS —
+    // so a routine connection recycle would take the whole server down (and log
+    // every user out on restart). Swallow it: the pool discards the dead client,
+    // and the next query opens a fresh one (queryWithRetry covers in-flight use).
+    pool.on("error", (err) => {
+      console.warn(
+        `  [db] idle pool client error (recovered): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    });
   }
   return pool;
 }
@@ -41,6 +53,64 @@ export async function query<T extends pg.QueryResultRow = pg.QueryResultRow>(
   params?: unknown[],
 ): Promise<pg.QueryResult<T>> {
   return getPool().query<T>(text, params);
+}
+
+/**
+ * True for errors that mean "the connection/server was momentarily unavailable",
+ * NOT "your query was wrong". These are the failures a managed Postgres (Railway,
+ * Neon, Supabase) throws when it reaps an idle connection, recycles, or briefly
+ * runs out of slots — retrying on a fresh connection succeeds. We must never
+ * treat these as application/auth errors (doing so logs valid users out).
+ */
+export function isTransientDbError(err: unknown): boolean {
+  const code = (err as { code?: unknown })?.code;
+  if (typeof code === "string") {
+    // Node socket errors + Postgres connection-class SQLSTATEs.
+    if (
+      [
+        "ECONNRESET",
+        "ETIMEDOUT",
+        "EPIPE",
+        "ENOTFOUND",
+        "ECONNREFUSED",
+        "57P01", // admin_shutdown
+        "57P02", // crash_shutdown
+        "57P03", // cannot_connect_now (e.g. DB still starting)
+        "08000", // connection_exception
+        "08003", // connection_does_not_exist
+        "08006", // connection_failure
+      ].includes(code)
+    ) {
+      return true;
+    }
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  return /Connection terminated|terminating connection|Client has encountered a connection error|server closed the connection|timeout exceeded when trying to connect|connection timeout/i.test(
+    msg,
+  );
+}
+
+/**
+ * query() with a short retry on transient connection failures. Use this for
+ * idempotent statements (SELECT, or UPSERT/INSERT … ON CONFLICT) on hot paths
+ * such as auth, where a single dropped pooled connection must not surface as a
+ * user-facing failure. Genuine SQL/constraint errors are re-thrown immediately.
+ */
+export async function queryWithRetry<
+  T extends pg.QueryResultRow = pg.QueryResultRow,
+>(text: string, params?: unknown[], attempts = 3): Promise<pg.QueryResult<T>> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await getPool().query<T>(text, params);
+    } catch (err) {
+      lastErr = err;
+      if (!isTransientDbError(err) || i === attempts - 1) throw err;
+      // Brief backoff lets the pool discard the dead connection before retry.
+      await new Promise((r) => setTimeout(r, 100 * (i + 1)));
+    }
+  }
+  throw lastErr;
 }
 
 export async function runMigrations(): Promise<void> {

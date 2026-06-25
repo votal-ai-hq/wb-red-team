@@ -30,7 +30,12 @@ import { mapResultsToCompliance } from "../lib/report-generator.js";
 import type { Config, Report } from "../lib/types.js";
 import type { AttackResult } from "../lib/types.js";
 import { withMiddleware, type RequestContext } from "../lib/middleware.js";
-import { isDbConfigured, runMigrations, query } from "../lib/db.js";
+import {
+  isDbConfigured,
+  isTransientDbError,
+  runMigrations,
+  query,
+} from "../lib/db.js";
 import { logAudit, queryAuditLog } from "../lib/audit.js";
 import {
   storeReport,
@@ -959,6 +964,25 @@ const server = createServer(
         });
         res.end(JSON.stringify({ ok: true, user }));
       } catch (err) {
+        // A transient DB failure must NOT be reported as bad credentials —
+        // that's the bug where valid logins intermittently "failed". Surface it
+        // as 503 so the user retries instead of doubting their password, and so
+        // a real outage is visible in logs/monitoring.
+        if (isTransientDbError(err)) {
+          console.error(
+            `  [auth] Login DB error (transient): ${err instanceof Error ? err.message : String(err)}`,
+          );
+          res.writeHead(503, {
+            "Content-Type": "application/json",
+            "Retry-After": "2",
+          });
+          res.end(
+            JSON.stringify({
+              error: "Service temporarily unavailable. Please try again.",
+            }),
+          );
+          return;
+        }
         console.warn(`  [auth] Login failed: ${err instanceof Error ? err.message : String(err)}`);
         res.writeHead(401, { "Content-Type": "application/json" });
         res.end(
