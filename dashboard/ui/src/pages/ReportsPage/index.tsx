@@ -635,7 +635,7 @@ function ReportDetail({ filename }: { filename: string }) {
                 }, 100);
               });
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-70 transition-colors print:hidden"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-70 transition-colors no-print"
           >
             {preparingPdf ? (
               <>
@@ -781,7 +781,7 @@ function ReportDetail({ filename }: { filename: string }) {
       )}
 
       {/* ── Results section (hidden during print — print table below replaces it) ── */}
-      <Card className="print:hidden">
+      <Card className="no-print">
         <CardHeader className="pb-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -944,7 +944,7 @@ function ReportDetail({ filename }: { filename: string }) {
       )}
 
       {/* ── Print-only: ALL attacks from all rounds (hidden on screen) ── */}
-      <div className="hidden print:block">
+      <div className="print-only">
         <div className="text-sm font-semibold text-foreground mb-2 mt-4">
           All Findings — {allRoundsResults.length} attacks across {rounds.length} round{rounds.length !== 1 ? "s" : ""}
         </div>

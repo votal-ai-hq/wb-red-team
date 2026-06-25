@@ -131,17 +131,20 @@
 }
 
 /* Print styles for PDF export */
+.print-only {
+  display: none !important;
+}
 @media print {
   /* Hide non-content elements */
   aside, header, nav,
   [data-slot="topbar"],
   button, a[download],
   input, select,
-  .print\:hidden {
+  .no-print {
     display: none !important;
   }
   /* Show print-only elements */
-  .print\:block {
+  .print-only {
     display: block !important;
   }
   /* Full width content */
