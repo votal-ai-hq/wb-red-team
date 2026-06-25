@@ -47,4 +47,4 @@ RUN mkdir -p report reports/litellm-guardrails
 EXPOSE 4200
 
 # Run the dashboard server (serves UI + run API)
-CMD ["tsx", "dashboard/server.ts", "4200"]
+CMD ["sh", "-c", "tsx dashboard/server.ts ${PORT:-4200}"]
