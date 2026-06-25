@@ -217,9 +217,10 @@ export interface GuardrailResult {
 
 // ── Reference ──
 export interface ReferenceData {
-  ALL_ATTACK_CATEGORIES: string[];
-  ALL_STRATEGIES: StrategyInfo[];
+  categories: string[];
+  strategies: StrategyInfo[];
   categoryCompliance: Record<string, string[]>;
+  frameworks?: { name: string; items: unknown[] }[];
 }
 
 export interface StrategyInfo {

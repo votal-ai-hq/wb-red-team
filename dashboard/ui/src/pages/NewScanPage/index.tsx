@@ -63,8 +63,8 @@ export default function NewScanPage() {
     getReference()
       .then((data) => {
         setRef(data);
-        if (data.ALL_STRATEGIES.length > 0) {
-          setStrategy(data.ALL_STRATEGIES[0].slug);
+        if (data.strategies.length > 0) {
+          setStrategy(data.strategies[0].slug);
         }
       })
       .catch((err) => {
@@ -87,15 +87,15 @@ export default function NewScanPage() {
     if (tpl.categories.length > 0) {
       // Only select categories that exist in reference data
       setSelectedCategories(
-        tpl.categories.filter((c) => ref.ALL_ATTACK_CATEGORIES.includes(c))
+        tpl.categories.filter((c) => ref.categories.includes(c))
       );
     } else {
       // "all" means select every category
-      setSelectedCategories([...ref.ALL_ATTACK_CATEGORIES]);
+      setSelectedCategories([...ref.categories]);
     }
 
     // Match strategy by slug
-    const matchedStrategy = ref.ALL_STRATEGIES.find((s) => s.slug === tpl.strategy);
+    const matchedStrategy = ref.strategies.find((s) => s.slug === tpl.strategy);
     if (matchedStrategy) {
       setStrategy(matchedStrategy.slug);
     }
@@ -105,7 +105,7 @@ export default function NewScanPage() {
         JSON.stringify(
           {
             targetUrl: targetUrl || "https://example.com",
-            attackCategories: ref.ALL_ATTACK_CATEGORIES,
+            attackCategories: ref.categories,
             strategies: [tpl.strategy],
           },
           null,
@@ -247,7 +247,7 @@ export default function NewScanPage() {
         </div>
 
         {/* Attack Categories */}
-        {ref && ref.ALL_ATTACK_CATEGORIES.length > 0 && (
+        {ref && ref.categories.length > 0 && (
           <div className={`${cardClass} p-5`}>
             <div className="flex items-center justify-between mb-3">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -257,7 +257,7 @@ export default function NewScanPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    setSelectedCategories([...ref.ALL_ATTACK_CATEGORIES])
+                    setSelectedCategories([...ref.categories])
                   }
                   className="text-xs text-primary hover:text-primary/80"
                 >
@@ -273,7 +273,7 @@ export default function NewScanPage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {ref.ALL_ATTACK_CATEGORIES.map((cat) => {
+              {ref.categories.map((cat) => {
                 const selected = selectedCategories.includes(cat);
                 return (
                   <button
@@ -293,7 +293,7 @@ export default function NewScanPage() {
             </div>
             {selectedCategories.length > 0 && (
               <p className="text-xs text-muted-foreground mt-2">
-                {selectedCategories.length} of {ref.ALL_ATTACK_CATEGORIES.length}{" "}
+                {selectedCategories.length} of {ref.categories.length}{" "}
                 selected
               </p>
             )}
@@ -301,7 +301,7 @@ export default function NewScanPage() {
         )}
 
         {/* Strategy */}
-        {ref && ref.ALL_STRATEGIES.length > 0 && (
+        {ref && ref.strategies.length > 0 && (
           <div className={`${cardClass} p-5`}>
             <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
               Strategy
@@ -311,7 +311,7 @@ export default function NewScanPage() {
               onChange={(e) => setStrategy(e.target.value)}
               className="w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-muted text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             >
-              {ref.ALL_STRATEGIES.map((s) => (
+              {ref.strategies.map((s) => (
                 <option key={s.slug} value={s.slug}>
                   {s.name} ({s.level})
                 </option>
