@@ -28,6 +28,9 @@ import {
   ShieldOff,
   AlertTriangle,
   Filter,
+  Download,
+  FileDown,
+  Printer,
 } from "lucide-react";
 
 /* ─── helpers ─── */
@@ -597,7 +600,32 @@ function ReportDetail({ filename }: { filename: string }) {
         >
           <ArrowLeft size={16} /> Back to Reports
         </button>
-        <Badge variant="secondary">Completed</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">Completed</Badge>
+          <a
+            href={`/api/report/${encodeURIComponent(filename)}?download=1`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+            download
+          >
+            <Download className="w-3.5 h-3.5" />
+            JSON
+          </a>
+          <a
+            href={`/api/report-csv/${encodeURIComponent(filename)}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+            download
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            CSV
+          </a>
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            PDF
+          </button>
+        </div>
       </div>
 
       {/* Target URL header */}

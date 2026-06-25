@@ -130,6 +130,46 @@
   }
 }
 
+/* Print styles for PDF export */
+@media print {
+  /* Hide non-content elements */
+  aside, header, nav,
+  [data-slot="topbar"],
+  button:not([data-print-keep]),
+  a[download],
+  input, select {
+    display: none !important;
+  }
+  /* Full width content */
+  main, [data-slot="main-content"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  /* Clean card borders for print */
+  [data-slot="card"] {
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  /* Ensure all text is visible */
+  .truncate, .line-clamp-2, .line-clamp-6 {
+    overflow: visible !important;
+    white-space: normal !important;
+    -webkit-line-clamp: unset !important;
+    text-overflow: unset !important;
+  }
+  body {
+    font-size: 12px;
+    background: white !important;
+    color: black !important;
+  }
+  /* Page margins */
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
