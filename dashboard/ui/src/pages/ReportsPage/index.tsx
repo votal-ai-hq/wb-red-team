@@ -346,13 +346,31 @@ function FindingRow({ result }: { result: ReportResult }) {
                 )}
               </div>
 
-              {/* ── Response body ── */}
-              {result.responseBody && (
-                <div className="rounded-lg border border-border bg-card p-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Response</div>
-                  <p className="text-sm text-foreground whitespace-pre-wrap break-words line-clamp-6">
-                    {typeof result.responseBody === "string" ? result.responseBody : JSON.stringify(result.responseBody, null, 2)}
-                  </p>
+              {/* ── Request & Response side by side ── */}
+              {(result.payload || result.responseBody) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Request / Payload */}
+                  <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-950/10 p-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1.5">Request</div>
+                    <p className="text-sm text-foreground whitespace-pre-wrap break-words line-clamp-8">
+                      {result.payload
+                        || (conversations.length > 0 && conversations[0]?.role === "user" ? conversations[0].content : null)
+                        || (typeof result.attack === "object" && result.attack
+                            ? JSON.stringify((result.attack as Record<string, unknown>).payload, null, 2)
+                            : "-")}
+                    </p>
+                  </div>
+                  {/* Response */}
+                  <div className="rounded-lg border border-border bg-card p-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Response</div>
+                    <p className="text-sm text-foreground whitespace-pre-wrap break-words line-clamp-8">
+                      {result.responseBody
+                        ? (typeof result.responseBody === "string" ? result.responseBody : JSON.stringify(result.responseBody, null, 2))
+                        : (conversations.length > 1 && conversations[conversations.length - 1]?.role !== "user"
+                            ? conversations[conversations.length - 1].content
+                            : "-")}
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -943,8 +961,8 @@ function ReportDetail({ filename }: { filename: string }) {
         </Card>
       )}
 
-      {/* ── Print-only: ALL attacks from all rounds (hidden on screen) ── */}
-      <div className="print-only">
+      {/* ── Print-only: ALL attacks from all rounds (hidden on screen, visible in print) ── */}
+      <div className="print-only" id="print-full-report">
         <div className="text-sm font-semibold text-foreground mb-2 mt-4">
           All Findings — {allRoundsResults.length} attacks across {rounds.length} round{rounds.length !== 1 ? "s" : ""}
         </div>

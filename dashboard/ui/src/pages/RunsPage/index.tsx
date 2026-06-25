@@ -288,19 +288,19 @@ export default function RunsPage() {
                 key={run.runId}
                 className={`rounded-xl border border-border border-l-4 ${cfg.borderColor} ${cfg.bgColor} overflow-hidden`}
               >
-                {/* Run row */}
-                <div className="flex items-center gap-4 px-5 py-4">
+                {/* Run row — click anywhere to expand */}
+                <div
+                  className="flex items-center gap-4 px-5 py-4 cursor-pointer"
+                  onClick={() => toggleExpand(run.runId)}
+                >
                   {/* Expand toggle */}
-                  <button
-                    onClick={() => toggleExpand(run.runId)}
-                    className="text-muted-foreground hover:text-foreground shrink-0"
-                  >
+                  <span className="text-muted-foreground shrink-0">
                     {isExpanded ? (
                       <ChevronDown className="w-4 h-4" />
                     ) : (
                       <ChevronRight className="w-4 h-4" />
                     )}
-                  </button>
+                  </span>
 
                   {/* Status badge */}
                   <Badge variant={cfg.variant} className="shrink-0">

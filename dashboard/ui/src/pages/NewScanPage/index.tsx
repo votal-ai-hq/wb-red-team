@@ -401,7 +401,8 @@ export default function NewScanPage() {
     setError(null);
     setSuccess(null);
 
-    if (!baseUrl.trim()) {
+    // baseUrl is required unless using JSON override with a target already set
+    if (!baseUrl.trim() && !(showJsonOverride && jsonConfig.trim())) {
       setError("Target base URL is required.");
       return;
     }
@@ -1168,7 +1169,7 @@ export default function NewScanPage() {
         {/* ═══ Submit ═══ */}
         <button
           type="submit"
-          disabled={submitting || !baseUrl.trim()}
+          disabled={submitting || (!baseUrl.trim() && !(showJsonOverride && jsonConfig.trim()))}
           className="w-full flex items-center justify-center gap-2.5 px-6 py-4 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md active:scale-[0.99]"
         >
           {submitting ? (

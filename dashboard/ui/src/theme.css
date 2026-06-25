@@ -158,6 +158,13 @@
   .max-w-7xl {
     max-width: 100% !important;
   }
+  /* Remove overflow clipping that hides print content */
+  * {
+    overflow: visible !important;
+  }
+  main {
+    height: auto !important;
+  }
   /* Clean card borders for print */
   [data-slot="card"] {
     box-shadow: none !important;
