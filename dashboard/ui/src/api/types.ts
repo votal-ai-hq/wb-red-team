@@ -51,16 +51,29 @@ export interface ReportResult {
   verdict: string;
   llmVerdict?: string;
   statusCode?: number;
+  responseTimeMs?: number;
   reasoning?: string;
   llmReasoning?: string;
+  llmEvidenceFor?: string;
+  llmEvidenceAgainst?: string;
+  judgeConfidence?: number;
+  policyUsed?: {
+    name: string;
+    pass_criteria?: string[];
+    fail_criteria?: string[];
+    partial_criteria?: string[];
+    instructions?: string;
+    severity_override?: string | null;
+  };
   payload?: string;
   responseBody?: string;
   findings?: string[];
   steps?: ConversationStep[];
+  conversation?: ConversationStep[];
   affectedFiles?: AffectedFile[];
   executionTrace?: ExecutionTrace;
   threatAssessment?: ThreatAssessment;
-  idealResponse?: string;
+  idealResponse?: string | { content?: string; explanation?: string };
 }
 
 export interface ConversationStep {

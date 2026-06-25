@@ -280,10 +280,16 @@ function ReportsGrid() {
   );
 }
 
-/* ─── Finding Row ─── */
+/* ─── Finding Row (rich expandable detail) ─── */
 
 function FindingRow({ result }: { result: ReportResult }) {
   const [expanded, setExpanded] = useState(false);
+  const conversations = result.conversation ?? result.steps ?? [];
+  const atk = typeof result.attack === "object" && result.attack ? result.attack as Record<string, unknown> : null;
+  const strategyName = atk?.strategyName as string | undefined;
+  const idealResp = typeof result.idealResponse === "object" && result.idealResponse
+    ? result.idealResponse as { content?: string; explanation?: string }
+    : typeof result.idealResponse === "string" ? { content: result.idealResponse } : null;
 
   return (
     <>
@@ -298,10 +304,11 @@ function FindingRow({ result }: { result: ReportResult }) {
             ) : (
               <ChevronRight size={14} className="text-muted-foreground" />
             )}
+            <span className={`w-2 h-2 rounded-full ${verdictDotColor(result.verdict)}`} />
             {getAttackName(result)}
           </span>
         </TableCell>
-        <TableCell className="text-sm text-muted-foreground">{getCategory(result) || "-"}</TableCell>
+        <TableCell className="text-sm text-muted-foreground">{prettyCat(getCategory(result) || "-")}</TableCell>
         <TableCell>
           <Badge variant={severityVariant(getSeverity(result) || "unknown")}>{getSeverity(result) || "unknown"}</Badge>
         </TableCell>
@@ -309,81 +316,175 @@ function FindingRow({ result }: { result: ReportResult }) {
           <Badge variant={verdictVariant(result.verdict)}>{result.verdict}</Badge>
         </TableCell>
         <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-          {result.reasoning || result.llmReasoning || "-"}
+          {result.llmReasoning || result.reasoning || "-"}
         </TableCell>
       </TableRow>
+
       {expanded && (
-        <TableRow className="bg-muted/40">
-          <TableCell colSpan={5} className="px-6 py-4">
-            <div className="space-y-3 text-sm">
-              {(result.reasoning || result.llmReasoning) && (
-                <div>
-                  <span className="font-medium text-foreground">Reasoning: </span>
-                  <span className="text-muted-foreground">
-                    {result.reasoning || result.llmReasoning}
-                  </span>
+        <TableRow className="bg-muted/20">
+          <TableCell colSpan={5} className="px-6 py-5">
+            <div className="space-y-4">
+              {/* ── Top bar: verdict + severity + category + response time ── */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={verdictVariant(result.verdict)}>{result.verdict}</Badge>
+                <Badge variant={severityVariant(getSeverity(result))}>{getSeverity(result)}</Badge>
+                <span className="text-xs text-muted-foreground">
+                  {prettyCat(getCategory(result))}
+                </span>
+                {strategyName && (
+                  <span className="text-xs text-muted-foreground">· {strategyName}</span>
+                )}
+                {result.statusCode && (
+                  <span className="text-xs text-muted-foreground">· HTTP {result.statusCode}</span>
+                )}
+                {result.responseTimeMs != null && (
+                  <span className="text-xs text-muted-foreground">{result.responseTimeMs}ms</span>
+                )}
+              </div>
+
+              {/* ── Response body ── */}
+              {result.responseBody && (
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Response</div>
+                  <p className="text-sm text-foreground whitespace-pre-wrap break-words line-clamp-6">
+                    {typeof result.responseBody === "string" ? result.responseBody : JSON.stringify(result.responseBody, null, 2)}
+                  </p>
                 </div>
               )}
-              {result.payload && (
-                <div>
-                  <span className="font-medium text-foreground">Payload: </span>
-                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground break-all">
-                    {result.payload}
-                  </code>
+
+              {/* ── Evidence For / Against (side by side) ── */}
+              {(result.llmEvidenceFor || result.llmEvidenceAgainst) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {result.llmEvidenceFor && (
+                    <div className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400 mb-1.5">Evidence For (Vulnerability)</div>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{result.llmEvidenceFor}</p>
+                    </div>
+                  )}
+                  {result.llmEvidenceAgainst && (
+                    <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20 p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1.5">Evidence Against (Defense)</div>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{result.llmEvidenceAgainst}</p>
+                    </div>
+                  )}
                 </div>
               )}
+
+              {/* ── Findings ── */}
               {result.findings && result.findings.length > 0 && (
                 <div>
-                  <span className="font-medium text-foreground">Findings:</span>
-                  <ul className="list-disc list-inside text-muted-foreground mt-1">
-                    {result.findings.map((f, i) => (
-                      <li key={i}>{f}</li>
-                    ))}
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Findings</div>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5">
+                    {result.findings.map((f, i) => <li key={i}>{f}</li>)}
                   </ul>
                 </div>
               )}
-              {result.steps && result.steps.length > 0 && (
+
+              {/* ── Threat Assessment + Confidence ── */}
+              {(result.threatAssessment || result.judgeConfidence != null) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {result.threatAssessment && (
+                    <div className="rounded-lg border border-border bg-card p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Threat Assessment</div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant={severityVariant(result.threatAssessment.level)}>
+                          {result.threatAssessment.level}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{result.threatAssessment.description}</p>
+                    </div>
+                  )}
+                  {result.judgeConfidence != null && (
+                    <div className="rounded-lg border border-border bg-card p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Judge Confidence</div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-bold text-foreground tabular-nums">{result.judgeConfidence}%</span>
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              result.judgeConfidence >= 70 ? "bg-emerald-500" : result.judgeConfidence >= 40 ? "bg-amber-500" : "bg-red-500"
+                            }`}
+                            style={{ width: `${result.judgeConfidence}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Ideal Response ── */}
+              {idealResp && (
+                <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20 p-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1.5">Ideal Response</div>
+                  {idealResp.content && (
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{idealResp.content}</p>
+                  )}
+                  {idealResp.explanation && (
+                    <p className="text-xs text-muted-foreground mt-1">{idealResp.explanation}</p>
+                  )}
+                </div>
+              )}
+
+              {/* ── Conversation / Multi-turn steps ── */}
+              {conversations.length > 0 && (
                 <div>
-                  <span className="font-medium text-foreground">
-                    Conversation ({result.steps.length} steps):
-                  </span>
-                  <div className="mt-2 space-y-2">
-                    {result.steps.map((step, i) => (
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                    Conversation ({conversations.length} steps)
+                  </div>
+                  <div className="space-y-1.5">
+                    {conversations.map((step, i) => (
                       <div
                         key={i}
                         className={`rounded-lg px-3 py-2 text-xs ${
                           step.role === "user"
-                            ? "bg-blue-50 text-blue-900 dark:bg-blue-950 dark:text-blue-200"
-                            : "bg-muted text-muted-foreground"
+                            ? "bg-blue-50 text-blue-900 dark:bg-blue-950 dark:text-blue-200 border border-blue-100 dark:border-blue-900"
+                            : "bg-muted text-muted-foreground border border-border"
                         }`}
                       >
                         <span className="font-semibold capitalize">{step.role}: </span>
                         <span className="whitespace-pre-wrap break-words">{step.content}</span>
                         {step.statusCode && (
-                          <span className="ml-2 text-[10px] text-muted-foreground">
-                            [{step.statusCode}]
-                          </span>
+                          <span className="ml-2 text-[10px] text-muted-foreground">[{step.statusCode}]</span>
                         )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              {result.threatAssessment && (
-                <div>
-                  <span className="font-medium text-foreground">Threat Assessment: </span>
-                  <Badge variant={severityVariant(result.threatAssessment.level)}>
-                    {result.threatAssessment.level}
-                  </Badge>
-                  <span className="ml-2 text-muted-foreground">
-                    {result.threatAssessment.description}
-                  </span>
-                </div>
-              )}
-              {result.idealResponse && (
-                <div>
-                  <span className="font-medium text-foreground">Ideal Response: </span>
-                  <span className="text-muted-foreground">{result.idealResponse}</span>
+
+              {/* ── Judge Policy ── */}
+              {result.policyUsed && (
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Judge Policy — {result.policyUsed.name}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    {result.policyUsed.pass_criteria && result.policyUsed.pass_criteria.length > 0 && (
+                      <div>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">PASS criteria:</span>
+                        <ul className="list-disc list-inside text-muted-foreground mt-0.5 space-y-0.5">
+                          {result.policyUsed.pass_criteria.map((c, i) => <li key={i}>{c}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {result.policyUsed.fail_criteria && result.policyUsed.fail_criteria.length > 0 && (
+                      <div>
+                        <span className="font-semibold text-red-600 dark:text-red-400">FAIL criteria:</span>
+                        <ul className="list-disc list-inside text-muted-foreground mt-0.5 space-y-0.5">
+                          {result.policyUsed.fail_criteria.map((c, i) => <li key={i}>{c}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {result.policyUsed.partial_criteria && result.policyUsed.partial_criteria.length > 0 && (
+                      <div>
+                        <span className="font-semibold text-amber-600 dark:text-amber-400">PARTIAL criteria:</span>
+                        <ul className="list-disc list-inside text-muted-foreground mt-0.5 space-y-0.5">
+                          {result.policyUsed.partial_criteria.map((c, i) => <li key={i}>{c}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
