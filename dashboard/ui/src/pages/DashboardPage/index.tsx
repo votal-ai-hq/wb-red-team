@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { getReportsMeta } from "@/api/reports";
+import { getReportsMeta, getReport } from "@/api/reports";
 import { getRuns } from "@/api/runs";
-import type { ReportMeta, RunMeta, ReportTrend } from "@/api/types";
+import type { ReportMeta, RunMeta, ReportTrend, ReportSummary } from "@/api/types";
 import { ScoreRing } from "@/components/shared/ScoreRing";
 import { TrendChart } from "@/components/shared/TrendChart";
 import {
@@ -43,6 +43,10 @@ const SEVERITY_CONFIG: Record<
   medium: { dot: "bg-amber-400", text: "text-amber-700 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30", label: "Medium" },
   low: { dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30", label: "Low" },
 };
+
+function prettyCat(cat: string) {
+  return cat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function getSeverity(score: number): SeverityLevel {
   if (score < 30) return "critical";
@@ -118,15 +122,31 @@ export default function DashboardPage() {
   const [reportsMeta, setReportsMeta] = useState<ReportMeta[]>([]);
   const [trend, setTrend] = useState<ReportTrend[]>([]);
   const [runs, setRuns] = useState<RunMeta[]>([]);
+  const [byCategory, setByCategory] = useState<Record<string, { total: number; passed: number; findings: string[] }>>({});
   const [loading, setLoading] = useState(true);
   const [tableFilter, setTableFilter] = useState<"all" | SeverityLevel>("all");
 
   useEffect(() => {
     Promise.all([getReportsMeta(1, 200), getRuns()])
-      .then(([reportsRes, runsRes]) => {
+      .then(async ([reportsRes, runsRes]) => {
         setReportsMeta(reportsRes.items);
         setTrend(reportsRes.trend ?? []);
         setRuns(runsRes);
+
+        // Fetch latest report's summary.byCategory for category breakdown
+        if (reportsRes.items.length > 0) {
+          try {
+            const latest = await getReport(reportsRes.items[0].filename, true);
+            const s = typeof latest.summary === "object" && latest.summary
+              ? latest.summary as ReportSummary
+              : null;
+            if (s?.byCategory) {
+              setByCategory(s.byCategory as Record<string, { total: number; passed: number; findings: string[] }>);
+            }
+          } catch {
+            // category data is optional, don't block dashboard
+          }
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -163,17 +183,12 @@ export default function DashboardPage() {
     scoreBuckets[getSeverity(r.score)]++;
   });
 
-  // ── attack category analysis ──
-  const categoryVulnCounts: Record<string, number> = {};
-  reportsMeta.forEach((r) => {
-    (r.attackCategories ?? []).forEach((cat) => {
-      categoryVulnCounts[cat] = (categoryVulnCounts[cat] || 0) + r.passed;
-    });
-  });
-  const topCategories = Object.entries(categoryVulnCounts)
-    .sort((a, b) => b[1] - a[1])
+  // ── attack category analysis (from latest report's summary.byCategory) ──
+  const topCategories = Object.entries(byCategory)
+    .filter(([, v]) => v.total > 0)
+    .sort((a, b) => b[1].passed - a[1].passed)
     .slice(0, 6);
-  const maxCatVulns = topCategories.length > 0 ? topCategories[0][1] : 1;
+  const maxCatVulns = topCategories.length > 0 ? topCategories[0][1].passed : 1;
 
   // ── top targets ──
   const targetVulns: Record<string, number> = {};
@@ -403,29 +418,29 @@ export default function DashboardPage() {
         {/* Top Vulnerable Categories */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold">Top Vulnerable Categories</CardTitle>
+            <CardTitle className="text-sm font-semibold">Categories (Latest Scan)</CardTitle>
           </CardHeader>
           <CardContent>
             {topCategories.length > 0 ? (
               <div className="space-y-3">
-                {topCategories.map(([cat, count], i) => (
+                {topCategories.map(([cat, data], i) => (
                   <div key={cat} className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground w-4 text-right tabular-nums">
                       {i + 1}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-foreground truncate" title={cat}>
-                          {cat}
+                        <span className="text-sm font-medium text-foreground truncate" title={prettyCat(cat)}>
+                          {prettyCat(cat)}
                         </span>
                         <span className="text-xs font-semibold tabular-nums text-muted-foreground ml-2">
-                          {count}
+                          {data.passed}/{data.total}
                         </span>
                       </div>
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full bg-red-500/80 transition-all duration-500"
-                          style={{ width: `${(count / maxCatVulns) * 100}%` }}
+                          style={{ width: `${(data.passed / maxCatVulns) * 100}%` }}
                         />
                       </div>
                     </div>

@@ -21,8 +21,7 @@ export interface ReportMeta {
   partial: number;
   failed: number;
   errors: number;
-  attackCategories?: string[];
-  summary?: string;
+  categoryCount?: number;
 }
 
 export interface ReportTrend {
@@ -47,8 +46,8 @@ export interface ReportRound {
 export interface ReportResult {
   attackName?: string;
   attack?: string | Record<string, unknown>;
-  category: string;
-  severity: string;
+  category?: string;
+  severity?: string;
   verdict: string;
   llmVerdict?: string;
   statusCode?: number;
@@ -182,7 +181,7 @@ export interface ComplianceResult {
 
 // ── Risk ──
 export interface RiskAnalysisResult {
-  attackName: string;
+  attack: string;
   category: string;
   impactLevel: string;
   businessImpact: string;

@@ -48,6 +48,20 @@ function getAttackName(result: { attack?: string | Record<string, unknown>; atta
   return result.attackName ?? "Unknown";
 }
 
+function getCategory(result: { attack?: string | Record<string, unknown>; category?: string }): string {
+  if (result.category) return result.category;
+  const atk = result.attack;
+  if (typeof atk === "object" && atk !== null) return (atk as Record<string, unknown>).category as string ?? "";
+  return "";
+}
+
+function getSeverity(result: { attack?: string | Record<string, unknown>; severity?: string }): string {
+  if (result.severity) return result.severity;
+  const atk = result.attack;
+  if (typeof atk === "object" && atk !== null) return (atk as Record<string, unknown>).severity as string ?? "";
+  return "";
+}
+
 export default function RiskPage() {
   const [reports, setReports] = useState<ReportMeta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,13 +96,12 @@ export default function RiskPage() {
 
   const handleRunAI = useCallback(async () => {
     if (!fullReport) return;
-    const attacks = fullReport.rounds.flatMap((r) =>
+    const attacks = (fullReport.rounds ?? []).flatMap((r) =>
       r.results.map((res) => ({
-        attackName: getAttackName(res),
-        category: res.category,
-        severity: res.severity,
-        verdict: res.verdict,
-        reasoning: res.reasoning,
+        name: getAttackName(res),
+        category: getCategory(res),
+        severity: getSeverity(res),
+        findings: res.findings ?? [],
       }))
     );
     const response = await analyzeRisk(attacks);
@@ -105,15 +118,15 @@ export default function RiskPage() {
 
   // ---- Derived data from full report ----
   const allResults = fullReport
-    ? fullReport.rounds.flatMap((r) => r.results)
+    ? (fullReport.rounds ?? []).flatMap((r) => r.results)
     : [];
 
   const severityDist: Record<string, number> = {};
   const vulnerabilities = allResults.filter(
-    (r) => r.verdict === "vulnerable" || r.verdict === "fail" || r.verdict === "failed"
+    (r) => r.verdict === "FAIL" || r.verdict === "PARTIAL"
   );
   allResults.forEach((r) => {
-    const sev = r.severity || "unknown";
+    const sev = getSeverity(r) || "unknown";
     severityDist[sev] = (severityDist[sev] || 0) + 1;
   });
 
@@ -122,7 +135,7 @@ export default function RiskPage() {
   // Group vulnerabilities by priority for remediation matrix
   const remediationGroups: Record<string, typeof vulnerabilities> = {};
   vulnerabilities.forEach((v) => {
-    const key = v.severity || "unknown";
+    const key = getSeverity(v) || "unknown";
     if (!remediationGroups[key]) remediationGroups[key] = [];
     remediationGroups[key].push(v);
   });
@@ -299,10 +312,10 @@ export default function RiskPage() {
                         <td className="py-2.5 pr-4 text-foreground font-medium max-w-[300px] truncate">
                           {getAttackName(v)}
                         </td>
-                        <td className="py-2.5 pr-4 text-muted-foreground">{v.category}</td>
+                        <td className="py-2.5 pr-4 text-muted-foreground">{getCategory(v)}</td>
                         <td className="py-2.5 pr-4">
-                          <Badge variant={severityBadgeVariant(v.severity)}>
-                            {v.severity || "unknown"}
+                          <Badge variant={severityBadgeVariant(getSeverity(v))}>
+                            {getSeverity(v) || "unknown"}
                           </Badge>
                         </td>
                         <td className="py-2.5">
@@ -357,7 +370,7 @@ export default function RiskPage() {
                             className="text-sm text-foreground"
                           >
                             <span className="font-medium">{getAttackName(item)}</span>
-                            <span className="text-muted-foreground ml-2">({item.category})</span>
+                            <span className="text-muted-foreground ml-2">({getCategory(item)})</span>
                           </li>
                         ))}
                         {items.length > 10 && (
@@ -408,11 +421,11 @@ export default function RiskPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {riskResults.map((result, i) => (
                   <div
-                    key={`${result.attackName}-${i}`}
+                    key={`${result.attack}-${i}`}
                     className="border border-border rounded-lg p-4 space-y-2"
                   >
                     <h4 className="font-semibold text-foreground text-sm">
-                      {result.attackName}
+                      {result.attack}
                     </h4>
                     <p className="text-xs text-muted-foreground">{result.category}</p>
                     <div className="grid grid-cols-2 gap-2 pt-2">

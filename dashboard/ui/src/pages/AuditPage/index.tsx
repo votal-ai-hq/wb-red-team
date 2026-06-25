@@ -169,7 +169,7 @@ export default function AuditPage() {
                     className="border-b border-border/50 last:border-0"
                   >
                     <td className="py-2.5 pr-4 text-muted-foreground whitespace-nowrap">
-                      {new Date(entry.createdAt ?? entry.timestamp).toLocaleString("en-US", {
+                      {new Date(entry.createdAt ?? entry.timestamp ?? "").toLocaleString("en-US", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
