@@ -284,6 +284,31 @@ function ReportsGrid() {
   );
 }
 
+/* ─── Expandable text block ─── */
+
+function ExpandableText({ text, maxLines = 4 }: { text: string; maxLines?: number }) {
+  const [showAll, setShowAll] = useState(false);
+  const isLong = text.length > maxLines * 100;
+
+  return (
+    <div>
+      <p className={`text-[13px] text-foreground whitespace-pre-wrap break-words ${!showAll && isLong ? `line-clamp-${maxLines}` : ""}`}
+         style={!showAll && isLong ? { WebkitLineClamp: maxLines, display: "-webkit-box", WebkitBoxOrient: "vertical", overflow: "hidden" } : undefined}
+      >
+        {text}
+      </p>
+      {isLong && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowAll(!showAll); }}
+          className="text-[11px] font-medium text-primary hover:underline mt-1"
+        >
+          {showAll ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ─── Finding Row (rich expandable detail) ─── */
 
 function FindingRow({ result }: { result: ReportResult }) {
@@ -294,6 +319,15 @@ function FindingRow({ result }: { result: ReportResult }) {
   const idealResp = typeof result.idealResponse === "object" && result.idealResponse
     ? result.idealResponse as { content?: string; explanation?: string }
     : typeof result.idealResponse === "string" ? { content: result.idealResponse } : null;
+
+  const requestText = result.payload
+    || (conversations.length > 0 && conversations[0]?.role === "user" ? conversations[0].content : null)
+    || (atk?.payload ? JSON.stringify(atk.payload, null, 2) : "");
+  const responseText = result.responseBody
+    ? (typeof result.responseBody === "string" ? result.responseBody : JSON.stringify(result.responseBody, null, 2))
+    : (conversations.length > 1 && conversations[conversations.length - 1]?.role !== "user"
+        ? conversations[conversations.length - 1].content
+        : "");
 
   return (
     <>
@@ -346,47 +380,51 @@ function FindingRow({ result }: { result: ReportResult }) {
                 )}
               </div>
 
-              {/* ── Request & Response side by side ── */}
-              {(result.payload || result.responseBody) && (
+              {/* ── Request & Response ── */}
+              {(requestText || responseText) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {/* Request / Payload */}
-                  <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-950/10 p-3">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1.5">Request</div>
-                    <p className="text-sm text-foreground whitespace-pre-wrap break-words line-clamp-8">
-                      {result.payload
-                        || (conversations.length > 0 && conversations[0]?.role === "user" ? conversations[0].content : null)
-                        || (typeof result.attack === "object" && result.attack
-                            ? JSON.stringify((result.attack as Record<string, unknown>).payload, null, 2)
-                            : "-")}
-                    </p>
-                  </div>
-                  {/* Response */}
-                  <div className="rounded-lg border border-border bg-card p-3">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Response</div>
-                    <p className="text-sm text-foreground whitespace-pre-wrap break-words line-clamp-8">
-                      {result.responseBody
-                        ? (typeof result.responseBody === "string" ? result.responseBody : JSON.stringify(result.responseBody, null, 2))
-                        : (conversations.length > 1 && conversations[conversations.length - 1]?.role !== "user"
-                            ? conversations[conversations.length - 1].content
-                            : "-")}
-                    </p>
-                  </div>
+                  {requestText && (
+                    <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-950/10 p-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1.5 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        Request
+                      </div>
+                      <ExpandableText text={requestText} maxLines={6} />
+                    </div>
+                  )}
+                  {responseText && (
+                    <div className="rounded-lg border border-border bg-card p-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+                        Response
+                        {result.statusCode && <span className="font-normal ml-1">HTTP {result.statusCode}</span>}
+                        {result.responseTimeMs != null && <span className="font-normal ml-1">{result.responseTimeMs}ms</span>}
+                      </div>
+                      <ExpandableText text={responseText} maxLines={6} />
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* ── Evidence For / Against (side by side) ── */}
+              {/* ── Evidence For / Against ── */}
               {(result.llmEvidenceFor || result.llmEvidenceAgainst) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {result.llmEvidenceFor && (
-                    <div className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 p-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400 mb-1.5">Evidence For (Vulnerability)</div>
-                      <p className="text-sm text-foreground whitespace-pre-wrap">{result.llmEvidenceFor}</p>
+                    <div className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50/30 dark:bg-red-950/10 p-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400 mb-1.5 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                        Evidence For Vulnerability
+                      </div>
+                      <ExpandableText text={result.llmEvidenceFor} maxLines={5} />
                     </div>
                   )}
                   {result.llmEvidenceAgainst && (
-                    <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20 p-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1.5">Evidence Against (Defense)</div>
-                      <p className="text-sm text-foreground whitespace-pre-wrap">{result.llmEvidenceAgainst}</p>
+                    <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50/30 dark:bg-emerald-950/10 p-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1.5 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Evidence Against (Defense)
+                      </div>
+                      <ExpandableText text={result.llmEvidenceAgainst} maxLines={5} />
                     </div>
                   )}
                 </div>
@@ -402,28 +440,30 @@ function FindingRow({ result }: { result: ReportResult }) {
                 </div>
               )}
 
-              {/* ── Threat Assessment + Confidence ── */}
-              {(result.threatAssessment || result.judgeConfidence != null) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* ── Threat Assessment + Confidence (compact row) ── */}
+              {(result.threatAssessment || result.judgeConfidence != null || result.llmReasoning) && (
+                <div className="flex flex-wrap items-start gap-4 rounded-lg border border-border bg-card p-3">
                   {result.threatAssessment && (
-                    <div className="rounded-lg border border-border bg-card p-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Threat Assessment</div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant={severityVariant(result.threatAssessment.level)}>
-                          {result.threatAssessment.level}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{result.threatAssessment.description}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Threat Assessment</div>
+                      <Badge variant={severityVariant(result.threatAssessment.level)} className="mb-1">
+                        {result.threatAssessment.level}
+                      </Badge>
+                      <p className="text-xs text-muted-foreground">{result.threatAssessment.description}</p>
                     </div>
                   )}
                   {result.judgeConfidence != null && (
-                    <div className="rounded-lg border border-border bg-card p-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Judge Confidence</div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl font-bold text-foreground tabular-nums">{result.judgeConfidence}%</span>
-                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="shrink-0 text-center">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Confidence</div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-lg font-bold tabular-nums ${
+                          result.judgeConfidence >= 70 ? "text-emerald-600 dark:text-emerald-400" :
+                          result.judgeConfidence >= 40 ? "text-amber-600 dark:text-amber-400" :
+                          "text-red-600 dark:text-red-400"
+                        }`}>{result.judgeConfidence}%</span>
+                        <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all ${
+                            className={`h-full rounded-full ${
                               result.judgeConfidence >= 70 ? "bg-emerald-500" : result.judgeConfidence >= 40 ? "bg-amber-500" : "bg-red-500"
                             }`}
                             style={{ width: `${result.judgeConfidence}%` }}
@@ -432,18 +472,25 @@ function FindingRow({ result }: { result: ReportResult }) {
                       </div>
                     </div>
                   )}
+                  {result.llmReasoning && !result.llmEvidenceFor && (
+                    <div className="min-w-0 flex-1 basis-full">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">LLM Reasoning</div>
+                      <ExpandableText text={result.llmReasoning} maxLines={3} />
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* ── Ideal Response ── */}
-              {idealResp && (
-                <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20 p-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1.5">Ideal Response</div>
-                  {idealResp.content && (
-                    <p className="text-sm text-foreground whitespace-pre-wrap">{idealResp.content}</p>
-                  )}
+              {idealResp && idealResp.content && (
+                <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50/30 dark:bg-emerald-950/10 p-3">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1.5 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    Ideal Response
+                  </div>
+                  <ExpandableText text={idealResp.content} maxLines={4} />
                   {idealResp.explanation && (
-                    <p className="text-xs text-muted-foreground mt-1">{idealResp.explanation}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1.5 italic">{idealResp.explanation}</p>
                   )}
                 </div>
               )}
