@@ -6279,8 +6279,8 @@
           buildAttackCardSkeleton("Attack Severity Distribution") +
           "</div>" +
           "</div>" +
-          // Row 2: Scan Score Distribution + Top Targets + Top Vulnerable Endpoints
-          '<div class="u-grid-3 u-gap-4 u-mb-4">' +
+          // Row 2: Scan Score Distribution + Top Targets
+          '<div class="u-grid-2 u-gap-4 u-mb-4">' +
           // Score Distribution
           '<div class="c-card">' +
           '<div class="u-flex u-items-center u-mb-2" style="justify-content:space-between;">' +
@@ -6328,38 +6328,6 @@
                 })
                 .join("")
             : '<div class="c-empty u-p-5">No vulnerabilities found</div>') +
-          "</div>" +
-          // Top Vulnerable Endpoints
-          '<div class="c-card">' +
-          '<div class="u-text-md u-font-semibold u-mb-4">Top Vulnerable Endpoints</div>' +
-          (topEndpoints.length > 0
-            ? topEndpoints
-                .map(function (entry) {
-                  var ep = entry[0],
-                    count = entry[1];
-                  var maxCount = topEndpoints[0][1];
-                  var pct = (count / maxCount) * 100;
-                  return (
-                    '<div class="u-mb-3">' +
-                    '<div class="u-flex u-text-sm u-mb-1" style="justify-content:space-between;gap:8px;">' +
-                    '<span class="u-truncate" style="max-width:170px;" title="' +
-                    esc(ep) +
-                    '">' +
-                    esc(ep) +
-                    "</span>" +
-                    '<span class="u-text-red u-font-semibold">' +
-                    count +
-                    "</span>" +
-                    "</div>" +
-                    '<div class="c-progress" style="height:4px;">' +
-                    '<div style="height:100%;width:' +
-                    pct +
-                    '%;background:var(--red);border-radius:2px;"></div>' +
-                    "</div></div>"
-                  );
-                })
-                .join("")
-            : '<div class="c-empty u-p-5">No endpoint data available</div>') +
           "</div>" +
           "</div>" +
           // Row 3: Recent Scans
