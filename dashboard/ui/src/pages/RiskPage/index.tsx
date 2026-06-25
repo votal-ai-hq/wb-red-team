@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Shield, AlertTriangle, Play } from "lucide-react";
+import { Shield, AlertTriangle, Play, Search } from "lucide-react";
 
 /* ---------- helpers (unchanged logic) ---------- */
 
@@ -135,6 +135,7 @@ const severityBorderColors: Record<string, string> = {
 /* ========== component ========== */
 
 export default function RiskPage() {
+  const [reportSearch, setReportSearch] = useState("");
   const [reports, setReports] = useState<ReportMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string>("");
@@ -242,11 +243,22 @@ export default function RiskPage() {
               No reports available. Run a scan first.
             </p>
           ) : (
+            <>
+            <div className="relative max-w-xs mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Filter reports..."
+                value={reportSearch}
+                onChange={(e) => setReportSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 bg-background border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+            </div>
             <div
               ref={scrollRef}
               className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
             >
-              {reports.map((r) => {
+              {reports.filter((r) => !reportSearch || r.targetUrl.toLowerCase().includes(reportSearch.toLowerCase()) || r.filename.toLowerCase().includes(reportSearch.toLowerCase())).map((r) => {
                 const isSelected = selectedFile === r.filename;
                 const date = new Date(r.timestamp);
                 return (
@@ -292,6 +304,7 @@ export default function RiskPage() {
                 );
               })}
             </div>
+            </>
           )}
         </CardContent>
       </Card>
