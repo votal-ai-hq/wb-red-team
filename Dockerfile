@@ -5,8 +5,9 @@ RUN npm ci --omit=dev
 
 # Build React frontend
 FROM node:20-slim AS ui-build
+WORKDIR /app
+COPY dashboard/ui/package.json dashboard/ui/package-lock.json* ./dashboard/ui/
 WORKDIR /app/dashboard/ui
-COPY dashboard/ui/package.json dashboard/ui/package-lock.json* ./
 RUN npm ci
 COPY dashboard/ui/ ./
 RUN npm run build
@@ -27,7 +28,7 @@ COPY tsconfig.json ./
 COPY lib/ ./lib/
 COPY attacks/ ./attacks/
 COPY attacks-mcp/ ./attacks-mcp/
-COPY dashboard/ ./dashboard/
+COPY dashboard/server.ts ./dashboard/
 COPY red-team.ts ./
 COPY policies/ ./policies/
 COPY lib/migrations/ ./lib/migrations/
@@ -35,7 +36,6 @@ COPY compliance/ ./compliance/
 COPY config.example.json ./
 COPY examples/ ./examples/
 COPY data/ ./data/
-
 COPY scripts/ ./scripts/
 
 # Copy React build output
