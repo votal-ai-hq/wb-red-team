@@ -16,7 +16,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { CheckSquare, Play, ChevronDown } from "lucide-react";
 
 const cardClass =
-  "bg-white border border-[rgba(20,45,90,0.14)] rounded-xl p-5 shadow-sm";
+  "bg-card border border-border rounded-xl p-5 shadow-sm";
 
 const statusColors: Record<string, { bg: string; text: string; label: string }> = {
   vulnerable: { bg: "bg-red-100", text: "text-red-800", label: "Vulnerable" },
@@ -134,14 +134,14 @@ export default function CompliancePage() {
     <div className="max-w-7xl mx-auto space-y-5">
       {/* Step 1: Report Selector */}
       <div className={cardClass}>
-        <h2 className="text-lg font-semibold text-[#1a2433] mb-3 flex items-center gap-2">
-          <CheckSquare className="w-5 h-5 text-accent" />
+        <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+          <CheckSquare className="w-5 h-5 text-primary" />
           Compliance Analysis
         </h2>
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="w-full flex items-center justify-between px-4 py-2.5 bg-surface2 border border-border rounded-lg text-sm text-text-primary hover:border-accent transition-colors"
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-muted border border-border rounded-lg text-sm text-foreground hover:border-primary transition-colors"
           >
             <span>
               {selectedFile
@@ -152,12 +152,12 @@ export default function CompliancePage() {
                   ).toLocaleDateString()
                 : "Select a report to analyze..."}
             </span>
-            <ChevronDown className="w-4 h-4 text-text-secondary" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </button>
           {dropdownOpen && (
-            <div className="absolute z-20 mt-1 w-full bg-white border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
+            <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
               {reports.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-text-secondary">
+                <div className="px-4 py-3 text-sm text-muted-foreground">
                   No reports available
                 </div>
               ) : (
@@ -168,8 +168,8 @@ export default function CompliancePage() {
                       setSelectedFile(r.filename);
                       setDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-surface2 transition-colors flex items-center justify-between ${
-                      selectedFile === r.filename ? "bg-surface2 font-medium" : ""
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-center justify-between ${
+                      selectedFile === r.filename ? "bg-muted font-medium" : ""
                     }`}
                   >
                     <span className="truncate">
@@ -180,7 +180,7 @@ export default function CompliancePage() {
                         year: "numeric",
                       })}
                     </span>
-                    <span className="ml-2 text-xs text-text-secondary">
+                    <span className="ml-2 text-xs text-muted-foreground">
                       Score: {r.score}
                     </span>
                   </button>
@@ -194,19 +194,19 @@ export default function CompliancePage() {
       {/* Step 2: Configure & Run */}
       {selectedFile && (
         <div className={cardClass}>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
             AI Deep Analysis Configuration
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Provider */}
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 LLM Provider
               </label>
               <select
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
-                className="w-full px-3 py-2 bg-surface2 border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:border-accent"
+                className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-primary"
               >
                 <option value="Anthropic">Anthropic</option>
                 <option value="OpenAI">OpenAI</option>
@@ -215,7 +215,7 @@ export default function CompliancePage() {
             </div>
             {/* Model */}
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Model (optional)
               </label>
               <input
@@ -223,7 +223,7 @@ export default function CompliancePage() {
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
                 placeholder="e.g. claude-sonnet-4-20250514"
-                className="w-full px-3 py-2 bg-surface2 border border-border rounded-lg text-sm text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent"
+                className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
               />
             </div>
           </div>
@@ -231,20 +231,20 @@ export default function CompliancePage() {
           {/* Framework selector */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-text-primary">
+              <label className="text-sm font-medium text-foreground">
                 Compliance Frameworks
               </label>
               <div className="flex gap-2">
                 <button
                   onClick={handleSelectAll}
-                  className="text-xs text-accent hover:underline"
+                  className="text-xs text-primary hover:underline"
                 >
                   Select All
                 </button>
-                <span className="text-xs text-text-secondary">|</span>
+                <span className="text-xs text-muted-foreground">|</span>
                 <button
                   onClick={handleSelectNone}
-                  className="text-xs text-accent hover:underline"
+                  className="text-xs text-primary hover:underline"
                 >
                   None
                 </button>
@@ -257,25 +257,25 @@ export default function CompliancePage() {
                   onClick={() => toggleFramework(fw.id)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                     selectedFrameworks.has(fw.id)
-                      ? "bg-accent/10 border-accent text-accent"
-                      : "bg-surface2 border-border text-text-secondary hover:border-accent/50"
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "bg-muted border-border text-muted-foreground hover:border-primary/50"
                   }`}
                 >
                   <span
                     className={`w-3.5 h-3.5 rounded border flex items-center justify-center text-[10px] ${
                       selectedFrameworks.has(fw.id)
-                        ? "bg-accent border-accent text-white"
+                        ? "bg-primary border-primary text-white"
                         : "border-gray-300"
                     }`}
                   >
                     {selectedFrameworks.has(fw.id) && "\u2713"}
                   </span>
                   {fw.name}
-                  <span className="text-text-secondary">({fw.controlCount})</span>
+                  <span className="text-muted-foreground">({fw.controlCount})</span>
                 </button>
               ))}
               {frameworks.length === 0 && (
-                <span className="text-sm text-text-secondary">
+                <span className="text-sm text-muted-foreground">
                   No frameworks available
                 </span>
               )}
@@ -285,7 +285,7 @@ export default function CompliancePage() {
           <button
             onClick={handleRunAI}
             disabled={isStreaming || selectedFrameworks.size === 0}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             {isStreaming ? (
               <>
@@ -319,10 +319,10 @@ export default function CompliancePage() {
         <div className="space-y-4">
           {Object.entries(grouped).map(([framework, results]) => (
             <div key={framework} className={cardClass}>
-              <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
-                <CheckSquare className="w-4 h-4 text-accent" />
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <CheckSquare className="w-4 h-4 text-primary" />
                 {framework}
-                <span className="text-xs text-text-secondary font-normal">
+                <span className="text-xs text-muted-foreground font-normal">
                   ({results.length} controls)
                 </span>
               </h3>
@@ -330,17 +330,17 @@ export default function CompliancePage() {
                 {results.map((r, i) => (
                   <div
                     key={`${r.code}-${i}`}
-                    className="flex items-start gap-3 p-3 bg-surface2/50 rounded-lg border border-border/50"
+                    className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border border-border/50"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-mono text-accent font-semibold">
+                        <span className="text-xs font-mono text-primary font-semibold">
                           {r.code}
                         </span>
                         <StatusBadge status={r.status} />
                       </div>
-                      <p className="text-sm font-medium text-text-primary">{r.title}</p>
-                      <p className="text-xs text-text-secondary mt-1">{r.summary}</p>
+                      <p className="text-sm font-medium text-foreground">{r.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{r.summary}</p>
                     </div>
                   </div>
                 ))}

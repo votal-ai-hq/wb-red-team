@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 const cardClass =
-  "bg-white border border-[rgba(20,45,90,0.14)] rounded-xl shadow-sm";
+  "bg-card border border-border rounded-xl shadow-sm";
 
 type RunStatus = RunMeta["status"];
 
@@ -61,9 +61,9 @@ function truncateId(id: string) {
 
 function verdictColor(verdict: string) {
   const v = verdict.toLowerCase();
-  if (v === "pass" || v === "passed") return "text-success";
-  if (v === "fail" || v === "failed") return "text-critical";
-  return "text-text-secondary";
+  if (v === "pass" || v === "passed") return "text-emerald-600";
+  if (v === "fail" || v === "failed") return "text-red-600";
+  return "text-muted-foreground";
 }
 
 export default function RunsPage() {
@@ -142,7 +142,7 @@ export default function RunsPage() {
       <div className="max-w-7xl mx-auto flex items-center justify-center py-32">
         <div className="flex flex-col items-center gap-3">
           <LoadingSpinner size="lg" />
-          <span className="text-sm text-text-secondary">Loading runs...</span>
+          <span className="text-sm text-muted-foreground">Loading runs...</span>
         </div>
       </div>
     );
@@ -153,13 +153,13 @@ export default function RunsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Scan Runs</h1>
-          <p className="text-sm text-text-secondary mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Scan Runs</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Active and historical scan activity
           </p>
         </div>
         {hasActiveRuns && (
-          <span className="inline-flex items-center gap-2 text-sm text-accent font-medium animate-pulse">
+          <span className="inline-flex items-center gap-2 text-sm text-primary font-medium animate-pulse">
             <Play className="w-4 h-4" />
             {activeRunIds.length} active
           </span>
@@ -169,13 +169,13 @@ export default function RunsPage() {
       {/* Search */}
       <div className={`${cardClass} p-3`}>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Filter by target URL..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-border rounded-lg bg-surface2 text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-border rounded-lg bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           />
         </div>
       </div>
@@ -205,9 +205,9 @@ export default function RunsPage() {
                 {/* Run card header */}
                 <button
                   onClick={() => toggleExpand(run.runId)}
-                  className="w-full flex items-center gap-4 p-4 text-left hover:bg-surface2/50 rounded-xl transition-colors"
+                  className="w-full flex items-center gap-4 p-4 text-left hover:bg-muted/50 rounded-xl transition-colors"
                 >
-                  <span className="text-text-secondary">
+                  <span className="text-muted-foreground">
                     {isExpanded ? (
                       <ChevronDown className="w-4 h-4" />
                     ) : (
@@ -217,23 +217,23 @@ export default function RunsPage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <code className="text-xs font-mono text-text-secondary bg-surface2 px-2 py-0.5 rounded">
+                      <code className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
                         {truncateId(run.runId)}
                       </code>
                       <StatusBadge status={run.status} />
                       {run.progressCount != null && (
-                        <span className="text-xs text-text-secondary">
+                        <span className="text-xs text-muted-foreground">
                           {run.progressCount} attacks
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-4 mt-1.5">
                       {run.targetUrl && (
-                        <span className="text-sm font-medium text-text-primary truncate max-w-[400px]">
+                        <span className="text-sm font-medium text-foreground truncate max-w-[400px]">
                           {run.targetUrl}
                         </span>
                       )}
-                      <span className="text-xs text-text-secondary whitespace-nowrap">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
                         {formatTime(run.startedAt)}
                       </span>
                     </div>
@@ -251,7 +251,7 @@ export default function RunsPage() {
                       <div className="space-y-4">
                         {/* Summary */}
                         {detail.summary && (
-                          <p className="text-sm text-text-secondary italic">
+                          <p className="text-sm text-muted-foreground italic">
                             {detail.summary}
                           </p>
                         )}
@@ -259,15 +259,15 @@ export default function RunsPage() {
                         {/* Error message */}
                         {detail.error && (
                           <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <XCircle className="w-4 h-4 text-critical mt-0.5 shrink-0" />
-                            <p className="text-sm text-critical">{detail.error}</p>
+                            <XCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                            <p className="text-sm text-red-600">{detail.error}</p>
                           </div>
                         )}
 
                         {/* Progress list */}
                         {detail.progress.length > 0 && (
                           <div>
-                            <h4 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                               Progress ({detail.progress.length}
                               {detail.progressTotal
                                 ? ` / ${detail.progressTotal}`
@@ -278,15 +278,15 @@ export default function RunsPage() {
                               {detail.progress.map((p) => (
                                 <div
                                   key={p.index}
-                                  className="flex items-center gap-3 text-sm py-1.5 px-2 rounded hover:bg-surface2/50"
+                                  className="flex items-center gap-3 text-sm py-1.5 px-2 rounded hover:bg-muted/50"
                                 >
-                                  <span className="text-xs text-text-secondary w-6 text-right shrink-0">
+                                  <span className="text-xs text-muted-foreground w-6 text-right shrink-0">
                                     {p.index + 1}
                                   </span>
-                                  <span className="font-medium text-text-primary truncate flex-1">
+                                  <span className="font-medium text-foreground truncate flex-1">
                                     {p.attackName}
                                   </span>
-                                  <span className="text-xs text-text-secondary shrink-0">
+                                  <span className="text-xs text-muted-foreground shrink-0">
                                     {p.category}
                                   </span>
                                   <span
@@ -306,7 +306,7 @@ export default function RunsPage() {
                         {run.status === "done" && detail.reportFile && (
                           <a
                             href={`/reports`}
-                            className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:text-accent/80 transition-colors"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                           >
                             <CheckCircle className="w-4 h-4" />
                             View Report
@@ -314,7 +314,7 @@ export default function RunsPage() {
                         )}
                       </div>
                     ) : (
-                      <p className="text-sm text-text-secondary py-4">
+                      <p className="text-sm text-muted-foreground py-4">
                         Could not load run details.
                       </p>
                     )}

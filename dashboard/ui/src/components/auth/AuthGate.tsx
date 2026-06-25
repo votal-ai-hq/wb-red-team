@@ -14,10 +14,10 @@ export function AuthGate({ children }: AuthGateProps) {
 
   if (!initialized) {
     return (
-      <div className="fixed inset-0 bg-bg flex items-center justify-center">
+      <div className="fixed inset-0 bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-text-secondary">Loading...</span>
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-muted-foreground">Loading...</span>
         </div>
       </div>
     );

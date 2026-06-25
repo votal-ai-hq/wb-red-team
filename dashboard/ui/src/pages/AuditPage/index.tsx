@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { FileText, ChevronDown, Clock } from "lucide-react";
 
 const cardClass =
-  "bg-white border border-[rgba(20,45,90,0.14)] rounded-xl p-5 shadow-sm";
+  "bg-card border border-border rounded-xl p-5 shadow-sm";
 
 const ACTION_TYPES = [
   { value: "", label: "All Actions" },
@@ -58,10 +58,10 @@ export default function AuditPage() {
       <div className="max-w-7xl mx-auto">
         <div className={`${cardClass} text-center py-16`}>
           <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-[#1a2433] mb-2">
+          <h2 className="text-lg font-semibold text-foreground mb-2">
             Audit Log Unavailable
           </h2>
-          <p className="text-sm text-[#5a6b82] max-w-md mx-auto">
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
             No database is configured for the audit log. Please configure a
             database connection to enable activity tracking.
           </p>
@@ -75,11 +75,11 @@ export default function AuditPage() {
       {/* Header */}
       <div className={cardClass}>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#1a2433] flex items-center gap-2">
-            <Clock className="w-5 h-5 text-accent" />
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
             Activity Log
             {!loading && (
-              <span className="text-sm font-normal text-text-secondary">
+              <span className="text-sm font-normal text-muted-foreground">
                 ({total} entries)
               </span>
             )}
@@ -89,16 +89,16 @@ export default function AuditPage() {
           <div className="relative">
             <button
               onClick={() => setFilterOpen(!filterOpen)}
-              className="flex items-center gap-2 px-3 py-2 bg-surface2 border border-border rounded-lg text-sm text-text-primary hover:border-accent transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground hover:border-primary transition-colors"
             >
               <span>
                 {ACTION_TYPES.find((a) => a.value === actionFilter)?.label ||
                   "All Actions"}
               </span>
-              <ChevronDown className="w-4 h-4 text-text-secondary" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </button>
             {filterOpen && (
-              <div className="absolute right-0 z-20 mt-1 w-48 bg-white border border-border rounded-lg shadow-lg overflow-hidden">
+              <div className="absolute right-0 z-20 mt-1 w-48 bg-card border border-border rounded-lg shadow-lg overflow-hidden">
                 {ACTION_TYPES.map((a) => (
                   <button
                     key={a.value}
@@ -106,10 +106,10 @@ export default function AuditPage() {
                       setActionFilter(a.value);
                       setFilterOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-surface2 transition-colors ${
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors ${
                       actionFilter === a.value
-                        ? "bg-surface2 font-medium text-accent"
-                        : "text-text-primary"
+                        ? "bg-muted font-medium text-primary"
+                        : "text-foreground"
                     }`}
                   >
                     {a.label}
@@ -142,22 +142,22 @@ export default function AuditPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                  <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                     Timestamp
                   </th>
-                  <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                  <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                     Action
                   </th>
-                  <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                  <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                     Resource Type
                   </th>
-                  <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                  <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                     Resource ID
                   </th>
-                  <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                  <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                     User
                   </th>
-                  <th className="text-left py-2 font-semibold text-text-secondary">
+                  <th className="text-left py-2 font-semibold text-muted-foreground">
                     Details
                   </th>
                 </tr>
@@ -168,7 +168,7 @@ export default function AuditPage() {
                     key={entry.id}
                     className="border-b border-border/50 last:border-0"
                   >
-                    <td className="py-2.5 pr-4 text-text-secondary whitespace-nowrap">
+                    <td className="py-2.5 pr-4 text-muted-foreground whitespace-nowrap">
                       {new Date(entry.timestamp).toLocaleString("en-US", {
                         month: "short",
                         day: "numeric",
@@ -178,20 +178,20 @@ export default function AuditPage() {
                       })}
                     </td>
                     <td className="py-2.5 pr-4">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                         {entry.action}
                       </span>
                     </td>
-                    <td className="py-2.5 pr-4 text-text-primary">
+                    <td className="py-2.5 pr-4 text-foreground">
                       {entry.resource_type}
                     </td>
-                    <td className="py-2.5 pr-4 text-text-primary font-mono text-xs max-w-[180px] truncate" title={entry.resource_id}>
+                    <td className="py-2.5 pr-4 text-foreground font-mono text-xs max-w-[180px] truncate" title={entry.resource_id}>
                       {entry.resource_id}
                     </td>
-                    <td className="py-2.5 pr-4 text-text-secondary">
+                    <td className="py-2.5 pr-4 text-muted-foreground">
                       {entry.user_id || "-"}
                     </td>
-                    <td className="py-2.5 text-text-secondary text-xs max-w-[200px] truncate">
+                    <td className="py-2.5 text-muted-foreground text-xs max-w-[200px] truncate">
                       {entry.details
                         ? JSON.stringify(entry.details)
                         : "-"}

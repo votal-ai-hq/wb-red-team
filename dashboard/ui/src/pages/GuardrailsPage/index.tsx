@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { Shield, Search } from "lucide-react";
 
 const cardClass =
-  "bg-white border border-[rgba(20,45,90,0.14)] rounded-xl p-5 shadow-sm";
+  "bg-card border border-border rounded-xl p-5 shadow-sm";
 
 export default function GuardrailsPage() {
   const [reportsMeta, setReportsMeta] = useState<GuardrailReportMeta[]>([]);
@@ -51,20 +51,20 @@ export default function GuardrailsPage() {
         {/* Sidebar */}
         <div className="w-80 flex-shrink-0">
           <div className={`${cardClass} h-full flex flex-col`}>
-            <h2 className="text-sm font-semibold text-[#1a2433] mb-3 flex items-center gap-2">
-              <Shield className="w-4 h-4 text-accent" />
+            <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-primary" />
               Guardrail Reports
             </h2>
 
             {/* Search */}
             <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search reports..."
-                className="w-full pl-9 pr-3 py-2 bg-surface2 border border-border rounded-lg text-sm text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent"
+                className="w-full pl-9 pr-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
               />
             </div>
 
@@ -75,7 +75,7 @@ export default function GuardrailsPage() {
                   <LoadingSpinner size="sm" />
                 </div>
               ) : filteredMeta.length === 0 ? (
-                <p className="text-sm text-text-secondary text-center py-8 px-2">
+                <p className="text-sm text-muted-foreground text-center py-8 px-2">
                   No guardrail reports found.
                 </p>
               ) : (
@@ -85,21 +85,21 @@ export default function GuardrailsPage() {
                     onClick={() => setSelectedFile(r.filename)}
                     className={`w-full text-left px-3 py-3 rounded-lg transition-colors ${
                       selectedFile === r.filename
-                        ? "bg-accent/10 border border-accent/30"
-                        : "hover:bg-surface2 border border-transparent"
+                        ? "bg-primary/10 border border-primary/30"
+                        : "hover:bg-muted border border-transparent"
                     }`}
                   >
-                    <p className="text-sm font-medium text-text-primary truncate">
+                    <p className="text-sm font-medium text-foreground truncate">
                       {r.filename}
                     </p>
-                    <p className="text-xs text-text-secondary mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {new Date(r.created_at).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
                       })}
                       {r.model && (
-                        <span className="ml-2 text-accent">{r.model}</span>
+                        <span className="ml-2 text-primary">{r.model}</span>
                       )}
                     </p>
                     <div className="flex gap-2 mt-1.5">
@@ -138,23 +138,23 @@ export default function GuardrailsPage() {
             <div className="space-y-4">
               {/* Report header */}
               <div className={cardClass}>
-                <h2 className="text-lg font-semibold text-[#1a2433] mb-3 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-accent" />
+                <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-primary" />
                   {report.filename}
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {/* Model */}
                   <div>
-                    <span className="block text-xs text-text-secondary uppercase tracking-wider font-semibold">
+                    <span className="block text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                       Model
                     </span>
-                    <span className="text-sm font-medium text-text-primary mt-1">
+                    <span className="text-sm font-medium text-foreground mt-1">
                       {report.model || "N/A"}
                     </span>
                   </div>
                   {/* Guardrails used */}
                   <div className="col-span-2 md:col-span-3">
-                    <span className="block text-xs text-text-secondary uppercase tracking-wider font-semibold mb-1">
+                    <span className="block text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
                       Guardrails Used
                     </span>
                     <div className="flex flex-wrap gap-1.5">
@@ -162,13 +162,13 @@ export default function GuardrailsPage() {
                         report.guardrails!.map((g) => (
                           <span
                             key={g}
-                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent"
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary"
                           >
                             {g}
                           </span>
                         ))
                       ) : (
-                        <span className="text-sm text-text-secondary">N/A</span>
+                        <span className="text-sm text-muted-foreground">N/A</span>
                       )}
                     </div>
                   </div>
@@ -189,28 +189,28 @@ export default function GuardrailsPage() {
                   return (
                     <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-border">
                       <div className="text-center">
-                        <span className="block text-2xl font-bold text-text-primary">
+                        <span className="block text-2xl font-bold text-foreground">
                           {totalResults}
                         </span>
-                        <span className="text-xs text-text-secondary">Total</span>
+                        <span className="text-xs text-muted-foreground">Total</span>
                       </div>
                       <div className="text-center">
                         <span className="block text-2xl font-bold text-green-600">
                           {goodCount}
                         </span>
-                        <span className="text-xs text-text-secondary">Good</span>
+                        <span className="text-xs text-muted-foreground">Good</span>
                       </div>
                       <div className="text-center">
                         <span className="block text-2xl font-bold text-red-600">
                           {badCount}
                         </span>
-                        <span className="text-xs text-text-secondary">Bad</span>
+                        <span className="text-xs text-muted-foreground">Bad</span>
                       </div>
                       <div className="text-center">
                         <span className="block text-2xl font-bold text-orange-600">
                           {blockedCount}
                         </span>
-                        <span className="text-xs text-text-secondary">Blocked</span>
+                        <span className="text-xs text-muted-foreground">Blocked</span>
                       </div>
                     </div>
                   );
@@ -219,11 +219,11 @@ export default function GuardrailsPage() {
 
               {/* Results table */}
               <div className={cardClass}>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
                   Results ({report.results.length})
                 </h3>
                 {report.results.length === 0 ? (
-                  <p className="text-sm text-text-secondary text-center py-8">
+                  <p className="text-sm text-muted-foreground text-center py-8">
                     No results in this report.
                   </p>
                 ) : (
@@ -231,19 +231,19 @@ export default function GuardrailsPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border">
-                          <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                          <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                             Prompt
                           </th>
-                          <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                          <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                             Response
                           </th>
-                          <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                          <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                             Guardrail
                           </th>
-                          <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                          <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                             Verdict
                           </th>
-                          <th className="text-left py-2 font-semibold text-text-secondary">
+                          <th className="text-left py-2 font-semibold text-muted-foreground">
                             Blocked
                           </th>
                         </tr>
@@ -254,18 +254,18 @@ export default function GuardrailsPage() {
                             key={i}
                             className="border-b border-border/50 last:border-0 align-top"
                           >
-                            <td className="py-2.5 pr-4 text-text-primary max-w-[250px]">
+                            <td className="py-2.5 pr-4 text-foreground max-w-[250px]">
                               <p className="truncate" title={r.prompt}>
                                 {r.prompt}
                               </p>
                             </td>
-                            <td className="py-2.5 pr-4 text-text-secondary max-w-[250px]">
+                            <td className="py-2.5 pr-4 text-muted-foreground max-w-[250px]">
                               <p className="truncate" title={r.response}>
                                 {r.response}
                               </p>
                             </td>
                             <td className="py-2.5 pr-4">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                                 {r.guardrail}
                               </span>
                             </td>
@@ -288,7 +288,7 @@ export default function GuardrailsPage() {
                                   Blocked
                                 </span>
                               ) : (
-                                <span className="text-xs text-text-secondary">
+                                <span className="text-xs text-muted-foreground">
                                   -
                                 </span>
                               )}

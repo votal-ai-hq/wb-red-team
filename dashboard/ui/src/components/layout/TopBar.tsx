@@ -44,35 +44,35 @@ export function TopBar() {
     <header className="h-14 shrink-0 flex items-center gap-4 px-5 border-b border-border bg-white/85">
       <button
         onClick={toggleNav}
-        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface2 transition-colors"
+        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
       >
-        <Menu className="w-[18px] h-[18px] text-text-secondary" />
+        <Menu className="w-[18px] h-[18px] text-muted-foreground" />
       </button>
 
-      <h1 className="text-base font-semibold text-text-primary tracking-tight">
+      <h1 className="text-base font-semibold text-foreground tracking-tight">
         {getTitle(location.pathname)}
       </h1>
 
-      <div className="hidden sm:flex items-center gap-2 flex-1 max-w-md ml-4 px-3 py-2 rounded-lg bg-surface2 border border-border text-text-secondary text-sm">
+      <div className="hidden sm:flex items-center gap-2 flex-1 max-w-md ml-4 px-3 py-2 rounded-lg bg-muted border border-border text-muted-foreground text-sm">
         <Search className="w-4 h-4 opacity-50" />
         <input
           type="search"
           placeholder="Search scans, reports, risks..."
-          className="bg-transparent outline-none flex-1 text-text-primary placeholder:text-text-secondary/60"
+          className="bg-transparent outline-none flex-1 text-foreground placeholder:text-muted-foreground/60"
         />
       </div>
 
       <div className="flex-1" />
 
       {(authMode === "simple" || authMode === "oidc") && user && (
-        <div className="flex items-center gap-2.5 text-sm text-text-secondary">
-          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-xs font-semibold text-white border-2 border-white shadow-sm">
+        <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-white border-2 border-white shadow-sm">
             {initials}
           </div>
           <span className="hidden md:inline">{user.username}</span>
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 text-xs rounded-md border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors"
+            className="px-3 py-1.5 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
           >
             Sign out
           </button>

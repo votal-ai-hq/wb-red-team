@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { Shield, AlertTriangle, Play, ChevronDown } from "lucide-react";
 
 const cardClass =
-  "bg-white border border-[rgba(20,45,90,0.14)] rounded-xl p-5 shadow-sm";
+  "bg-card border border-border rounded-xl p-5 shadow-sm";
 
 function severityBadgeVariant(severity: string): "critical" | "high" | "medium" | "low" | "info" {
   const s = severity.toLowerCase();
@@ -116,14 +116,14 @@ export default function RiskPage() {
     <div className="max-w-7xl mx-auto space-y-5">
       {/* Step 1: Report selector */}
       <div className={cardClass}>
-        <h2 className="text-lg font-semibold text-[#1a2433] mb-3 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-accent" />
+        <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" />
           Risk Analysis
         </h2>
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="w-full flex items-center justify-between px-4 py-2.5 bg-surface2 border border-border rounded-lg text-sm text-text-primary hover:border-accent transition-colors"
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-muted border border-border rounded-lg text-sm text-foreground hover:border-primary transition-colors"
           >
             <span>
               {selectedFile
@@ -134,12 +134,12 @@ export default function RiskPage() {
                   ).toLocaleDateString()
                 : "Select a report to analyze..."}
             </span>
-            <ChevronDown className="w-4 h-4 text-text-secondary" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </button>
           {dropdownOpen && (
-            <div className="absolute z-20 mt-1 w-full bg-white border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
+            <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
               {reports.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-text-secondary">
+                <div className="px-4 py-3 text-sm text-muted-foreground">
                   No reports available
                 </div>
               ) : (
@@ -150,8 +150,8 @@ export default function RiskPage() {
                       setSelectedFile(r.filename);
                       setDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-surface2 transition-colors flex items-center justify-between ${
-                      selectedFile === r.filename ? "bg-surface2 font-medium" : ""
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-center justify-between ${
+                      selectedFile === r.filename ? "bg-muted font-medium" : ""
                     }`}
                   >
                     <span className="truncate">
@@ -162,7 +162,7 @@ export default function RiskPage() {
                         year: "numeric",
                       })}
                     </span>
-                    <span className="ml-2 text-xs text-text-secondary">
+                    <span className="ml-2 text-xs text-muted-foreground">
                       Score: {r.score}
                     </span>
                   </button>
@@ -186,15 +186,15 @@ export default function RiskPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Score Ring */}
             <div className={`${cardClass} flex flex-col items-center justify-center gap-3`}>
-              <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Security Score
               </span>
               <ScoreRing score={fullReport.score} size={140} />
               <div className="text-center">
-                <p className="text-sm text-text-secondary">
+                <p className="text-sm text-muted-foreground">
                   {fullReport.passed} passed / {fullReport.failed} failed / {fullReport.errors} errors
                 </p>
-                <p className="text-xs text-text-secondary mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {fullReport.totalAttacks} total attacks
                 </p>
               </div>
@@ -202,7 +202,7 @@ export default function RiskPage() {
 
             {/* Severity Distribution */}
             <div className={`${cardClass} col-span-1 lg:col-span-2`}>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
                 Severity Distribution
               </h3>
               <div className="space-y-3">
@@ -211,19 +211,19 @@ export default function RiskPage() {
                   .map((sev) => {
                     const count = severityDist[sev] || 0;
                     const colors: Record<string, string> = {
-                      critical: "bg-critical",
-                      high: "bg-warning",
-                      medium: "bg-yellow",
-                      low: "bg-success",
+                      critical: "bg-red-500",
+                      high: "bg-orange-500",
+                      medium: "bg-amber-500",
+                      low: "bg-emerald-500",
                       unknown: "bg-gray-400",
                     };
                     return (
                       <div key={sev}>
                         <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="text-text-secondary capitalize">{sev}</span>
-                          <span className="font-semibold text-text-primary">{count}</span>
+                          <span className="text-muted-foreground capitalize">{sev}</span>
+                          <span className="font-semibold text-foreground">{count}</span>
                         </div>
-                        <div className="h-2.5 bg-surface2 rounded-full overflow-hidden">
+                        <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full ${colors[sev] || "bg-gray-400"} transition-all duration-500`}
                             style={{ width: `${(count / maxSevCount) * 100}%` }}
@@ -238,14 +238,14 @@ export default function RiskPage() {
 
           {/* Exploitability Section */}
           <div className={cardClass}>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
               <span className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-warning" />
+                <AlertTriangle className="w-4 h-4 text-orange-600" />
                 Exploitable Vulnerabilities ({vulnerabilities.length})
               </span>
             </h3>
             {vulnerabilities.length === 0 ? (
-              <p className="text-sm text-text-secondary py-4 text-center">
+              <p className="text-sm text-muted-foreground py-4 text-center">
                 No exploitable vulnerabilities found.
               </p>
             ) : (
@@ -253,16 +253,16 @@ export default function RiskPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                      <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                         Attack
                       </th>
-                      <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                      <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                         Category
                       </th>
-                      <th className="text-left py-2 pr-4 font-semibold text-text-secondary">
+                      <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">
                         Severity
                       </th>
-                      <th className="text-left py-2 font-semibold text-text-secondary">
+                      <th className="text-left py-2 font-semibold text-muted-foreground">
                         Verdict
                       </th>
                     </tr>
@@ -273,10 +273,10 @@ export default function RiskPage() {
                         key={`${v.attackName}-${i}`}
                         className="border-b border-border/50 last:border-0"
                       >
-                        <td className="py-2.5 pr-4 text-text-primary font-medium max-w-[300px] truncate">
+                        <td className="py-2.5 pr-4 text-foreground font-medium max-w-[300px] truncate">
                           {v.attackName}
                         </td>
-                        <td className="py-2.5 pr-4 text-text-secondary">{v.category}</td>
+                        <td className="py-2.5 pr-4 text-muted-foreground">{v.category}</td>
                         <td className="py-2.5 pr-4">
                           <Badge variant={severityBadgeVariant(v.severity)}>
                             {v.severity || "unknown"}
@@ -290,7 +290,7 @@ export default function RiskPage() {
                   </tbody>
                 </table>
                 {vulnerabilities.length > 50 && (
-                  <p className="text-xs text-text-secondary mt-2">
+                  <p className="text-xs text-muted-foreground mt-2">
                     Showing 50 of {vulnerabilities.length} vulnerabilities
                   </p>
                 )}
@@ -301,7 +301,7 @@ export default function RiskPage() {
           {/* Remediation Matrix */}
           {sortedRemediationKeys.length > 0 && (
             <div className={cardClass}>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
                 Remediation Matrix (by priority)
               </h3>
               <div className="space-y-4">
@@ -323,7 +323,7 @@ export default function RiskPage() {
                         <Badge variant={severityBadgeVariant(severity)}>
                           {severity}
                         </Badge>
-                        <span className="text-sm text-text-secondary">
+                        <span className="text-sm text-muted-foreground">
                           {items.length} finding{items.length !== 1 ? "s" : ""}
                         </span>
                       </div>
@@ -331,14 +331,14 @@ export default function RiskPage() {
                         {items.slice(0, 10).map((item, idx) => (
                           <li
                             key={`${item.attackName}-${idx}`}
-                            className="text-sm text-text-primary"
+                            className="text-sm text-foreground"
                           >
                             <span className="font-medium">{item.attackName}</span>
-                            <span className="text-text-secondary ml-2">({item.category})</span>
+                            <span className="text-muted-foreground ml-2">({item.category})</span>
                           </li>
                         ))}
                         {items.length > 10 && (
-                          <li className="text-xs text-text-secondary">
+                          <li className="text-xs text-muted-foreground">
                             +{items.length - 10} more
                           </li>
                         )}
@@ -353,13 +353,13 @@ export default function RiskPage() {
           {/* Step 3: AI Risk Analysis */}
           <div className={cardClass}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 AI Risk Analysis
               </h3>
               <button
                 onClick={handleRunAI}
                 disabled={isStreaming}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
                 {isStreaming ? (
                   <>
@@ -388,44 +388,44 @@ export default function RiskPage() {
                     key={`${result.attackName}-${i}`}
                     className="border border-border rounded-lg p-4 space-y-2"
                   >
-                    <h4 className="font-semibold text-text-primary text-sm">
+                    <h4 className="font-semibold text-foreground text-sm">
                       {result.attackName}
                     </h4>
-                    <p className="text-xs text-text-secondary">{result.category}</p>
+                    <p className="text-xs text-muted-foreground">{result.category}</p>
                     <div className="grid grid-cols-2 gap-2 pt-2">
                       <div>
-                        <span className="block text-xs text-text-secondary">Impact Level</span>
-                        <span className="text-sm font-medium text-text-primary">
+                        <span className="block text-xs text-muted-foreground">Impact Level</span>
+                        <span className="text-sm font-medium text-foreground">
                           {result.impactLevel}
                         </span>
                       </div>
                       <div>
-                        <span className="block text-xs text-text-secondary">Business Impact</span>
-                        <span className="text-sm font-medium text-text-primary">
+                        <span className="block text-xs text-muted-foreground">Business Impact</span>
+                        <span className="text-sm font-medium text-foreground">
                           {result.businessImpact}
                         </span>
                       </div>
                       <div>
-                        <span className="block text-xs text-text-secondary">
+                        <span className="block text-xs text-muted-foreground">
                           Financial Exposure
                         </span>
-                        <span className="text-sm font-medium text-text-primary">
+                        <span className="text-sm font-medium text-foreground">
                           {result.financialExposure}
                         </span>
                       </div>
                       <div>
-                        <span className="block text-xs text-text-secondary">
+                        <span className="block text-xs text-muted-foreground">
                           Remediation Estimate
                         </span>
-                        <span className="text-sm font-medium text-text-primary">
+                        <span className="text-sm font-medium text-foreground">
                           {result.remediationEstimate}
                         </span>
                       </div>
                     </div>
                     {result.complianceRisk && (
                       <div className="pt-1">
-                        <span className="block text-xs text-text-secondary">Compliance Risk</span>
-                        <span className="text-sm text-text-primary">{result.complianceRisk}</span>
+                        <span className="block text-xs text-muted-foreground">Compliance Risk</span>
+                        <span className="text-sm text-foreground">{result.complianceRisk}</span>
                       </div>
                     )}
                   </div>

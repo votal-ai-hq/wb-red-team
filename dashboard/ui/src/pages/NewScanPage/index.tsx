@@ -7,7 +7,7 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { Play, Zap, Shield, Settings, Rocket } from "lucide-react";
 
 const cardClass =
-  "bg-white border border-[rgba(20,45,90,0.14)] rounded-xl shadow-sm";
+  "bg-card border border-border rounded-xl shadow-sm";
 
 const TEMPLATES: {
   key: string;
@@ -168,7 +168,7 @@ export default function NewScanPage() {
       <div className="max-w-7xl mx-auto flex items-center justify-center py-32">
         <div className="flex flex-col items-center gap-3">
           <LoadingSpinner size="lg" />
-          <span className="text-sm text-text-secondary">
+          <span className="text-sm text-muted-foreground">
             Loading scan configuration...
           </span>
         </div>
@@ -180,30 +180,30 @@ export default function NewScanPage() {
     <div className="max-w-3xl mx-auto space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-          <Rocket className="w-6 h-6 text-accent" />
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <Rocket className="w-6 h-6 text-primary" />
           Launch Scan
         </h1>
-        <p className="text-sm text-text-secondary mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Configure and start a new security scan
         </p>
       </div>
 
       {/* Alerts */}
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-critical">
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
           <span className="font-medium">Error:</span> {error}
         </div>
       )}
       {success && (
-        <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-success">
+        <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-emerald-600">
           <span className="font-medium">Success:</span> {success}
         </div>
       )}
 
       {/* Templates */}
       <div className={`${cardClass} p-5`}>
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
           Templates
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -214,13 +214,13 @@ export default function NewScanPage() {
                 key={tpl.key}
                 type="button"
                 onClick={() => applyTemplate(tpl.key)}
-                className="flex flex-col items-center gap-2 p-4 border border-border rounded-lg hover:border-accent hover:bg-accent/5 transition-colors text-center"
+                className="flex flex-col items-center gap-2 p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-center"
               >
-                <Icon className="w-5 h-5 text-accent" />
-                <span className="text-sm font-semibold text-text-primary">
+                <Icon className="w-5 h-5 text-primary" />
+                <span className="text-sm font-semibold text-foreground">
                   {tpl.label}
                 </span>
-                <span className="text-xs text-text-secondary">
+                <span className="text-xs text-muted-foreground">
                   {tpl.description}
                 </span>
               </button>
@@ -233,8 +233,8 @@ export default function NewScanPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Target URL */}
         <div className={`${cardClass} p-5`}>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">
-            Target URL <span className="text-critical">*</span>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Target URL <span className="text-red-600">*</span>
           </label>
           <input
             type="text"
@@ -242,7 +242,7 @@ export default function NewScanPage() {
             onChange={(e) => setTargetUrl(e.target.value)}
             placeholder="https://api.example.com"
             required
-            className="w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-surface2 text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+            className="w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           />
         </div>
 
@@ -250,7 +250,7 @@ export default function NewScanPage() {
         {ref && ref.ALL_ATTACK_CATEGORIES.length > 0 && (
           <div className={`${cardClass} p-5`}>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Attack Categories
               </label>
               <div className="flex gap-2">
@@ -259,14 +259,14 @@ export default function NewScanPage() {
                   onClick={() =>
                     setSelectedCategories([...ref.ALL_ATTACK_CATEGORIES])
                   }
-                  className="text-xs text-accent hover:text-accent/80"
+                  className="text-xs text-primary hover:text-primary/80"
                 >
                   Select All
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedCategories([])}
-                  className="text-xs text-text-secondary hover:text-text-primary"
+                  className="text-xs text-muted-foreground hover:text-foreground"
                 >
                   Clear
                 </button>
@@ -282,8 +282,8 @@ export default function NewScanPage() {
                     onClick={() => toggleCategory(cat)}
                     className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                       selected
-                        ? "bg-accent text-white border-accent"
-                        : "bg-surface2 text-text-secondary border-border hover:border-accent hover:text-text-primary"
+                        ? "bg-primary text-white border-primary"
+                        : "bg-muted text-muted-foreground border-border hover:border-primary hover:text-foreground"
                     }`}
                   >
                     {cat.replace(/_/g, " ")}
@@ -292,7 +292,7 @@ export default function NewScanPage() {
               })}
             </div>
             {selectedCategories.length > 0 && (
-              <p className="text-xs text-text-secondary mt-2">
+              <p className="text-xs text-muted-foreground mt-2">
                 {selectedCategories.length} of {ref.ALL_ATTACK_CATEGORIES.length}{" "}
                 selected
               </p>
@@ -303,13 +303,13 @@ export default function NewScanPage() {
         {/* Strategy */}
         {ref && ref.ALL_STRATEGIES.length > 0 && (
           <div className={`${cardClass} p-5`}>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
               Strategy
             </label>
             <select
               value={strategy}
               onChange={(e) => setStrategy(e.target.value)}
-              className="w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-surface2 text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+              className="w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-muted text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             >
               {ref.ALL_STRATEGIES.map((s) => (
                 <option key={s.slug} value={s.slug}>
@@ -322,7 +322,7 @@ export default function NewScanPage() {
 
         {/* JSON Config Editor */}
         <div className={`${cardClass} p-5`}>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
             Advanced JSON Config
           </label>
           <textarea
@@ -330,9 +330,9 @@ export default function NewScanPage() {
             onChange={(e) => setJsonConfig(e.target.value)}
             placeholder='{"targetUrl": "...", "attackCategories": [...], ...}'
             rows={6}
-            className="w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-surface2 text-text-primary placeholder:text-text-secondary font-mono focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y"
+            className="w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-muted text-foreground placeholder:text-muted-foreground font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-y"
           />
-          <p className="text-xs text-text-secondary mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Optional. Overrides form fields when provided.
           </p>
         </div>
@@ -341,7 +341,7 @@ export default function NewScanPage() {
         <button
           type="submit"
           disabled={submitting || !targetUrl.trim()}
-          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white font-semibold rounded-xl hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {submitting ? (
             <>
