@@ -3,7 +3,7 @@
  * Append-only — no UPDATE or DELETE operations.
  */
 
-import { query } from "./db.js";
+import { query, queryWithRetry } from "./db.js";
 import type { RequestContext } from "./middleware.js";
 
 export type AuditAction =
@@ -41,7 +41,10 @@ export async function logAudit(
   metadata?: Record<string, unknown>,
 ): Promise<void> {
   try {
-    await query(
+    // Retry transient connection drops — a momentary pooler blip must not spam
+    // the logs with stack traces (and a rare duplicate row in an append-only log
+    // is harmless).
+    await queryWithRetry(
       `INSERT INTO audit_log (tenant_id, user_id, action, target_type, target_id, metadata, ip_address)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
