@@ -509,6 +509,7 @@ function ReportDetail({ filename }: { filename: string }) {
   const [findingsPage, setFindingsPage] = useState(1);
   const [verdictFilter, setVerdictFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [printMode, setPrintMode] = useState(false);
   const perPage = 25;
 
   useEffect(() => {
@@ -582,10 +583,17 @@ function ReportDetail({ filename }: { filename: string }) {
 
   const totalFindings = filteredResults.length;
   const totalFindingsPages = Math.max(1, Math.ceil(totalFindings / perPage));
-  const pagedFindings = filteredResults.slice(
-    (findingsPage - 1) * perPage,
-    findingsPage * perPage,
-  );
+  const pagedFindings = printMode
+    ? filteredResults
+    : filteredResults.slice(
+        (findingsPage - 1) * perPage,
+        findingsPage * perPage,
+      );
+
+  // For print mode: show all results from ALL rounds
+  const allRoundsResults = printMode
+    ? rounds.flatMap((r) => r.results ?? [])
+    : [];
 
   // Partial count
   const partialCount = allResults.filter((r) => r.verdict === "PARTIAL").length;
@@ -619,8 +627,14 @@ function ReportDetail({ filename }: { filename: string }) {
             CSV
           </a>
           <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+            onClick={() => {
+              setPrintMode(true);
+              setTimeout(() => {
+                window.print();
+                setPrintMode(false);
+              }, 300);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors print:hidden"
           >
             <Printer className="w-3.5 h-3.5" />
             PDF
@@ -917,6 +931,45 @@ function ReportDetail({ filename }: { filename: string }) {
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* ── Print-only: ALL attacks from all rounds ── */}
+      {printMode && (
+        <div className="print-only-full-report">
+          <div className="text-xs text-muted-foreground mb-2 mt-4">
+            Full Attack Report — {allRoundsResults.length} total findings across {rounds.length} round{rounds.length !== 1 ? "s" : ""}
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-[10px] w-8">#</TableHead>
+                <TableHead className="text-[10px]">Attack Name</TableHead>
+                <TableHead className="text-[10px]">Category</TableHead>
+                <TableHead className="text-[10px]">Severity</TableHead>
+                <TableHead className="text-[10px]">Verdict</TableHead>
+                <TableHead className="text-[10px]">Reasoning</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {allRoundsResults.map((result, i) => (
+                <TableRow key={i}>
+                  <TableCell className="text-[10px] tabular-nums text-muted-foreground">{i + 1}</TableCell>
+                  <TableCell className="text-[10px] font-medium">{getAttackName(result)}</TableCell>
+                  <TableCell className="text-[10px] text-muted-foreground">{prettyCat(getCategory(result))}</TableCell>
+                  <TableCell className="text-[10px]">
+                    <Badge variant={severityVariant(getSeverity(result))}>{getSeverity(result)}</Badge>
+                  </TableCell>
+                  <TableCell className="text-[10px]">
+                    <Badge variant={verdictVariant(result.verdict)}>{result.verdict}</Badge>
+                  </TableCell>
+                  <TableCell className="text-[10px] text-muted-foreground max-w-[300px]">
+                    {result.llmReasoning || result.reasoning || "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
