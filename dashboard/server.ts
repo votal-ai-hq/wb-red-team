@@ -66,7 +66,7 @@ const LITELLM_REPORT_DIR = join(
   "reports",
   "litellm-guardrails",
 );
-const DASHBOARD_DIR = import.meta.dirname;
+const DASHBOARD_DIR = join(import.meta.dirname, "ui", "dist");
 
 // ── Login rate limiter ──
 interface RateLimitEntry {
@@ -145,6 +145,12 @@ const MIME: Record<string, string> = {
   ".js": "application/javascript",
   ".json": "application/json",
   ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+  ".map": "application/json",
 };
 
 // ── Report metadata cache ──
@@ -1184,6 +1190,20 @@ const server = createServer(
       }
 
       if (!job) {
+        // Job not in memory (server restarted) — try to cancel via DB
+        if (isDbConfigured() && ctx?.tenantId) {
+          const updated = await query(
+            "UPDATE runs SET status='cancelled', finished_at=NOW() WHERE id=$1 AND tenant_id=$2 AND status IN ('queued','running') RETURNING id",
+            [id, ctx.tenantId],
+          ).catch(() => ({ rows: [] }));
+          if (updated.rows.length > 0) {
+            cancelledRunIds.add(id);
+            if (ctx) await logAudit(ctx, "run.cancel", "run", id, { reason: "cancelled after server restart" });
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ runId: id, status: "cancelled" }));
+            return;
+          }
+        }
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Run not found" }));
         return;
@@ -2291,6 +2311,70 @@ Be specific and factual. Reference real incidents and realistic financial figure
     }
 
     // API: list attack categories and strategies (for config reference)
+    // API: list available policy files
+    if (url.pathname === "/api/policies" && req.method === "GET") {
+      try {
+        const policyDir = resolvePath("policies");
+        const files = existsSync(policyDir)
+          ? readdirSync(policyDir)
+              .filter((f) => f.endsWith(".json"))
+              .sort()
+          : [];
+        const policies = files.map((f) => {
+          try {
+            const raw = readFileSync(join(policyDir, f), "utf-8");
+            const data = JSON.parse(raw);
+            return {
+              filename: f,
+              path: `policies/${f}`,
+              name: data.name || f.replace(/\.json$/, ""),
+              description: data.description || "",
+              version: data.version || "",
+            };
+          } catch {
+            return { filename: f, path: `policies/${f}`, name: f.replace(/\.json$/, ""), description: "", version: "" };
+          }
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(policies));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(err) }));
+      }
+      return;
+    }
+
+    // API: upload a custom policy file
+    if (url.pathname === "/api/policy-upload" && req.method === "POST") {
+      try {
+        const body = JSON.parse(await readBody(req));
+        if (!body.name || !body.policy) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "name and policy fields are required" }));
+          return;
+        }
+        // Validate the policy JSON structure
+        const policy = typeof body.policy === "string" ? JSON.parse(body.policy) : body.policy;
+        if (!policy.global && !policy.categories) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Invalid policy: must have global and/or categories" }));
+          return;
+        }
+        const policyDir = resolvePath("policies");
+        if (!existsSync(policyDir)) mkdirSync(policyDir, { recursive: true });
+        // Sanitize filename
+        const safeName = body.name.replace(/[^a-zA-Z0-9_-]/g, "-").toLowerCase();
+        const filename = `${safeName}.json`;
+        writeFileSync(join(policyDir, filename), JSON.stringify(policy, null, 2));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ filename, path: `policies/${filename}` }));
+      } catch (err) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: `Invalid policy: ${err instanceof Error ? err.message : String(err)}` }));
+      }
+      return;
+    }
+
     if (url.pathname === "/api/reference" && req.method === "GET") {
       try {
         const { ALL_ATTACK_CATEGORIES } = await import("../lib/types.js");
@@ -2418,8 +2502,16 @@ Be specific and factual. Reference real incidents and realistic financial figure
       res.writeHead(200, { "Content-Type": mime });
       res.end(data);
     } catch {
-      res.writeHead(404);
-      res.end("Not found");
+      // SPA fallback: serve index.html for non-API routes
+      try {
+        const indexPath = join(DASHBOARD_DIR, "index.html");
+        const data = readFileSync(indexPath);
+        res.writeHead(200, { "Content-Type": "text/html" });
+        res.end(data);
+      } catch {
+        res.writeHead(404);
+        res.end("Not found");
+      }
     }
   }),
 );

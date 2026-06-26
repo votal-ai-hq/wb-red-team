@@ -14,6 +14,8 @@ Red-Team AI is built for that gap. It reads your application's source code first
 
 📖 **Full product documentation:** [docs/index.md](docs/index.md) — comprehensive manual covering configuration, white-box scanning, attack catalog, compliance, deployment, and the extension API.
 
+🖥️ **Dashboard:** Modern React dashboard with shadcn/ui components for scan management, report analysis, risk assessment, and compliance tracking.
+
 ---
 
 ## Why star this?
