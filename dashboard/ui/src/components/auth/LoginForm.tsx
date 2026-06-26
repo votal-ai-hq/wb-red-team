@@ -1,26 +1,41 @@
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import * as authApi from "@/api/auth";
 import { Shield } from "lucide-react";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 
 export function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { setUser, setToken } = useAuthStore();
+  const { setUser, setToken, hcaptchaSiteKey } = useAuthStore();
+  const captchaRef = useRef<HCaptcha>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
+    if (hcaptchaSiteKey && !captchaToken) {
+      setError("Please complete the CAPTCHA verification.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const { user } = await authApi.login(username, password);
+      const { user } = await authApi.login(
+        username,
+        password,
+        captchaToken || undefined,
+      );
       setUser(user);
       setToken("session");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
+      // Reset captcha on failure so user can retry
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken("");
     } finally {
       setLoading(false);
     }
@@ -70,13 +85,25 @@ export function LoginForm() {
             />
           </div>
 
+          {hcaptchaSiteKey && (
+            <div className="flex justify-center">
+              <HCaptcha
+                ref={captchaRef}
+                sitekey={hcaptchaSiteKey}
+                onVerify={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken("")}
+                onError={() => setCaptchaToken("")}
+              />
+            </div>
+          )}
+
           {error && (
             <p className="text-sm text-red-600">{error}</p>
           )}
 
           <button
             type="submit"
-            disabled={loading || !username || !password}
+            disabled={loading || !username || !password || (!!hcaptchaSiteKey && !captchaToken)}
             className="w-full py-3 rounded-lg bg-foreground text-white text-sm font-semibold hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-2"
           >
             {loading ? "Signing in..." : "Sign In"}
