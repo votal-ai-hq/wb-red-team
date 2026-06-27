@@ -253,6 +253,8 @@ export interface GuardrailResultLeg {
   latency_ms?: number;
   response_text?: string;
   guardrail_verdict?: string;
+  /** Per-leg verdict emitted by the guardrail eval, e.g. "guardrail_blocked", "benign_answer". */
+  verdict?: string;
 }
 
 export interface GuardrailAssessment {

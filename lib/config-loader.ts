@@ -70,9 +70,17 @@ function validateAndNormalizeConfig(config: Config): Config {
     );
     config.target.applicationDetails = "";
   }
-  if (!config.auth?.credentials?.length && !config.auth?.apiKeys) {
-    throw new Error(
-      "config: at least one auth method (credentials or apiKeys) is required",
+  // Auth is optional: a public endpoint that needs no authentication is a valid,
+  // common target (e.g. an unauthenticated ticketing chatbot). When no auth is
+  // provided, normalize to a safe "no auth" shape and just send requests.
+  config.auth = config.auth ?? ({} as Config["auth"]);
+  config.auth.methods = config.auth.methods ?? [];
+  config.auth.credentials = config.auth.credentials ?? [];
+  config.auth.apiKeys = config.auth.apiKeys ?? {};
+  config.auth.jwtSecret = config.auth.jwtSecret ?? "";
+  if (!config.auth.credentials.length && !Object.keys(config.auth.apiKeys).length) {
+    console.warn(
+      "Warning: no auth credentials or apiKeys provided — scanning the target as an unauthenticated/public endpoint",
     );
   }
   if (!config.sensitivePatterns?.length) {

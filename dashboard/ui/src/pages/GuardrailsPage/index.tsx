@@ -49,7 +49,23 @@ function getVerdict(r: GuardrailResult): string {
 }
 
 function isBlocked(r: GuardrailResult): boolean {
-  return r.assessment?.blocked ?? r.blocked ?? false;
+  // Primary signal: the with-guardrails leg. This mirrors the server's
+  // extractGuardrailSummary() detection so the UI stops under-reporting blocks
+  // to zero. (`assessment` in real reports is a free-text string, so the old
+  // `assessment.blocked` / top-level `blocked` checks were always falsy.)
+  const g = r.with_guardrails;
+  if (g) {
+    const verdict = g.verdict ?? g.guardrail_verdict;
+    if (verdict) {
+      return verdict === "guardrail_blocked" || verdict === "safe_refusal_or_redirect";
+    }
+    if (g.status_code === 400 || g.status_code === 403) return true;
+    if ((g.response_text || "").toLowerCase().includes("blocked by votal guardrails")) {
+      return true;
+    }
+  }
+  // Legacy fallbacks for older flat report shapes.
+  return (typeof r.assessment === "object" && r.assessment?.blocked) || r.blocked || false;
 }
 
 function isBad(r: GuardrailResult): boolean {

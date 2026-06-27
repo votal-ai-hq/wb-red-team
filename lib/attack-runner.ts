@@ -565,7 +565,7 @@ export async function executeAttack(
       break;
     }
     case "api_key": {
-      const key = config.auth.apiKeys[attack.role];
+      const key = config.auth.apiKeys?.[attack.role];
       if (key) headers["X-Api-Key"] = key;
       break;
     }

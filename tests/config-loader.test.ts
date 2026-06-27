@@ -243,19 +243,23 @@ describe("loadConfig", () => {
     expect(() => loadConfig(path)).toThrow("target.agentEndpoint is required");
   });
 
-  it("throws on missing auth credentials and apiKeys", () => {
+  it("accepts a config with no auth (public/unauthenticated endpoint)", () => {
     const path = writeTestConfig(
       tmpDir,
       makeValidConfig({
         auth: {
-          methods: ["jwt"],
+          methods: [],
           jwtSecret: "s",
           credentials: [],
           apiKeys: undefined,
         },
       }),
     );
-    expect(() => loadConfig(path)).toThrow("at least one auth method");
+    const config = loadConfig(path);
+    // No auth provided → normalized to a safe "no auth" shape, not an error.
+    expect(config.auth.credentials).toEqual([]);
+    expect(config.auth.apiKeys).toEqual({});
+    expect(config.auth.methods).toEqual([]);
   });
 
   it("throws on non-existent config file", () => {

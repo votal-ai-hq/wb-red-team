@@ -497,6 +497,8 @@ function createProvider(
   name: string,
   requestConfig: OpenAICompatibleRequestConfig = {},
 ): LlmProvider {
+  // Provider names are case-insensitive (callers may pass "OpenAI", "Anthropic").
+  name = (name ?? "").toLowerCase();
   const cacheKey = `${name}:${JSON.stringify(requestConfig.guardrails ?? [])}`;
   if (providerCache.has(cacheKey)) {
     return providerCache.get(cacheKey)!;
