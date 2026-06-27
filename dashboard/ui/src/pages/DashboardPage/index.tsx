@@ -201,19 +201,29 @@ export default function DashboardPage() {
   const maxTargetVulns = topTargets.length > 0 ? topTargets[0][1] : 1;
 
   // ── filtered scans for table ──
-  const recentScans = reportsMeta.slice(0, 20);
+  // Use the full report set so the tab counts (derived from scoreBuckets over
+  // all reports) stay consistent with what the table actually shows. Slicing to
+  // a "recent 20" here made "All Scans" disagree with the severity tab counts.
+  const allScans = reportsMeta;
   const filteredScans =
     tableFilter === "all"
-      ? recentScans
-      : recentScans.filter((r) => getSeverity(r.score) === tableFilter);
+      ? allScans
+      : allScans.filter((r) => getSeverity(r.score) === tableFilter);
 
   const filterTabs: { key: "all" | SeverityLevel; label: string; count: number }[] = [
-    { key: "all", label: "All Scans", count: recentScans.length },
+    { key: "all", label: "All Scans", count: allScans.length },
     { key: "critical", label: "Critical", count: scoreBuckets.critical },
     { key: "high", label: "High", count: scoreBuckets.high },
     { key: "medium", label: "Medium", count: scoreBuckets.medium },
     { key: "low", label: "Low", count: scoreBuckets.low },
   ];
+
+  const SEVERITY_EMPTY_LABEL: Record<SeverityLevel, string> = {
+    critical: "critical",
+    high: "high",
+    medium: "medium",
+    low: "low",
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -293,6 +303,13 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Row 2: Severity breakdown (Pepper-style colored dot + number row) ── */}
+      <div>
+      <div className="flex items-baseline justify-between mb-2">
+        <h2 className="text-sm font-semibold text-foreground">Scans by Severity</h2>
+        <span className="text-[11px] text-muted-foreground">
+          Scans grouped by overall risk score
+        </span>
+      </div>
       <div className="grid grid-cols-4 gap-4">
         {(["critical", "high", "medium", "low"] as const).map((level) => {
           const cfg = SEVERITY_CONFIG[level];
@@ -310,6 +327,7 @@ export default function DashboardPage() {
             </Card>
           );
         })}
+      </div>
       </div>
 
       {/* ── Row 3: Findings table with filter tabs ── */}
@@ -404,10 +422,23 @@ export default function DashboardPage() {
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Shield className="w-10 h-10 text-muted-foreground/30 mb-3" />
-              <p className="text-sm font-medium text-muted-foreground">No scans found</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                Run your first security scan to see results here
-              </p>
+              {tableFilter === "all" ? (
+                <>
+                  <p className="text-sm font-medium text-muted-foreground">No scans found</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    Run your first security scan to see results here
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    No {SEVERITY_EMPTY_LABEL[tableFilter]} severity scans
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    No scans fall into the {SEVERITY_EMPTY_LABEL[tableFilter]} severity range
+                  </p>
+                </>
+              )}
             </div>
           )}
         </CardContent>

@@ -81,12 +81,24 @@ function fmtDateTime(iso: string) {
   });
 }
 
+// Verdict semantics (lib/response-analyzer.ts): PASS = attack succeeded
+// (vulnerability, bad/red); FAIL = agent defended (good/green).
 function verdictColor(verdict: string | undefined) {
   const v = (verdict ?? "").toUpperCase();
-  if (v === "PASS") return "text-emerald-600 dark:text-emerald-400";
-  if (v === "FAIL") return "text-red-600 dark:text-red-400";
+  if (v === "PASS") return "text-red-600 dark:text-red-400";
+  if (v === "FAIL") return "text-emerald-600 dark:text-emerald-400";
   if (v === "PARTIAL") return "text-amber-600 dark:text-amber-400";
   return "text-muted-foreground";
+}
+
+/** Defender-friendly label for a raw attack verdict. */
+function verdictLabel(verdict: string | undefined) {
+  const v = (verdict ?? "").toUpperCase();
+  if (v === "PASS") return "Vulnerable";
+  if (v === "FAIL") return "Defended";
+  if (v === "PARTIAL") return "Partial";
+  if (v === "ERROR") return "Error";
+  return verdict ?? "—";
 }
 
 /* ─── main component ─── */
@@ -435,8 +447,8 @@ export default function RunsPage() {
                           {attackResults.slice(-5).map((p, i) => (
                             <div key={i} className="flex items-center gap-2 text-xs py-0.5">
                               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                p.verdict === "PASS" ? "bg-emerald-500" :
-                                p.verdict === "FAIL" ? "bg-red-500" :
+                                p.verdict === "PASS" ? "bg-red-500" :
+                                p.verdict === "FAIL" ? "bg-emerald-500" :
                                 p.verdict === "PARTIAL" ? "bg-amber-500" : "bg-gray-400"
                               }`} />
                               <span className="text-muted-foreground tabular-nums w-5">
@@ -447,7 +459,7 @@ export default function RunsPage() {
                               </span>
                               <span className="text-muted-foreground shrink-0">{String(p.category ?? "")}</span>
                               <span className={`font-semibold shrink-0 ${verdictColor(String(p.verdict ?? ""))}`}>
-                                {String(p.verdict ?? "—")}
+                                {p.verdict ? verdictLabel(String(p.verdict)) : "—"}
                               </span>
                             </div>
                           ))}
@@ -520,7 +532,7 @@ export default function RunsPage() {
                                     {cat}
                                   </span>
                                   <span className={`text-xs font-semibold shrink-0 ${verdictColor(vrd)}`}>
-                                    {vrd || "—"}
+                                    {vrd ? verdictLabel(vrd) : "—"}
                                   </span>
                                 </div>
                                 );

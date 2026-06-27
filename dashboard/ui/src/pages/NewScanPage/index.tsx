@@ -38,6 +38,7 @@ import {
   Braces,
   Upload,
   Loader2,
+  Search,
 } from "lucide-react";
 
 /* ─── constants ─── */
@@ -60,6 +61,7 @@ const ATTACK_MODES = [
 ] as const;
 
 const AUTH_METHODS = [
+  { value: "none", label: "No Auth (public)" },
   { value: "api_key", label: "API Key" },
   { value: "body_role", label: "Body Role" },
   { value: "jwt", label: "JWT" },
@@ -232,6 +234,8 @@ export default function NewScanPage() {
   // ── Attack config ──
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStrategies, setSelectedStrategies] = useState<string[]>([]);
+  const [categorySearch, setCategorySearch] = useState("");
+  const [strategySearch, setStrategySearch] = useState("");
   const [adaptiveRounds, setAdaptiveRounds] = useState(3);
   const [maxAttacksPerCategory, setMaxAttacksPerCategory] = useState(15);
   const [concurrency, setConcurrency] = useState(3);
@@ -731,8 +735,25 @@ export default function NewScanPage() {
                   </div>
                 )}
 
+                <div className="relative mb-3 max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={categorySearch}
+                    onChange={(e) => setCategorySearch(e.target.value)}
+                    placeholder="Search categories..."
+                    className="w-full pl-9 pr-3 py-1.5 bg-background border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+
                 <div className="flex flex-wrap gap-2">
-                  {ref.categories.map((cat) => {
+                  {ref.categories
+                    .filter((cat) =>
+                      !categorySearch ||
+                      prettyCat(cat).toLowerCase().includes(categorySearch.toLowerCase()) ||
+                      cat.toLowerCase().includes(categorySearch.toLowerCase()),
+                    )
+                    .map((cat) => {
                     const selected = selectedCategories.includes(cat);
                     return (
                       <button
@@ -792,7 +813,29 @@ export default function NewScanPage() {
                   </div>
                 </div>
 
-                {Object.entries(strategyGroups).map(([level, strategies]) => (
+                <div className="relative mb-3 max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={strategySearch}
+                    onChange={(e) => setStrategySearch(e.target.value)}
+                    placeholder="Search strategies..."
+                    className="w-full pl-9 pr-3 py-1.5 bg-background border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+
+                {Object.entries(strategyGroups)
+                  .map(([level, strategies]) => [
+                    level,
+                    strategies.filter(
+                      (s) =>
+                        !strategySearch ||
+                        s.name.toLowerCase().includes(strategySearch.toLowerCase()) ||
+                        s.slug.toLowerCase().includes(strategySearch.toLowerCase()),
+                    ),
+                  ] as [string, StrategyInfo[]])
+                  .filter(([, strategies]) => strategies.length > 0)
+                  .map(([level, strategies]) => (
                   <div key={level} className="mb-4 last:mb-0">
                     <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                       {level}
@@ -991,9 +1034,13 @@ export default function NewScanPage() {
                         key={m.value}
                         type="button"
                         onClick={() =>
-                          setAuthMethods((prev) =>
-                            selected ? prev.filter((x) => x !== m.value) : [...prev, m.value],
-                          )
+                          setAuthMethods((prev) => {
+                            if (selected) return prev.filter((x) => x !== m.value);
+                            // "No Auth" is exclusive — selecting it clears the
+                            // others, and selecting any real method clears it.
+                            if (m.value === "none") return ["none"];
+                            return [...prev.filter((x) => x !== "none"), m.value];
+                          })
                         }
                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                           selected

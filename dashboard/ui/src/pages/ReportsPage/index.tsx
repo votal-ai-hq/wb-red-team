@@ -106,11 +106,45 @@ function getRoundNumber(round: { round?: number; roundNumber?: number }): number
   return round.round ?? round.roundNumber ?? 0;
 }
 
-function verdictVariant(v: string | undefined | null): "destructive" | "default" | "secondary" {
+/*
+ * Verdict semantics (from lib/response-analyzer.ts — the source of truth):
+ *   PASS    = the attack SUCCEEDED → a vulnerability was found (BAD, red)
+ *   FAIL    = the agent DEFENDED → the attack was blocked (GOOD, green)
+ *   PARTIAL = partial leak / incomplete defense
+ * The raw verdict strings are kept in the data; we only relabel/recolor them in
+ * the UI so a held defense reads as a positive outcome instead of a scary "FAIL".
+ */
+
+/** Defender-friendly display label for a raw verdict. */
+function verdictLabel(v: string | undefined | null): string {
   const l = (v ?? "").toUpperCase();
-  if (l === "FAIL") return "destructive";
-  if (l === "PASS") return "default";
-  return "secondary";
+  if (l === "PASS") return "Vulnerable";
+  if (l === "FAIL") return "Defended";
+  if (l === "PARTIAL") return "Partial";
+  if (l === "ERROR") return "Error";
+  return v ?? "—";
+}
+
+/** Badge variant + extra classes for a raw verdict. */
+function verdictBadge(v: string | undefined | null): {
+  variant: "destructive" | "default" | "secondary" | "outline";
+  className: string;
+} {
+  const l = (v ?? "").toUpperCase();
+  if (l === "PASS") return { variant: "destructive", className: "" };
+  if (l === "FAIL")
+    return {
+      variant: "outline",
+      className:
+        "text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
+    };
+  if (l === "PARTIAL")
+    return {
+      variant: "outline",
+      className:
+        "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800",
+    };
+  return { variant: "secondary", className: "" };
 }
 
 function prettyCat(cat: string) {
@@ -119,8 +153,8 @@ function prettyCat(cat: string) {
 
 function verdictDotColor(v: string | undefined | null) {
   const l = (v ?? "").toUpperCase();
-  if (l === "PASS") return "bg-emerald-500";
-  if (l === "FAIL") return "bg-red-500";
+  if (l === "PASS") return "bg-red-500";
+  if (l === "FAIL") return "bg-emerald-500";
   if (l === "PARTIAL") return "bg-amber-500";
   return "bg-gray-400";
 }
@@ -195,8 +229,8 @@ function ReportsGrid() {
                     <TableHead>Target URL</TableHead>
                     <TableHead className="w-[180px]">Date</TableHead>
                     <TableHead className="w-[90px] text-center">Attacks</TableHead>
-                    <TableHead className="w-[80px] text-center">Passed</TableHead>
-                    <TableHead className="w-[80px] text-center">Failed</TableHead>
+                    <TableHead className="w-[90px] text-center">Vulnerable</TableHead>
+                    <TableHead className="w-[90px] text-center">Defended</TableHead>
                     <TableHead className="w-[80px] text-center">Errors</TableHead>
                     <TableHead className="w-[60px]" />
                   </TableRow>
@@ -232,12 +266,12 @@ function ReportsGrid() {
                         {r.totalAttacks}
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className="text-sm tabular-nums text-green-600 dark:text-green-400 font-medium">
+                        <span className="text-sm tabular-nums text-red-600 dark:text-red-400 font-medium">
                           {r.passed}
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className="text-sm tabular-nums text-red-600 dark:text-red-400 font-medium">
+                        <span className="text-sm tabular-nums text-green-600 dark:text-green-400 font-medium">
                           {r.failed}
                         </span>
                       </TableCell>
@@ -351,7 +385,7 @@ function FindingRow({ result }: { result: ReportResult }) {
           <Badge variant={severityVariant(getSeverity(result) || "unknown")}>{getSeverity(result) || "unknown"}</Badge>
         </TableCell>
         <TableCell>
-          <Badge variant={verdictVariant(result.verdict)}>{result.verdict}</Badge>
+          <Badge variant={verdictBadge(result.verdict).variant} className={verdictBadge(result.verdict).className}>{verdictLabel(result.verdict)}</Badge>
         </TableCell>
         <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
           {result.llmReasoning || result.reasoning || "-"}
@@ -364,7 +398,7 @@ function FindingRow({ result }: { result: ReportResult }) {
             <div className="space-y-4">
               {/* ── Top bar: verdict + severity + category + response time ── */}
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={verdictVariant(result.verdict)}>{result.verdict}</Badge>
+                <Badge variant={verdictBadge(result.verdict).variant} className={verdictBadge(result.verdict).className}>{verdictLabel(result.verdict)}</Badge>
                 <Badge variant={severityVariant(getSeverity(result))}>{getSeverity(result)}</Badge>
                 <span className="text-xs text-muted-foreground">
                   {prettyCat(getCategory(result))}
@@ -736,9 +770,10 @@ function ReportDetail({ filename }: { filename: string }) {
             {/* Stats cards */}
             {([
               { label: "TOTAL ATTACKS", value: stats.totalAttacks, icon: Zap, color: "text-foreground" },
-              { label: "VULNERABILITIES", value: stats.failed, icon: AlertCircle, color: "text-red-600 dark:text-red-400" },
+              // PASS verdict = attack succeeded = vulnerability; FAIL = defended.
+              { label: "VULNERABILITIES", value: stats.passed, icon: AlertCircle, color: "text-red-600 dark:text-red-400" },
               { label: "PARTIAL", value: partialCount, icon: AlertTriangle, color: "text-amber-600 dark:text-amber-400" },
-              { label: "DEFENDED", value: stats.passed, icon: ShieldCheck, color: "text-emerald-600 dark:text-emerald-400" },
+              { label: "DEFENDED", value: stats.failed, icon: ShieldCheck, color: "text-emerald-600 dark:text-emerald-400" },
               { label: "ERRORS", value: stats.errors, icon: ShieldOff, color: "text-muted-foreground" },
             ] as const).map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="text-center">
@@ -757,19 +792,19 @@ function ReportDetail({ filename }: { filename: string }) {
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-          <strong>FAIL</strong> = attack succeeded, vulnerability found
+          <strong>Vulnerable</strong> = attack succeeded, vulnerability found
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-          <strong>PASS</strong> = defense held, attack was blocked
+          <strong>Defended</strong> = defense held, attack was blocked
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-          <strong>PARTIAL</strong> = partial leak or incomplete defense
+          <strong>Partial</strong> = partial leak or incomplete defense
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-gray-400" />
-          <strong>ERROR</strong> = indeterminate could not complete normally
+          <strong>Error</strong> = indeterminate, could not complete normally
         </span>
       </div>
 
@@ -792,13 +827,13 @@ function ReportDetail({ filename }: { filename: string }) {
                 <div className="mt-3 space-y-1 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                    <span className="text-muted-foreground">FAIL</span>
-                    <span className="font-semibold text-foreground ml-auto tabular-nums">{stats.failed}</span>
+                    <span className="text-muted-foreground">Vulnerable</span>
+                    <span className="font-semibold text-foreground ml-auto tabular-nums">{stats.passed}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    <span className="text-muted-foreground">PASS</span>
-                    <span className="font-semibold text-foreground ml-auto tabular-nums">{stats.passed}</span>
+                    <span className="text-muted-foreground">Defended</span>
+                    <span className="font-semibold text-foreground ml-auto tabular-nums">{stats.failed}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
@@ -882,7 +917,7 @@ function ReportDetail({ filename }: { filename: string }) {
                   }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${verdictDotColor(v)}`} />
-                  {v}
+                  {verdictLabel(v)}
                 </button>
               ))}
             </div>
@@ -1038,11 +1073,11 @@ function ReportDetail({ filename }: { filename: string }) {
                 </td>
                 <td className="text-[9px] py-1 pr-2 align-top">
                   <span className={`font-bold ${
-                    result.verdict === "FAIL" ? "text-red-700"
-                      : result.verdict === "PASS" ? "text-emerald-700"
+                    result.verdict === "PASS" ? "text-red-700"
+                      : result.verdict === "FAIL" ? "text-emerald-700"
                       : result.verdict === "PARTIAL" ? "text-amber-700"
                       : "text-muted-foreground"
-                  }`}>{result.verdict}</span>
+                  }`}>{verdictLabel(result.verdict)}</span>
                 </td>
                 <td className="text-[9px] py-1 text-muted-foreground align-top">{result.llmReasoning || result.reasoning || "-"}</td>
               </tr>

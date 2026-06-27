@@ -385,6 +385,15 @@ const RESPONSE_BODY_SLIM_LEN = 2000;
  * downloads) is never mutated. Events needing no trim are passed through by
  * reference (cheap — incremental polls usually carry only a handful of events).
  */
+/** Re-indent an already-serialized JSON string for human-readable downloads. */
+function prettyJson(serialized: string): string {
+  try {
+    return JSON.stringify(JSON.parse(serialized), null, 2);
+  } catch {
+    return serialized;
+  }
+}
+
 function slimProgressForTransit(events: unknown[]): unknown[] {
   const trim = (s: unknown): string | null =>
     typeof s === "string" && s.length > RESPONSE_BODY_SLIM_LEN
@@ -1134,20 +1143,69 @@ const server = createServer(
         return;
       }
 
-      // Job not in memory — try to load config from DB or file (for rerun)
-      if (includeConfig) {
-        const savedConfig = await loadRunConfig(id, ctx?.tenantId);
-        if (savedConfig) {
+      // Job not in memory — this is a historical run from a previous server
+      // lifecycle. Surface its linked report so the UI's expandable detail row
+      // shows the attack results and a "View Report" link instead of nothing.
+      const savedConfig = includeConfig
+        ? await loadRunConfig(id, ctx?.tenantId)
+        : null;
+
+      let reportFilename: string | undefined;
+      if (isDbConfigured() && ctx?.tenantId) {
+        try {
+          const rep = await query<{ filename: string }>(
+            "SELECT filename FROM reports WHERE run_id=$1 AND tenant_id=$2 ORDER BY created_at DESC LIMIT 1",
+            [id, ctx.tenantId],
+          );
+          if (rep.rows.length > 0) reportFilename = rep.rows[0].filename;
+        } catch (err) {
+          console.error(`  [run detail] report lookup failed for ${id}:`, err);
+        }
+      }
+
+      if (reportFilename) {
+        const loaded = await loadReportRecord(reportFilename, ctx?.tenantId);
+        if (loaded) {
+          const report = normalizeReportSteps(loaded.report) as any;
+          const rounds = Array.isArray(report.rounds) ? report.rounds : [];
+          const results: any[] = rounds.flatMap((rd: any) =>
+            Array.isArray(rd.results) ? rd.results : [],
+          );
+          // Lightweight progress events matching the live-run event shape the
+          // UI consumes (attackName / category / verdict per result).
+          const progress = results.map((r, i) => ({
+            index: i,
+            attackName: r.attack?.name ?? r.attackName ?? "—",
+            category: r.attack?.category ?? r.category ?? "",
+            verdict: r.verdict ?? "",
+          }));
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(
             JSON.stringify({
               runId: id,
               status: "done",
-              config: savedConfig,
+              reportFile: reportFilename,
+              summary: report.summary,
+              progressTotal: progress.length,
+              progress,
+              ...(savedConfig ? { config: savedConfig } : {}),
             }),
           );
           return;
         }
+      }
+
+      // No report found — fall back to config-only response (for rerun/edit).
+      if (savedConfig) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            runId: id,
+            status: "done",
+            config: savedConfig,
+          }),
+        );
+        return;
       }
 
       res.writeHead(404, { "Content-Type": "application/json" });
@@ -1277,13 +1335,23 @@ const server = createServer(
               const finishedAt = row.finished_at ? new Date(row.finished_at).toISOString() : null;
               // Skip rows with no valid date
               if (!startedAt) continue;
+              // Runs only ever execute in this process's in-memory `jobs` map. A DB
+              // row still flagged running/queued but absent from memory is orphaned
+              // (the server restarted mid-run), so it is NOT actually active.
+              // Coerce it to a terminal state so the "N active" counters reflect
+              // reality instead of inflating with stale runs.
+              const rawStatus = row.status || "done";
+              const orphanedActive =
+                rawStatus === "running" || rawStatus === "queued";
               runs.push({
                 runId: row.id,
-                status: row.status || "done",
+                status: orphanedActive ? "error" : rawStatus,
                 startedAt,
                 finishedAt,
                 targetUrl: row.target_url || "unknown",
-                error: row.error || null,
+                error: orphanedActive
+                  ? row.error || "Interrupted — server restarted before completion"
+                  : row.error || null,
                 progressCount: 0,
                 reportFile: undefined,
                 summary: undefined,
@@ -1674,7 +1742,9 @@ const server = createServer(
             headers["Content-Disposition"] = `attachment; filename="${filename}"`;
           }
           res.writeHead(200, headers);
-          res.end(cached.body);
+          // Pretty-print downloads so the saved file is readable (the cached body
+          // is minified for fast browser transit).
+          res.end(download ? prettyJson(cached.body) : cached.body);
           return;
         }
 
@@ -1744,7 +1814,8 @@ const server = createServer(
           headers["Content-Disposition"] = `attachment; filename="${filename}"`;
         }
         res.writeHead(200, headers);
-        res.end(body);
+        // Pretty-print downloads so the saved file is readable, not one long line.
+        res.end(download ? prettyJson(body) : body);
       } catch (err) {
         console.error(`  Failed to load report ${filename}:`, err);
         res.writeHead(500, { "Content-Type": "application/json" });
@@ -2031,6 +2102,12 @@ const server = createServer(
             // No config.json — use defaults; API keys come from env vars
           }
         }
+        // Provider names are case-insensitive by nature, but createProvider()
+        // matches lowercase keys exactly. The UI sends capitalized labels like
+        // "Anthropic"/"OpenAI", so normalize before resolving the provider —
+        // otherwise every item throws "Unknown LLM provider" and the analysis
+        // silently fails after the NDJSON headers are already sent.
+        judgeProvider = String(judgeProvider).toLowerCase();
         const llm = getJudgeProvider({
           attackConfig: { judgeProvider, llmProvider: judgeProvider },
         } as Config);
