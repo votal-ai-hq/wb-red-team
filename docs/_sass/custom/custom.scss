@@ -5,6 +5,28 @@ $votal-indigo: #4f46e5;
 $votal-indigo-dark: #4338ca;
 $votal-ink: #1e1b3a;
 
+// ── Votal indigo accent ─────────────────────────────────────────────────────
+// Applied as plain overrides on top of the built-in light scheme. (A custom
+// color_scheme that @imports "./light" fails on GitHub Pages remote themes,
+// so the brand accent lives here instead.)
+.btn-primary {
+  background-color: $votal-indigo;
+  background-image: none;
+  border-color: $votal-indigo;
+}
+.btn-primary:hover {
+  background-color: $votal-indigo-dark;
+  border-color: $votal-indigo-dark;
+}
+
+.main-content a {
+  color: $votal-indigo;
+}
+
+.site-nav .nav-list-item .nav-list-link.active {
+  color: $votal-indigo;
+}
+
 // Sidebar logo sizing
 .site-logo {
   height: 2rem;
