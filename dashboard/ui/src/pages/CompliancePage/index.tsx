@@ -310,7 +310,7 @@ export default function CompliancePage() {
                   type="text"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  placeholder="e.g. claude-sonnet-4-20250514"
+                  placeholder="default: claude-sonnet-4-6 — leave blank to auto-pick per provider"
                   className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
