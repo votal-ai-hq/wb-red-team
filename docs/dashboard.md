@@ -1,6 +1,7 @@
 ---
 title: Dashboard
-nav_order: 11
+parent: Deploy & Operate
+nav_order: 2
 ---
 
 # Dashboard

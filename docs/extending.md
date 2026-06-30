@@ -1,6 +1,7 @@
 ---
 title: Extending
-nav_order: 13
+parent: Develop
+nav_order: 4
 ---
 
 # Extending the Framework

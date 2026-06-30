@@ -1,6 +1,7 @@
 ---
 title: Deployment
-nav_order: 12
+parent: Deploy & Operate
+nav_order: 1
 ---
 
 # Docker & Deployment

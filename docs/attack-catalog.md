@@ -1,6 +1,7 @@
 ---
 title: Attack Catalog
-nav_order: 6
+parent: Attacks & Analysis
+nav_order: 1
 ---
 
 # Attack Catalog

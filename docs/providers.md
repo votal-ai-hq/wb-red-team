@@ -1,6 +1,7 @@
 ---
 title: LLM Providers
-nav_order: 9
+parent: Develop
+nav_order: 1
 ---
 
 # LLM Providers

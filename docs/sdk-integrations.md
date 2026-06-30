@@ -1,6 +1,7 @@
 ---
 title: APIs & SDKs
-nav_order: 6
+parent: Develop
+nav_order: 2
 ---
 
 # APIs & SDKs

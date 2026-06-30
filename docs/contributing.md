@@ -1,6 +1,7 @@
 ---
 title: Contributing
-nav_order: 15
+parent: Reference
+nav_order: 3
 ---
 
 # Contributing

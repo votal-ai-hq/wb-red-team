@@ -1,6 +1,7 @@
 ---
 title: API-Only Testing
-nav_order: 5
+parent: Get Started
+nav_order: 4
 ---
 
 # API-Only (Black-Box) Testing

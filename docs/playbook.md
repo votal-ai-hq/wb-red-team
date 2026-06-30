@@ -1,6 +1,7 @@
 ---
 title: Playbook & Analysis
-nav_order: 8
+parent: Attacks & Analysis
+nav_order: 3
 ---
 
 # Attack Design Playbook & Result Analysis

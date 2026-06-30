@@ -1,6 +1,7 @@
 ---
 title: Developer Tools
-nav_order: 14
+parent: Develop
+nav_order: 3
 ---
 
 # Developer Tools & Agent Integration

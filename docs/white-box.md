@@ -1,6 +1,7 @@
 ---
 title: White-Box Scanning
-nav_order: 4
+parent: Get Started
+nav_order: 3
 ---
 
 # White-Box Scanning

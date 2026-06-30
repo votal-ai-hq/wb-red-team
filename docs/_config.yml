@@ -6,7 +6,7 @@ baseurl: ""
 remote_theme: just-the-docs/just-the-docs
 
 # Sidebar logo
-logo: "/assets/votalai-logo.png"
+logo: "/assets/votalai-logo.svg"
 
 plugins:
   - jekyll-remote-theme
@@ -30,8 +30,8 @@ aux_links:
 
 aux_links_new_tab: true
 
-# Color scheme
-color_scheme: light
+# Color scheme (Votal AI brand — see _sass/color_schemes/votal.scss)
+color_scheme: votal
 
 # Heading anchor links
 heading_anchors: true

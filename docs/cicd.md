@@ -1,6 +1,7 @@
 ---
 title: CI/CD Integration
-nav_order: 19
+parent: Deploy & Operate
+nav_order: 3
 ---
 
 # CI/CD Integration

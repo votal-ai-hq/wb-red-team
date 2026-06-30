@@ -1,6 +1,7 @@
 ---
 title: Operations & Security
-nav_order: 16
+parent: Deploy & Operate
+nav_order: 4
 ---
 
 # Troubleshooting & Security

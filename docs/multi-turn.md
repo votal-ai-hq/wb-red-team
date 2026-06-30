@@ -1,6 +1,7 @@
 ---
 title: Multi-Turn Attacks
-nav_order: 7
+parent: Attacks & Analysis
+nav_order: 2
 ---
 
 # Multi-Turn Attacks
