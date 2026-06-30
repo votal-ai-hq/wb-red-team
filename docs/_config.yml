@@ -30,8 +30,8 @@ aux_links:
 
 aux_links_new_tab: true
 
-# Color scheme (Votal AI brand — see _sass/color_schemes/votal.scss)
-color_scheme: votal
+# Color scheme — built-in light; Votal indigo accent applied in _sass/custom/custom.scss
+color_scheme: light
 
 # Heading anchor links
 heading_anchors: true
