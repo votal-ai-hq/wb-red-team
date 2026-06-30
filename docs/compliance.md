@@ -1,6 +1,7 @@
 ---
 title: Compliance Frameworks
-nav_order: 10
+parent: Attacks & Analysis
+nav_order: 5
 ---
 
 # Compliance Frameworks

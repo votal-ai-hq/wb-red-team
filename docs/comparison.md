@@ -1,6 +1,7 @@
 ---
 title: Comparison & Status
-nav_order: 17
+parent: Reference
+nav_order: 1
 ---
 
 # Comparison vs Other Tools

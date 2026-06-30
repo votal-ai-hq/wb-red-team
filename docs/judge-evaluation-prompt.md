@@ -1,3 +1,9 @@
+---
+title: Judge Evaluation Prompt
+parent: Attacks & Analysis
+nav_order: 4
+---
+
 # Judge Evaluation Prompt
 
 This is the full prompt sent to the LLM judge (default: Claude Sonnet) for each attack verdict evaluation. All variables have been resolved using the Default Security Policy.

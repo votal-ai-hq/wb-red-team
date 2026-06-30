@@ -6,13 +6,46 @@ description: White-box red teaming for agentic AI apps. Reads your code, finds b
 permalink: /
 ---
 
-# Red-Team AI
+<span class="hero-badge">White-Box AI Red Teaming</span>
 
-White-box red teaming for agentic AI apps. Reads your code, finds bugs specific to your stack — not generic prompt injections.
-{: .fs-6 .fw-300 }
+<h1 class="hero-title">Red-Team AI</h1>
+
+<p class="hero-subtitle">White-box red teaming for agentic AI apps. It reads your application's source code first — learning your tools, roles, and guardrails — then generates attacks tailored to <em>your</em> stack, not generic prompt injections.</p>
 
 [Get started]({{ site.baseurl }}/quick-start/){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [View on GitHub](https://github.com/sundi133/wb-red-team){: .btn .fs-5 .mb-4 .mb-md-0 }
+
+<div class="stat-grid">
+  <div><div class="stat-num">141</div><div class="stat-label">Attack Categories</div></div>
+  <div><div class="stat-num">155</div><div class="stat-label">Attack Strategies</div></div>
+  <div><div class="stat-num">11</div><div class="stat-label">Compliance Frameworks</div></div>
+  <div><div class="stat-num">15</div><div class="stat-label">Max Conversation Turns</div></div>
+</div>
+
+## Why Red-Team AI
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <span class="feature-icon">🔍</span>
+    <h3>White-box analysis</h3>
+    <p>Scans your codebase for tools, roles, guardrails, auth methods, and sensitive literals before a single attack is sent.</p>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">🧠</span>
+    <h3>LLM-driven planning</h3>
+    <p>Combines 141 categories with 155 strategies and prioritizes the attacks your codebase suggests will actually work.</p>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">🔁</span>
+    <h3>Adaptive multi-round</h3>
+    <p>Each round doubles down on near-misses from the last, with crescendo multi-turn escalation up to 15 turns.</p>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">⚖️</span>
+    <h3>Policy-driven judging</h3>
+    <p>Every response is judged by an LLM against configurable policy and mapped to 11 compliance frameworks.</p>
+  </div>
+</div>
 
 ---
 

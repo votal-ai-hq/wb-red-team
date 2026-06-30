@@ -1,6 +1,7 @@
 ---
 title: Configuration
-nav_order: 3
+parent: Get Started
+nav_order: 2
 ---
 
 # Configuration Reference

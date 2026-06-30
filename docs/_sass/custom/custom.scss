@@ -1,0 +1,108 @@
+// ── Votal AI docs — custom styling ──────────────────────────────────────────
+
+// Brand tokens
+$votal-indigo: #4f46e5;
+$votal-indigo-dark: #4338ca;
+$votal-ink: #1e1b3a;
+
+// Sidebar logo sizing
+.site-logo {
+  height: 2rem;
+  background-size: contain;
+  background-position: left center;
+}
+
+// ── Landing hero ────────────────────────────────────────────────────────────
+.hero-badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  margin-bottom: 1rem;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.1);
+  color: $votal-indigo;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hero-title {
+  font-size: 2.6rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.hero-subtitle {
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: #4a4861;
+  max-width: 42rem;
+}
+
+// ── Stats row ───────────────────────────────────────────────────────────────
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1.5rem;
+  margin: 2.5rem 0;
+  padding: 1.5rem 0;
+  border-top: 1px solid #ececf2;
+  border-bottom: 1px solid #ececf2;
+  text-align: center;
+}
+
+.stat-num {
+  font-size: 2rem;
+  font-weight: 700;
+  color: $votal-ink;
+  letter-spacing: -0.02em;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+// ── Feature cards ───────────────────────────────────────────────────────────
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2.5rem;
+}
+
+.feature-card {
+  border: 1px solid #ececf2;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.feature-card:hover {
+  border-color: rgba(79, 70, 229, 0.4);
+  box-shadow: 0 4px 16px rgba(30, 27, 58, 0.06);
+}
+
+.feature-card h3 {
+  margin-top: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.feature-card p {
+  margin-bottom: 0;
+  font-size: 0.88rem;
+  color: #4a4861;
+}
+
+.feature-icon {
+  font-size: 1.4rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
