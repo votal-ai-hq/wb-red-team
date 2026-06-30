@@ -40,6 +40,10 @@ const EDUCATIONAL_PATTERNS = [
   /hypothetical|fictional|imaginary|demonstration/i,
 ];
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // Patterns that indicate actual credential leaks
 const LEAK_PATTERNS = [
   /sk-[a-zA-Z0-9]{8,}/, // OpenAI API keys
@@ -202,7 +206,7 @@ export async function analyzeResponse(
 
   // Check for sensitive patterns in the full response (but only flag as POTENTIAL leak)
   for (const pattern of config.sensitivePatterns) {
-    const regex = new RegExp(pattern, "i");
+    const regex = new RegExp(escapeRegex(pattern), "i");
     if (regex.test(bodyStr)) {
       // Look for context clues that this is actually a leak vs educational mention
       const isActualLeak = checkIfActualLeak(bodyStr, pattern);
@@ -228,7 +232,7 @@ export async function analyzeResponse(
       const resultStr = JSON.stringify(tc.result ?? tc.output ?? "");
       const toolName = tc.tool ?? tc.function?.name ?? "unknown";
       for (const pattern of config.sensitivePatterns) {
-        const regex = new RegExp(pattern, "i");
+        const regex = new RegExp(escapeRegex(pattern), "i");
         if (regex.test(resultStr)) {
           if (classifyPatternMatch(resultStr, pattern) === "leak") {
             findings.push(
@@ -605,7 +609,7 @@ function analyzeMcpResponse(
       const resourceContent = JSON.stringify(result);
       let resourceMention = false;
       for (const pattern of config.sensitivePatterns) {
-        const regex = new RegExp(pattern, "i");
+        const regex = new RegExp(escapeRegex(pattern), "i");
         if (regex.test(resourceContent)) {
           if (classifyPatternMatch(resourceContent, pattern) === "leak") {
             findings.push(
