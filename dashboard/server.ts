@@ -18,7 +18,10 @@ import { randomUUID } from "node:crypto";
 import { loadConfig } from "../lib/config-loader.js";
 import { loadConfigFromObject } from "../lib/config-loader.js";
 import { loadEnvFile } from "../lib/env-loader.js";
-import { getJudgeProvider } from "../lib/llm-provider.js";
+import {
+  getJudgeProvider,
+  resolveJudgeProviderModel,
+} from "../lib/llm-provider.js";
 import { runRedTeam, type RunProgress } from "../lib/run.js";
 import { formatErrorDetails } from "../lib/error-utils.js";
 import { type ComplianceItem } from "../lib/compliance-mappings.js";
@@ -2080,38 +2083,33 @@ const server = createServer(
           "Transfer-Encoding": "chunked",
         });
 
-        // Use provider/model from request body, or fall back to config.json / defaults
-        let judgeProvider = body.provider || "anthropic";
-        let judgeModel = body.model || "claude-sonnet-4-6";
-        if (!body.provider || !body.model) {
-          try {
-            const config = loadConfig();
-            if (!body.provider) {
-              judgeProvider =
-                config.attackConfig.judgeProvider ??
-                config.attackConfig.llmProvider ??
-                judgeProvider;
-            }
-            if (!body.model) {
-              judgeModel =
-                config.attackConfig.judgeModel ??
-                config.attackConfig.llmModel ??
-                judgeModel;
-            }
-          } catch {
-            // No config.json — use defaults; API keys come from env vars
-          }
+        // Resolve a COHERENT provider + model pair. The UI sends a provider (e.g.
+        // "Anthropic") but often no model, so we must NOT borrow config.json's model
+        // when it belongs to a different provider — e.g. an OpenRouter slug
+        // "anthropic/claude-sonnet-4.5" POSTed to the Anthropic API returns 404 and
+        // silently empties the analysis. resolveJudgeProviderModel() keeps the model
+        // paired with its provider (request → matching config → per-provider default)
+        // and lower-cases the provider so createProvider() matches its keys.
+        let cfgProvider: string | undefined;
+        let cfgModel: string | undefined;
+        try {
+          const config = loadConfig();
+          cfgProvider =
+            config.attackConfig.judgeProvider ?? config.attackConfig.llmProvider;
+          cfgModel =
+            config.attackConfig.judgeModel ?? config.attackConfig.llmModel;
+        } catch {
+          // No config.json — rely on request + per-provider defaults; keys from env.
         }
-        // Provider names are case-insensitive by nature, but createProvider()
-        // matches lowercase keys exactly. The UI sends capitalized labels like
-        // "Anthropic"/"OpenAI", so normalize before resolving the provider —
-        // otherwise every item throws "Unknown LLM provider" and the analysis
-        // silently fails after the NDJSON headers are already sent.
-        judgeProvider = String(judgeProvider).toLowerCase();
+        const { provider: judgeProvider, model } = resolveJudgeProviderModel({
+          requestProvider: body.provider,
+          requestModel: body.model,
+          configProvider: cfgProvider,
+          configModel: cfgModel,
+        });
         const llm = getJudgeProvider({
           attackConfig: { judgeProvider, llmProvider: judgeProvider },
         } as Config);
-        const model = judgeModel;
         const allResults = reportData.rounds.flatMap(
           (r: { results: unknown[] }) => r.results,
         );
@@ -2260,8 +2258,29 @@ const server = createServer(
           return;
         }
 
-        const judgeProvider = provider || "anthropic";
-        const judgeModel = model || "claude-sonnet-4-6";
+        // Resolve a COHERENT provider + model pair, honoring config.json's judge
+        // settings (the UI sends nothing) and pairing each provider with a valid
+        // model so we never POST a foreign-provider model (e.g. an OpenRouter slug
+        // to the Anthropic API → 404) or hardcode a provider the deployment lacks
+        // an API key for.
+        let cfgProvider: string | undefined;
+        let cfgModel: string | undefined;
+        try {
+          const config = loadConfig();
+          cfgProvider =
+            config.attackConfig.judgeProvider ?? config.attackConfig.llmProvider;
+          cfgModel =
+            config.attackConfig.judgeModel ?? config.attackConfig.llmModel;
+        } catch {
+          // No config.json — rely on request + per-provider defaults; keys from env.
+        }
+        const { provider: judgeProvider, model: judgeModel } =
+          resolveJudgeProviderModel({
+            requestProvider: provider,
+            requestModel: model,
+            configProvider: cfgProvider,
+            configModel: cfgModel,
+          });
 
         // If no judge LLM can be initialized (e.g. missing API key), fail with
         // one clear message instead of streaming a wall of "UNKNOWN" cards.

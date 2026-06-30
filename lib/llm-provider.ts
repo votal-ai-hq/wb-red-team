@@ -559,3 +559,47 @@ export function getJudgeProvider(config: Config): LlmProvider {
         : undefined),
   });
 }
+
+/**
+ * Known-good default judge model per provider. Used when a caller specifies a
+ * provider but no model. Keeping the model paired with its provider prevents the
+ * cross-provider mismatch that breaks the on-demand analysis endpoints — e.g. an
+ * OpenRouter slug ("anthropic/claude-sonnet-4.5") being POSTed to the Anthropic
+ * API, which returns 404 and silently empties the analysis.
+ */
+export const DEFAULT_JUDGE_MODELS: Record<string, string> = {
+  anthropic: "claude-sonnet-4-6",
+  openai: "gpt-4o",
+  openrouter: "anthropic/claude-sonnet-4.5",
+};
+
+/**
+ * Resolve a COHERENT { provider, model } pair for the judge / on-demand analysis
+ * LLM. Precedence for the model: explicit request model → the config model *only
+ * when it belongs to the same provider* → the per-provider default. A provider is
+ * never paired with a different provider's model.
+ */
+export function resolveJudgeProviderModel(opts: {
+  requestProvider?: string | null;
+  requestModel?: string | null;
+  configProvider?: string | null;
+  configModel?: string | null;
+}): { provider: string; model: string } {
+  const norm = (s?: string | null) => (s ?? "").trim().toLowerCase();
+  const provider =
+    norm(opts.requestProvider) || norm(opts.configProvider) || "anthropic";
+
+  // An explicitly requested model always wins.
+  let model = (opts.requestModel ?? "").trim();
+  if (!model) {
+    // Inherit the config model only when it belongs to the resolved provider;
+    // otherwise fall back to that provider's known-good default.
+    if (opts.configModel && norm(opts.configProvider) === provider) {
+      model = opts.configModel.trim();
+    } else {
+      model = DEFAULT_JUDGE_MODELS[provider] || (opts.configModel ?? "").trim();
+    }
+  }
+  if (!model) model = DEFAULT_JUDGE_MODELS.anthropic;
+  return { provider, model };
+}
