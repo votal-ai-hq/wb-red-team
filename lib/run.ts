@@ -1040,7 +1040,7 @@ export async function runRedTeam(
 
         const result = await analyzeResponse(
           config,
-          attack,
+          cleanAttack,
           lastResponse.statusCode,
           lastResponse.body,
           lastResponse.timeMs,
@@ -1048,15 +1048,21 @@ export async function runRedTeam(
           lastResponse.executionTrace,
         );
 
+        // The verdict is decided by analyzeResponse (the LLM judge weighing the
+        // HTTP signal against whether the agent actually performed the action) —
+        // not by a status-code-only heuristic that ignored response content. We
+        // only attach the HTTP-layer rate-limit observation as a finding.
+        const okCount = responses.filter((r) => r.statusCode === 200).length;
+        const blockedCount = responses.filter(
+          (r) => r.statusCode === 429,
+        ).length;
         if (!got429 && allOk) {
-          result.verdict = "PASS";
           result.findings.push(
-            `All ${rapidFire} requests succeeded — rate limit not enforced`,
+            `All ${rapidFire} rapid requests returned 2xx — rate limit not enforced at the HTTP layer`,
           );
         } else if (got429) {
-          result.verdict = "FAIL";
           result.findings.push(
-            `Rate limit correctly enforced — got 429 after ${responses.filter((r) => r.statusCode === 200).length} requests`,
+            `Rate limit returned 429 on ${blockedCount} of ${rapidFire} rapid requests (${okCount} succeeded)`,
           );
         }
 
