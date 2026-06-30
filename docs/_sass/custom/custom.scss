@@ -13,13 +13,16 @@ $votal-ink: #1e1b3a;
   background-color: $votal-indigo;
   background-image: none;
   border-color: $votal-indigo;
+  color: #fff; // keep label visible on the indigo fill
 }
 .btn-primary:hover {
   background-color: $votal-indigo-dark;
   border-color: $votal-indigo-dark;
+  color: #fff;
 }
 
-.main-content a {
+// Content links indigo — but NOT buttons (a.btn), whose own text color must win.
+.main-content a:not(.btn) {
   color: $votal-indigo;
 }
 
@@ -127,4 +130,38 @@ $votal-ink: #1e1b3a;
   font-size: 1.4rem;
   display: block;
   margin-bottom: 0.5rem;
+}
+
+// ── Wider content layout ─────────────────────────────────────────────────────
+// The theme defaults to $content-width: 50rem, which leaves large empty gutters
+// on big screens. Widen it consistently across the three places the theme uses
+// it (main max-width, sidebar width, and the main's centered left margin) so the
+// layout stays balanced. Values mirror _sass/layout.scss with a wider content.
+$cw-wide: 66rem; // was 50rem
+$nav-w: 16.5rem; // $nav-width
+
+@media (min-width: 50rem) { // mq(md)
+  .main {
+    max-width: $cw-wide;
+  }
+}
+
+@media (min-width: 66.5rem) { // mq(lg) = $content-width + $nav-width
+  .side-bar {
+    width: calc((100% - #{$nav-w + $cw-wide}) / 2 + #{$nav-w});
+  }
+  .side-bar + .main {
+    margin-left: Max(#{$nav-w}, calc((100% - #{$nav-w + $cw-wide}) / 2 + #{$nav-w}));
+  }
+}
+
+// ── Expand all sidebar sections by default ───────────────────────────────────
+// The theme collapses child nav lists unless their section is active. Force
+// every section open so the whole tree is visible at a glance, and point all
+// expander chevrons in the expanded (active) orientation.
+.site-nav .nav-list .nav-list-item > .nav-list {
+  display: block !important;
+}
+.site-nav .nav-list .nav-list-item > .nav-list-expander svg {
+  transform: rotate(-90deg); // matches the theme's active-state rotation
 }
