@@ -2258,8 +2258,29 @@ const server = createServer(
           return;
         }
 
-        const judgeProvider = provider || "anthropic";
-        const judgeModel = model || "claude-sonnet-4-6";
+        // Resolve a COHERENT provider + model pair, honoring config.json's judge
+        // settings (the UI sends nothing) and pairing each provider with a valid
+        // model so we never POST a foreign-provider model (e.g. an OpenRouter slug
+        // to the Anthropic API → 404) or hardcode a provider the deployment lacks
+        // an API key for.
+        let cfgProvider: string | undefined;
+        let cfgModel: string | undefined;
+        try {
+          const config = loadConfig();
+          cfgProvider =
+            config.attackConfig.judgeProvider ?? config.attackConfig.llmProvider;
+          cfgModel =
+            config.attackConfig.judgeModel ?? config.attackConfig.llmModel;
+        } catch {
+          // No config.json — rely on request + per-provider defaults; keys from env.
+        }
+        const { provider: judgeProvider, model: judgeModel } =
+          resolveJudgeProviderModel({
+            requestProvider: provider,
+            requestModel: model,
+            configProvider: cfgProvider,
+            configModel: cfgModel,
+          });
 
         // If no judge LLM can be initialized (e.g. missing API key), fail with
         // one clear message instead of streaming a wall of "UNKNOWN" cards.

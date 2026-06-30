@@ -23,6 +23,7 @@ import {
   HelpCircle,
   CheckCircle,
   Search,
+  ChevronRight,
 } from "lucide-react";
 
 /* ---------- helpers ---------- */
@@ -59,6 +60,12 @@ const STATUS_CONFIG: Record<
     label: "Not Tested",
     icon: HelpCircle,
     dotColor: "bg-gray-400",
+  },
+  error: {
+    variant: "destructive",
+    label: "Analysis Error",
+    icon: AlertTriangle,
+    dotColor: "bg-rose-500",
   },
 };
 
@@ -472,25 +479,72 @@ export default function CompliancePage() {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="divide-y divide-border">
-                    {results.map((r, i) => (
-                      <div
-                        key={`${r.code}-${i}`}
-                        className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-mono text-primary font-semibold">
-                              {r.code}
-                            </span>
-                            <span className="text-sm font-medium text-foreground">{r.title}</span>
+                    {results.map((r, i) => {
+                      const details = r.details?.trim();
+                      const recommendations = r.recommendations ?? [];
+                      const findings = r.findings ?? [];
+                      const hasAnalysis =
+                        !!details || recommendations.length > 0 || findings.length > 0;
+                      return (
+                        <div key={`${r.code}-${i}`} className="py-3 first:pt-0 last:pb-0">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-mono text-primary font-semibold">
+                                  {r.code}
+                                </span>
+                                <span className="text-sm font-medium text-foreground">{r.title}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5">{r.summary}</p>
+                            </div>
+                            <StatusBadge status={r.status} />
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                            {r.summary}
-                          </p>
+                          {hasAnalysis && (
+                            <details className="mt-2 group">
+                              <summary className="cursor-pointer text-xs font-medium text-primary hover:underline list-none inline-flex items-center gap-1">
+                                <ChevronRight className="w-3 h-3 transition-transform group-open:rotate-90" />
+                                Detailed analysis
+                              </summary>
+                              <div className="mt-2 space-y-3 pl-4 border-l-2 border-border">
+                                {details && (
+                                  <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                                    {details}
+                                  </p>
+                                )}
+                                {recommendations.length > 0 && (
+                                  <div>
+                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                                      Recommendations
+                                    </p>
+                                    <ul className="list-disc pl-4 space-y-1">
+                                      {recommendations.map((rec, j) => (
+                                        <li key={j} className="text-xs text-muted-foreground leading-relaxed">
+                                          {rec}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {findings.length > 0 && (
+                                  <div>
+                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                                      Findings
+                                    </p>
+                                    <ul className="list-disc pl-4 space-y-1">
+                                      {findings.map((f, j) => (
+                                        <li key={j} className="text-xs text-muted-foreground leading-relaxed">
+                                          {f}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            </details>
+                          )}
                         </div>
-                        <StatusBadge status={r.status} />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

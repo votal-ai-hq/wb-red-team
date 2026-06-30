@@ -184,7 +184,7 @@ export interface ComplianceResult {
   framework: string;
   code: string;
   title: string;
-  status: "vulnerable" | "at_risk" | "secure" | "not_tested";
+  status: "vulnerable" | "at_risk" | "secure" | "not_tested" | "error";
   summary: string;
   findings?: string[];
   details?: string;
