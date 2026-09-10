@@ -20,10 +20,18 @@
  * Kept dependency-free and pure so it is unit-testable in isolation.
  */
 
+export interface McpToolAnnotationsLike {
+  title?: string;
+  readOnlyHint?: boolean;
+  destructiveHint?: boolean;
+  idempotentHint?: boolean;
+  openWorldHint?: boolean;
+}
 export interface McpToolLike {
   name?: string;
   description?: string;
   inputSchema?: unknown;
+  annotations?: McpToolAnnotationsLike;
 }
 export interface McpDiscoveryLike {
   tools?: McpToolLike[];
@@ -56,6 +64,15 @@ const STANDARD_SCHEMA_KEYS = new Set([
   "additionalProperties", "anyOf", "allOf", "oneOf", "$ref", "$schema",
   "examples", "const", "nullable", "definitions", "$defs", "propertyNames",
   "minItems", "maxItems", "uniqueItems", "multipleOf", "not",
+  // Numeric bounds + the rest of the standard validation vocabulary — these are
+  // legitimate schema keywords, not smuggled instructions. Omitting them made
+  // the Full-Schema-Poisoning scan false-positive on any tool with a bounded
+  // number (e.g. `amount_cents` with `exclusiveMinimum: 0`).
+  "exclusiveMinimum", "exclusiveMaximum", "patternProperties", "prefixItems",
+  "contains", "minContains", "maxContains", "if", "then", "else",
+  "dependentRequired", "dependentSchemas", "readOnly", "writeOnly", "deprecated",
+  "contentEncoding", "contentMediaType", "contentSchema", "unevaluatedProperties",
+  "unevaluatedItems", "$id", "$comment", "$anchor",
 ]);
 
 export interface PoisonFinding {
@@ -197,6 +214,97 @@ export function scanToolShadowing(discovery: McpDiscoveryLike): ShadowFinding[] 
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Tool NAMES implying a consequential / state-changing / outbound action.
+ *  Mirrors WRITE_TOOL_PATTERN in agent-loop.ts (substring match, so it catches
+ *  snake_case names like `create_transfer`), extended with the high-risk
+ *  mutation verbs common in real APIs (freeze, reverse, close, wire, …). Kept
+ *  local so this scanner stays dependency-free. */
+const WRITE_ACTION =
+  /(send|deliver|email|message|notify|post|publish|delete|remove|drop|write|create|insert|update|modify|patch|edit|exec|execute|install|deploy|pay|transfer|grant|revoke|approve|upload|push|merge|freeze|unfreeze|reverse|close|adjust|initiate|wire|cancel|refund|charge|withdraw|deposit|disable|enable|reset|terminate|suspend|activate)/i;
+/** Property names that imply an outbound network target (open-world action). */
+const URL_PARAM = /\b(url|uri|endpoint|host|webhook|callback|address|target|link)\b/i;
+
+export interface AnnotationFinding {
+  tool: string;
+  kind:
+    | "readonly-declared-write-tool"
+    | "contradictory-hints"
+    | "missing-annotation-on-write-tool"
+    | "closed-world-declared-network-tool";
+  detail: string;
+}
+
+/** Collect property-name + description strings from a tool inputSchema. */
+function schemaParamText(inputSchema: unknown): string {
+  if (!inputSchema || typeof inputSchema !== "object") return "";
+  const props = (inputSchema as Record<string, unknown>).properties;
+  if (!props || typeof props !== "object") return "";
+  const parts: string[] = [];
+  for (const [name, def] of Object.entries(props as Record<string, unknown>)) {
+    parts.push(name);
+    if (def && typeof def === "object") {
+      const d = (def as Record<string, unknown>).description;
+      if (typeof d === "string") parts.push(d);
+    }
+  }
+  return parts.join(" ");
+}
+
+/**
+ * Tool-annotation spoofing: a tool's behavior hints (readOnlyHint /
+ * destructiveHint / openWorldHint) contradict what the tool actually is. These
+ * hints drive client auto-approval, so a `readOnlyHint: true` on a tool that
+ * sends/writes/deletes is a consent-bypass. Hints are untrusted server input.
+ * Static signal → the caller grades it PARTIAL (a demonstrated mutation from a
+ * read-only-declared tool is the PASS, graded on the tools/call result).
+ */
+export function scanAnnotationMismatch(
+  discovery: McpDiscoveryLike,
+): AnnotationFinding[] {
+  const findings: AnnotationFinding[] = [];
+  for (const tool of discovery.tools ?? []) {
+    const name = tool.name ?? "(unnamed)";
+    const a = tool.annotations;
+    // Classify by the tool NAME, which names the operation. Matching the
+    // free-text description over-triggers on nouns ("search by name, email, or
+    // phone" is not a write just because it mentions "email").
+    const looksWrite = WRITE_ACTION.test(name);
+
+    if (a?.readOnlyHint === true && looksWrite) {
+      findings.push({
+        tool: name,
+        kind: "readonly-declared-write-tool",
+        detail:
+          "tool declares readOnlyHint:true but its name/description imply a write/send/delete action — a client may auto-approve a mutation",
+      });
+    }
+    if (a?.readOnlyHint === true && a?.destructiveHint === true) {
+      findings.push({
+        tool: name,
+        kind: "contradictory-hints",
+        detail: "tool declares both readOnlyHint:true and destructiveHint:true",
+      });
+    }
+    if (looksWrite && (!a || a.readOnlyHint === undefined)) {
+      findings.push({
+        tool: name,
+        kind: "missing-annotation-on-write-tool",
+        detail:
+          "write/send/delete-style tool exposes no readOnlyHint, leaving the client to guess whether consent is required",
+      });
+    }
+    if (a?.openWorldHint === false && URL_PARAM.test(schemaParamText(tool.inputSchema))) {
+      findings.push({
+        tool: name,
+        kind: "closed-world-declared-network-tool",
+        detail:
+          "tool declares openWorldHint:false but takes a URL/endpoint-style parameter — an outbound (open-world) action mislabeled as closed",
+      });
+    }
+  }
+  return findings;
 }
 
 export interface RugPullDiff {

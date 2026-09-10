@@ -192,6 +192,13 @@ import { mcpSsrfModule } from "../attacks-mcp/mcp-ssrf.js";
 import { mcpCrossTenantAccessModule } from "../attacks-mcp/mcp-cross-tenant-access.js";
 import { mcpDebugAccessModule } from "../attacks-mcp/mcp-debug-access.js";
 import { mcpToolShadowingModule } from "../attacks-mcp/mcp-tool-shadowing.js";
+import { mcpToolPoisoningModule } from "../attacks-mcp/mcp-tool-poisoning.js";
+import { mcpPromptPoisoningModule } from "../attacks-mcp/mcp-prompt-poisoning.js";
+import { mcpResourcePoisoningModule } from "../attacks-mcp/mcp-resource-poisoning.js";
+import { mcpToolAnnotationSpoofingModule } from "../attacks-mcp/mcp-tool-annotation-spoofing.js";
+import { mcpProtocolDowngradeModule } from "../attacks-mcp/mcp-protocol-downgrade.js";
+import { mcpSessionHijackingModule } from "../attacks-mcp/mcp-session-hijacking.js";
+import { mcpCapabilityManipulationModule } from "../attacks-mcp/mcp-capability-manipulation.js";
 import { mcpInsecureOutputModule } from "../attacks-mcp/mcp-insecure-output.js";
 import { mcpAuthAudienceModule } from "../attacks-mcp/mcp-auth-audience.js";
 import { mcpRugPullModule } from "../attacks-mcp/mcp-rug-pull.js";
@@ -223,6 +230,18 @@ import { auditLogEvasionModule } from "../attacks/audit-log-evasion.js";
 import { provenanceForgeryModule } from "../attacks/provenance-forgery.js";
 import { multiTurnPrivilegeEscalationModule } from "../attacks/multi-turn-privilege-escalation.js";
 import { stagedExfiltrationModule } from "../attacks/staged-exfiltration.js";
+import { systemPromptDisclosureModule } from "../attacks/system-prompt-disclosure.js";
+import { toolInventoryDisclosureModule } from "../attacks/tool-inventory-disclosure.js";
+import { agentConfigDisclosureModule } from "../attacks/agent-config-disclosure.js";
+import { ragSourceDisclosureModule } from "../attacks/rag-source-disclosure.js";
+import { infraEndpointDisclosureModule } from "../attacks/infra-endpoint-disclosure.js";
+import { modelIdentityDisclosureModule } from "../attacks/model-identity-disclosure.js";
+import { apiKeyExtractionModule } from "../attacks/api-key-extraction.js";
+import { envSecretExtractionModule } from "../attacks/env-secret-extraction.js";
+import { tokenExtractionModule } from "../attacks/token-extraction.js";
+import { toolCredentialHarvestingModule } from "../attacks/tool-credential-harvesting.js";
+import { secretManagerExtractionModule } from "../attacks/secret-manager-extraction.js";
+import { credentialReuseModule } from "../attacks/credential-reuse.js";
 
 export const ALL_MODULES: AttackModule[] = [
   authBypassModule,
@@ -381,6 +400,18 @@ export const ALL_MODULES: AttackModule[] = [
   provenanceForgeryModule,
   multiTurnPrivilegeEscalationModule,
   stagedExfiltrationModule,
+  systemPromptDisclosureModule,
+  toolInventoryDisclosureModule,
+  agentConfigDisclosureModule,
+  ragSourceDisclosureModule,
+  infraEndpointDisclosureModule,
+  modelIdentityDisclosureModule,
+  apiKeyExtractionModule,
+  envSecretExtractionModule,
+  tokenExtractionModule,
+  toolCredentialHarvestingModule,
+  secretManagerExtractionModule,
+  credentialReuseModule,
 ];
 
 export const MCP_MODULES: AttackModule[] = [
@@ -392,6 +423,13 @@ export const MCP_MODULES: AttackModule[] = [
   mcpCrossTenantAccessModule,
   mcpDebugAccessModule,
   mcpToolShadowingModule,
+  mcpToolPoisoningModule,
+  mcpPromptPoisoningModule,
+  mcpResourcePoisoningModule,
+  mcpToolAnnotationSpoofingModule,
+  mcpProtocolDowngradeModule,
+  mcpSessionHijackingModule,
+  mcpCapabilityManipulationModule,
   mcpInsecureOutputModule,
   mcpAuthAudienceModule,
   mcpRugPullModule,
@@ -483,6 +521,7 @@ export async function enrichAnalysisWithTargetSurface(
       capabilities: [...(surface.capabilities ?? [])],
       prompts: [...(surface.prompts ?? [])],
       resources: [...(surface.resources ?? [])],
+      resourceTemplates: [...(surface.resourceTemplates ?? [])],
     };
 
     const notes: string[] = [];
@@ -496,6 +535,10 @@ export async function enrichAnalysisWithTargetSurface(
       notes.push(`MCP prompts exposed: ${surface.prompts.join(", ")}`);
     if (surface.resources?.length)
       notes.push(`MCP resources exposed: ${surface.resources.join(", ")}`);
+    if (surface.resourceTemplates?.length)
+      notes.push(
+        `MCP resource templates exposed: ${surface.resourceTemplates.join(", ")}`,
+      );
 
     for (const note of notes) {
       if (!analysis.knownWeaknesses.includes(note)) {

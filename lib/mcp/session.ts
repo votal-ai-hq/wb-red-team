@@ -4,6 +4,7 @@ import type {
   McpInitializeResult,
   McpPromptDescriptor,
   McpResourceDescriptor,
+  McpResourceTemplateDescriptor,
   McpToolDescriptor,
 } from "./types.js";
 
@@ -28,8 +29,9 @@ export class McpSession {
     const result = await this.transport.request<McpInitializeResult>(
       "initialize",
       {
-        protocolVersion: DEFAULT_PROTOCOL_VERSION,
-        capabilities: {},
+        protocolVersion:
+          this.config.target.mcp?.protocolVersion ?? DEFAULT_PROTOCOL_VERSION,
+        capabilities: this.config.target.mcp?.clientCapabilities ?? {},
         clientInfo: {
           name: "wb-red-team",
           version: "phase-2",
@@ -109,6 +111,18 @@ export class McpSession {
     return result.resources ?? [];
   }
 
+  async listResourceTemplates(): Promise<McpResourceTemplateDescriptor[]> {
+    await this.initialize();
+    const result = await this.transport.request<{
+      resourceTemplates?: McpResourceTemplateDescriptor[];
+    }>(
+      "resources/templates/list",
+      {},
+      { timeoutMs: this.config.target.mcp?.sessionTimeoutMs ?? 10_000 },
+    );
+    return result.resourceTemplates ?? [];
+  }
+
   async readResource(uri: string): Promise<unknown> {
     await this.initialize();
     return this.transport.request(
@@ -124,6 +138,10 @@ export class McpSession {
 
   getRecentStderr(): string {
     return this.transport.getRecentStderr();
+  }
+
+  getSessionId(): string | undefined {
+    return this.transport.getSessionId();
   }
 
   getExecutionTrace(operation?: string): McpExecutionTrace {

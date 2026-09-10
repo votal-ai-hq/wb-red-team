@@ -7,6 +7,13 @@ import { mcpPathTraversalModule } from "../attacks-mcp/mcp-path-traversal.js";
 import { mcpSsrfModule } from "../attacks-mcp/mcp-ssrf.js";
 import { mcpCrossTenantAccessModule } from "../attacks-mcp/mcp-cross-tenant-access.js";
 import { mcpDebugAccessModule } from "../attacks-mcp/mcp-debug-access.js";
+import { mcpToolPoisoningModule } from "../attacks-mcp/mcp-tool-poisoning.js";
+import { mcpPromptPoisoningModule } from "../attacks-mcp/mcp-prompt-poisoning.js";
+import { mcpResourcePoisoningModule } from "../attacks-mcp/mcp-resource-poisoning.js";
+import { mcpToolAnnotationSpoofingModule } from "../attacks-mcp/mcp-tool-annotation-spoofing.js";
+import { mcpProtocolDowngradeModule } from "../attacks-mcp/mcp-protocol-downgrade.js";
+import { mcpSessionHijackingModule } from "../attacks-mcp/mcp-session-hijacking.js";
+import { mcpCapabilityManipulationModule } from "../attacks-mcp/mcp-capability-manipulation.js";
 
 const MCP_MODULES: AttackModule[] = [
   mcpToolMisuseModule,
@@ -16,6 +23,13 @@ const MCP_MODULES: AttackModule[] = [
   mcpSsrfModule,
   mcpCrossTenantAccessModule,
   mcpDebugAccessModule,
+  mcpToolPoisoningModule,
+  mcpPromptPoisoningModule,
+  mcpResourcePoisoningModule,
+  mcpToolAnnotationSpoofingModule,
+  mcpProtocolDowngradeModule,
+  mcpSessionHijackingModule,
+  mcpCapabilityManipulationModule,
 ];
 
 const mockAnalysis: CodebaseAnalysis = {
